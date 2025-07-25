@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HealthcareAgentic - Navigate Medical Bills with AI</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>PeopleHealth Advocate</h1>
+        <!-- Navigation will be controlled by JS -->
+    </header>
+
+    <main>
+        <!-- This section contains the Login and Sign-up forms. It will be hidden when a user is logged in. -->
+        <section id="auth-section">
+             <h2>Your personal AI agents that fight medical billing errors and insurance denials so you don't have to.</h2>
+             <p style="text-align: center;">Our AI-powered agents help you organize documents, find errors, and navigate the healthcare financial system with confidence.</p>
+            <div id="forms-container">
+                <!-- Sign-up Form -->
+                <div class="form-wrapper">
+                    <h2>Sign Up for Early Access</h2>
+                    <form id="signup-form">
+                        <div class="form-group">
+                            <label for="signup-email">Email Address</label>
+                            <input type="email" id="signup-email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="signup-password">Password (min. 6 characters)</label>
+                            <input type="password" id="signup-password" required>
+                        </div>
+                        <button type="submit" class="cta-button">Create Account & Pre-subscribe</button>
+                        <p id="signup-message" class="form-message"></p>
+                    </form>
+                </div>
+
+                <!-- Login Form -->
+                <div class="form-wrapper">
+                    <h2>Log In</h2>
+                    <form id="login-form">
+                        <div class="form-group">
+                            <label for="login-email">Email Address</label>
+                            <input type="email" id="login-email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="login-password">Password</label>
+                            <input type="password" id="login-password" required>
+                        </div>
+                        <button type="submit" class="cta-button">Log In</button>
+                        <p id="login-message" class="form-message"></p>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- This Dashboard section will be SHOWN ONLY when a user is logged in. -->
+        <section id="dashboard-section" class="hidden">
+            <h2>Your Dashboard</h2>
+            <p>Welcome back! Ask Agent 1 a question or upload a document to get started.</p>
+            <button id="logout-button" class="cta-button">Log Out</button>
+            <hr>
+            
+            <div id="agents">
+                <h2>Meet Your AI-Powered Healthcare Financial Advocates</h2>
+                <div class="agent-container">
+                    
+                    <!-- Agent 1 Card with Q&A Form -->
+                    <div class="agent-card">
+                        <h3>Agent 1: Research & Q&A</h3>
+                        <p>Your primary informational resource. Ask any question about U.S. medical billing rules, common insurance terms, or standard payer policies, and get clear, understandable answers grounded in reliable information.</p>
+                        <span class="status-available">Available in MVP</span>
+                        <div class="agent-qa-container">
+                            <form id="agent1-qa-form">
+                                <div class="form-group">
+                                    <input type="text" id="agent1-question" placeholder="Ask a question..." required>
+                                </div>
+                                <button type="submit" class="cta-button">Ask Agent 1</button>
+                            </form>
+                            <div id="agent1-answer" class="agent-answer-box"></div>
+                        </div>
+                    </div>
+
+                    <!-- Agent 2 Card -->
+                    <div class="agent-card">
+                        <h3>Agent 2: Organizer & Initial Analysis</h3>
+                        <p>Automatically extracts key information from your uploaded medical bills and EOBs. It organizes your documents, performs a basic comparison to spot discrepancies, and provides a concise summary.</p>
+                        <span class="status-available">Available in MVP</span>
+                        <!-- Add this inside the Agent 2 agent-card div -->
+                        <div class="agent-upload-container">
+                            <form id="agent2-upload-form">
+                                <div class="form-group">
+                                    <label for="document-upload">Upload a medical bill or EOB (PDF only):</label>
+                                    <input type="file" id="document-upload" name="document" accept=".pdf" required>
+                                </div>
+                                <button type="submit" class="cta-button">Upload & Analyze</button>
+                            </form>
+                            <div id="agent2-status-message" class="form-message"></div>
+                        </div>
+                        <!-- *** NEW CONTAINER FOR ANALYSIS RESULTS *** -->
+                        <div id="agent2-results-container">
+                            <h4 class="results-header">Analysis Results</h4>
+                            <div id="agent2-results-list">
+                                <!-- Analysis results will be dynamically inserted here by app.js -->
+                                <p class="no-results-message">No documents have been analyzed yet.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Agent 3 Card (Coming Soon) -->
+                    <div class="agent-card locked">
+                        <h3>Agent 3: Bill Challenger</h3>
+                        <div class="coming-soon-badge">Coming Soon</div>
+                        <p>Identifies specific billing errors like upcoding, unbundling of services, and duplicate charges, and assists in drafting dispute communications to your provider.</p>
+                    </div>
+
+                    <!-- Agent 4 Card (Coming Soon) -->
+                    <div class="agent-card locked">
+                        <h3>Agent 4: Insurance Denied Fighter</h3>
+                        <div class="coming-soon-badge">Coming Soon</div>
+                        <p>Focuses on helping you understand and context insurance claim denials by analyzing denial reasons, referencing policies, and helping generate comprehensive appeal letters and tracks the appeal process.</p>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 PeopleHealth.Ai Medical Bill Agentic. All rights reserved.</p>
+    </footer>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>

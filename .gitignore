@@ -112,4 +112,8 @@ Desktop.ini
 .idea/
 *.iml
 
+# .env file
+GCP_PROJECT_ID="healthcareagentic"
+STRIPE_SECRET_KEY="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"
+STRIPE_PRICE_ID="prod_SUB9HYlgctywpC"
 # End of file

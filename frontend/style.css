@@ -1,0 +1,284 @@
+/* Basic Body and Font Styling */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    background-color: #f4f7f9;
+    color: #333;
+}
+
+/* Header Styling */
+header {
+    background: #fff;
+    padding: 1rem 2rem;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+header h1 {
+    margin: 0;
+    color: #0056b3;
+    font-size: 1.5rem;
+}
+
+/* Main Content Styling */
+main {
+    padding: 1rem 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+section {
+    padding: 2rem 0;
+}
+
+h2 {
+    text-align: center;
+    margin-bottom: 2rem;
+    color: #333;
+}
+
+/* Agent Card Styling */
+.agent-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    justify-content: center;
+    margin-top: 2rem;
+}
+
+.agent-card {
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 1.5rem;
+    flex-basis: 45%;
+    min-width: 300px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    background: #fff;
+}
+
+.agent-card h3 {
+    margin-top: 0;
+    color: #0056b3;
+}
+
+.status-available {
+    font-weight: bold;
+    color: #28a745;
+}
+
+/* "Coming Soon" Styling for Locked Agents */
+.agent-card.locked {
+    background-color: #f8f9fa;
+    opacity: 0.7;
+}
+
+.coming-soon-badge {
+    background-color: #ffc107;
+    color: #333;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-weight: bold;
+    display: inline-block;
+    margin-bottom: 1rem;
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    padding: 2rem;
+    color: #666;
+    margin-top: 2rem;
+}
+
+/* Add this to your style.css file */
+.form-container {
+    max-width: 500px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+    text-align: left;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 8px;
+    box-sizing: border-box; /* Important for width calculation */
+}
+
+.cta-button {
+    background-color: #007bff;
+    color: white;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.cta-button:hover {
+    background-color: #0056b3;
+}
+
+#form-message {
+    margin-top: 1rem;
+    font-weight: bold;
+}
+
+/* Add this to your style.css file */
+.agent-qa-container {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #eee;
+}
+
+.agent-answer-box {
+    margin-top: 1rem;
+    padding: 1rem;
+    background-color: #e9ecef;
+    border-radius: 5px;
+    white-space: pre-wrap;
+    text-align: left;
+    min-height: 50px;
+    border: 1px solid #ddd;
+}
+
+/* Add this to style.css */
+.hidden {
+    display: none;
+}
+
+#forms-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    justify-content: center;
+}
+
+.form-wrapper {
+    flex: 1;
+    min-width: 320px;
+    max-width: 450px;
+    background: #fff;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.form-wrapper h2 {
+    text-align: left;
+    margin-top: 0;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+    text-align: left;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 10px;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.form-message {
+    margin-top: 1rem;
+    font-weight: bold;
+    min-height: 1.2em; /* Prevents layout shift */
+}
+
+/* Dashboard Styling */
+#dashboard-section {
+    background: #fff;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+#dashboard-section > h2 {
+    text-align: left;
+    margin-top: 0;
+}
+
+#logout-button {
+    background-color: #dc3545;
+}
+#logout-button:hover {
+    background-color: #c82333;
+}
+
+.agent-upload-container {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #eee;
+}
+
+#agent2-results-container {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #eee;
+}
+
+.results-header {
+    margin-bottom: 1rem;
+    color: #333;
+}
+
+.no-results-message {
+    color: #6c757d;
+    font-style: italic;
+}
+
+.analysis-item {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.analysis-item h5 {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+    color: #0056b3;
+}
+
+.analysis-item p {
+    margin-bottom: 0.5rem;
+}
+
+.analysis-item p strong {
+    color: #343a40;
+}
+
+.analysis-item pre {
+    background-color: #e9ecef;
+    padding: 0.75rem;
+    border-radius: 4px;
+    white-space: pre-wrap; /* Ensures long lines wrap */
+    word-wrap: break-word; /* Breaks long words if necessary */
+    font-size: 0.875rem;
+}
