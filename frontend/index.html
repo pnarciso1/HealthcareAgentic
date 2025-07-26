@@ -3,132 +3,338 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HealthcareAgentic - Navigate Medical Bills with AI</title>
+    <title>MyCareClaim - Clarity and Compassion for Every Medical Bill</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <header>
-        <h1>PeopleHealth Advocate</h1>
-        <!-- Navigation will be controlled by JS -->
-    </header>
 
-    <main>
-        <!-- This section contains the Login and Sign-up forms. It will be hidden when a user is logged in. -->
-        <section id="auth-section">
-             <h2>Your personal AI agents that fight medical billing errors and insurance denials so you don't have to.</h2>
-             <p style="text-align: center;">Our AI-powered agents help you organize documents, find errors, and navigate the healthcare financial system with confidence.</p>
-            <div id="forms-container">
-                <!-- Sign-up Form -->
-                <div class="form-wrapper">
-                    <h2>Sign Up for Early Access</h2>
-                    <form id="signup-form">
-                        <div class="form-group">
-                            <label for="signup-email">Email Address</label>
-                            <input type="email" id="signup-email" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="signup-password">Password (min. 6 characters)</label>
-                            <input type="password" id="signup-password" required>
-                        </div>
-                        <button type="submit" class="cta-button">Create Account & Pre-subscribe</button>
-                        <p id="signup-message" class="form-message"></p>
-                    </form>
+    <!-- LANDING PAGE FOR LOGGED-OUT USERS -->
+    <section id="auth-section">
+        <header class="landing-header">
+            <div id="logo-link" class="logo" style="cursor: pointer;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" stroke="#4F46E5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 7L12 12L22 7" stroke="#4F46E5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 12V22" stroke="#4F46E5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span>MyCareClaim</span>
+            </div>
+            <nav class="main-nav">
+                <a href="#" id="nav-how-it-works">How it works</a>
+                <a href="#">Pricing</a>
+                <a href="#">Resources</a>
+            </nav>
+            <div class="auth-buttons">
+                <button id="login-nav-button" class="btn-secondary">Log in</button>
+                <button id="get-started-button" class="btn-primary">Get started</button>
+            </div>
+        </header>
+
+        <main id="landing-page-content" class="landing-main">
+            <h1>Your Personal AI Team for Navigating Medical Bills & Insurance</h1>
+            <p class="landing-subheader">Let our AI agents simplify the most frustrating parts of healthcare — bills, claims, and denials.</p>
+            <div class="agent-showcase">
+                <!-- Landing Page Agent Cards -->
+                <div class="agent-showcase-card">
+                    <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></div>
+                    <h3>Research and Q&A</h3>
+                    <p>Get answers to your questions about medical bills, insurance, and more.</p>
                 </div>
-
-                <!-- Login Form -->
-                <div class="form-wrapper">
-                    <h2>Log In</h2>
-                    <form id="login-form">
-                        <div class="form-group">
-                            <label for="login-email">Email Address</label>
-                            <input type="email" id="login-email" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="login-password">Password</label>
-                            <input type="password" id="login-password" required>
-                        </div>
-                        <button type="submit" class="cta-button">Log In</button>
-                        <p id="login-message" class="form-message"></p>
-                    </form>
+                <div class="agent-showcase-card">
+                    <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg></div>
+                    <h3>Bill and Claim Analysis</h3>
+                    <p>Upload your bills and claims for a detailed analysis to identify errors and savings.</p>
+                </div>
+                <div class="agent-showcase-card">
+                    <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.89 1.45l8 4A2 2 0 0 1 22 7.24v9.53a2 2 0 0 1-1.11 1.79l-8 4a2 2 0 0 1-1.79 0l-8-4A2 2 0 0 1 2 16.77V7.24a2 2 0 0 1 1.11-1.79l8-4a2 2 0 0 1 1.78 0z"></path><polyline points="2.32 6.16 12 11 21.68 6.16"></polyline><line x1="12" y1="22.76" x2="12" y2="11"></line><line x1="7" y1="3.5" x2="17" y2="8.5"></line></svg></div>
+                    <h3>Challenging Bills</h3>
+                    <p>Our AI agent can help you challenge errors and overcharges on your medical bills.</p>
+                </div>
+                <div class="agent-showcase-card">
+                    <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg></div>
+                    <h3>Fighting Denials</h3>
+                    <p>Our AI agent can help you fight insurance denials and navigate the appeals process.</p>
                 </div>
             </div>
-        </section>
+            <div class="cta-buttons">
+                <button id="get-started-main-button" class="btn-primary">Get started</button>
+                <button class="btn-secondary">Learn more</button>
+            </div>
+        </main>
 
-        <!-- This Dashboard section will be SHOWN ONLY when a user is logged in. -->
-        <section id="dashboard-section" class="hidden">
-            <h2>Your Dashboard</h2>
-            <p>Welcome back! Ask Agent 1 a question or upload a document to get started.</p>
-            <button id="logout-button" class="cta-button">Log Out</button>
-            <hr>
-            
-            <div id="agents">
-                <h2>Meet Your AI-Powered Healthcare Financial Advocates</h2>
-                <div class="agent-container">
+        <!-- HOW IT WORKS PAGE -->
+        <main id="how-it-works-page" class="page-content hidden">
+            <div class="page-header">
+                <h1>How It Works</h1>
+                <p>We've built a team of AI Agents dedicated to helping you simplify the messiest parts of healthcare — starting with your bills and insurance claims. Here's how it works:</p>
+            </div>
+            <div class="how-it-works-content">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-text">
+                        <h2>Choose What You Need Help With</h2>
+                        <p>Whether you're confused about a medical bill, need help filing a claim, or want to understand your insurance options — start by telling us your issue. Our platform routes your request to the right AI Agent.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-text">
+                        <h2>Get Support from Specialized AI Agents</h2>
+                        <p>We've built a growing team of task-specific agents that act like your own personal healthcare support staff:</p>
+                        <ul class="agent-list">
+                            <li><strong>🟣 Research & Q&A Agent:</strong> Ask anything — from "What is this charge for?" to "How do I file an appeal?" This agent pulls from trusted sources to give you instant, easy-to-understand answers.</li>
+                            <li><strong>📝 Bill & Claim Explainer Agent:</strong> Upload your documents, and this agent will analyze and translate confusing bill and claim language into plain English — highlighting errors and opportunities to save.</li>
+                            <li><strong>⚠️ Challenging Bills Agent (Coming Soon):</strong> This agent helps you push back on overcharges and billing mistakes — crafting dispute letters and guiding you through the challenge process.</li>
+                            <li><strong>📄 Denials & Appeals Agent (Coming Soon):</strong> If your insurance denied a claim, this agent helps you understand why and walks you through the appeals process with templates and advice.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-text">
+                        <h2>We're Always Building More Agents</h2>
+                        <p>The healthcare system is complex — so we're building a whole team of AI agents to make it easier. As new use cases arise, we'll release new agents designed to tackle them. Our goal: let AI do the hard work so you don't have to.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="cta-section">
+                <h2>Ready to Get Started?</h2>
+                <p>Sign up today and let your AI agents take the stress out of healthcare.</p>
+                <div class="cta-buttons">
+                    <button id="get-started-cta-button" class="btn-primary">Get started</button>
+                    <button id="login-cta-button" class="btn-secondary">Log In</button>
+                </div>
+            </div>
+        </main>
+
+        <footer class="landing-footer">
+            <a href="#">Terms of Service</a>
+            <span>&copy; 2025 MyCareClaim. All rights reserved.</span>
+            <a href="#">Privacy Policy</a>
+        </footer>
+    </section>
+
+    <!-- MODAL FOR LOGIN/SIGNUP FORMS -->
+    <div id="forms-container" class="hidden">
+        <div id="signup-form-wrapper" class="form-wrapper">
+            <button class="close-modal">&times;</button>
+            <h2>Sign Up for Early Access</h2>
+            <form id="signup-form">
+                <div class="form-group"><label for="signup-email">Email Address</label><input type="email" id="signup-email" required></div>
+                <div class="form-group"><label for="signup-password">Password (min. 6 characters)</label><input type="password" id="signup-password" required></div>
+                <button type="submit" class="cta-button">Create Account</button>
+                <p id="signup-message" class="form-message"></p>
+            </form>
+        </div>
+        <div id="login-form-wrapper" class="form-wrapper">
+            <button class="close-modal">&times;</button>
+            <h2>Log In</h2>
+            <form id="login-form">
+                <div class="form-group"><label for="login-email">Email Address</label><input type="email" id="login-email" required></div>
+                <div class="form-group"><label for="login-password">Password</label><input type="password" id="login-password" required></div>
+                <div class="form-group"><a href="#" id="forgot-password-link" class="form-link">Forgot Password?</a></div>
+                <button type="submit" class="cta-button">Log In</button>
+                <p id="login-message" class="form-message"></p>
+            </form>
+        </div>
+        <div id="reset-password-wrapper" class="form-wrapper hidden-form">
+            <button class="close-modal">&times;</button>
+            <h2>Reset Password</h2>
+            <form id="reset-password-form">
+                <p>Enter your email address and we'll send you a link to reset your password.</p>
+                <div class="form-group"><label for="reset-email">Email Address</label><input type="email" id="reset-email" required></div>
+                <button type="submit" class="cta-button">Send Reset Link</button>
+                <p id="reset-message" class="form-message"></p>
+                <a href="#" id="back-to-login-link" class="form-link">Back to Log In</a>
+            </form>
+        </div>
+    </div>
+
+    <!-- MAIN APP CONTAINER FOR LOGGED-IN USERS -->
+    <div id="app-container" class="hidden">
+        <header class="app-header">
+            <div class="logo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" stroke="#4F46E5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 7L12 12L22 7" stroke="#4F46E5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 12V22" stroke="#4F46E5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span>MyCareClaim</span>
+            </div>
+            <nav class="app-nav">
+                <a href="#" id="nav-agents">Agents</a>
+                <a href="#">Bills</a>
+                <a href="#">Settings</a>
+            </nav>
+            <button id="logout-button" class="btn-secondary">Log Out</button>
+        </header>
+
+        <!-- PAGE: AGENT SELECTION -->
+        <main id="agent-selection-page" class="page">
+            <div class="page-header">
+                <h1>Choose Your Agent</h1>
+                <p>Select an AI agent to get started.</p>
+            </div>
+            <div class="agent-selection-container">
+                <div class="agent-selection-card" data-page="agent-1-page">
+                    <h3>Research and Q&A</h3>
+                    <p>Ask questions about medical bills and insurance.</p>
+                </div>
+                <div class="agent-selection-card" data-page="agent-2-page">
+                    <h3>Bill and Claim Analysis</h3>
+                    <p>Upload documents to find errors and savings.</p>
+                </div>
+                <div class="agent-selection-card" data-page="agent-3-page">
+                    <h3>Challenge Bills</h3>
+                    <p>Generate letters to dispute incorrect charges.</p>
+                </div>
+                <div class="agent-selection-card" data-page="agent-4-page">
+                    <h3>Fight Denials</h3>
+                    <p>Get help with the insurance appeals process.</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- PAGE: AGENT 1 - RESEARCH & Q&A -->
+        <main id="agent-1-page" class="page hidden">
+            <div class="page-header">
+                <h1>Research and Q&A Agent</h1>
+            </div>
+            <form id="agent1-qa-form" class="agent1-form">
+                <input type="text" id="agent1-question" placeholder="Ask a question about your medical bills...">
+                <button type="submit" class="btn-primary">Ask</button>
+            </form>
+            <div class="agent1-results">
+                <h3>Recent Questions</h3>
+                <ul id="recent-questions-list" class="recent-questions">
+                    <!-- Questions will be dynamically inserted here by app.js -->
+                </ul>
+                <h3>Answer</h3>
+                <div id="agent1-answer" class="agent1-answer-box">
+                    <p class="placeholder">Your answer will appear here...</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- PAGE: AGENT 2 - BILL & CLAIM ANALYSIS -->
+        <main id="agent-2-page" class="page hidden">
+            <div class="page-header">
+                <h1>Upload Your Medical Bills and Claims</h1>
+                <p>Our AI-powered system will analyze your documents to identify discrepancies and potential issues.</p>
+            </div>
+            <form id="agent2-upload-form" class="agent2-upload-area">
+                <p><strong>Drag and drop your files here, or</strong></p>
+                <p>Supported formats: PDF, JPG, PNG</p>
+                <input type="file" id="document-upload" name="document" accept=".pdf,.jpg,.jpeg,.png" hidden>
+                <button type="button" id="browse-files-button" class="btn-secondary">Browse Files</button>
+            </form>
+            <div id="agent2-progress-container" class="hidden">
+                <h3>Analysis Progress</h3>
+                <p>Analyzing your documents</p>
+                <div class="progress-bar"><div class="progress-bar-inner"></div></div>
+                <p id="agent2-status-message"></p>
+            </div>
+            <div id="agent2-results-container">
+                <h3>Analysis Results</h3>
+                <div id="agent2-results-list">
+                    <p class="placeholder">Once the analysis is complete, you'll see a detailed report here.</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- PAGE: AGENT 3 - CHALLENGE BILLS -->
+        <main id="agent-3-page" class="page hidden" style="position: relative;">
+            <div class="coming-soon-overlay">
+                <h2>Coming Soon</h2>
+                <p>This agent is currently under development. Check back later for updates!</p>
+            </div>
+            <div class="page-header">
+                <h1>Challenge Your Medical Bill</h1>
+            </div>
+            <div class="agent3-form-container">
+                <form id="agent3-challenge-form">
+                    <h3>Step 1: Gather Information</h3>
+                    <div class="form-group"><label for="patient-name">Patient Name</label><input type="text" id="patient-name" placeholder="Enter patient's full name" disabled></div>
+                    <div class="form-group"><label for="date-of-service">Date of Service</label><input type="text" id="date-of-service" placeholder="MM/DD/YYYY" disabled></div>
+                    <div class="form-group"><label for="provider-name">Provider Name</label><input type="text" id="provider-name" placeholder="Enter the name of the healthcare provider" disabled></div>
+                    <div class="form-group"><label for="bill-amount">Bill Amount</label><input type="text" id="bill-amount" placeholder="Enter the total amount of the bill" disabled></div>
                     
-                    <!-- Agent 1 Card with Q&A Form -->
-                    <div class="agent-card">
-                        <h3>Agent 1: Research & Q&A</h3>
-                        <p>Your primary informational resource. Ask any question about U.S. medical billing rules, common insurance terms, or standard payer policies, and get clear, understandable answers grounded in reliable information.</p>
-                        <span class="status-available">Available in MVP</span>
-                        <div class="agent-qa-container">
-                            <form id="agent1-qa-form">
-                                <div class="form-group">
-                                    <input type="text" id="agent1-question" placeholder="Ask a question..." required>
-                                </div>
-                                <button type="submit" class="cta-button">Ask Agent 1</button>
-                            </form>
-                            <div id="agent1-answer" class="agent-answer-box"></div>
-                        </div>
-                    </div>
+                    <h3>Step 2: Describe the Issue</h3>
+                    <div class="form-group"><label for="issue-description">Issue Description</label><textarea id="issue-description" rows="4" placeholder="Describe the issue with the bill, e.g., incorrect charges, duplicate billing, etc." disabled></textarea></div>
 
-                    <!-- Agent 2 Card -->
-                    <div class="agent-card">
-                        <h3>Agent 2: Organizer & Initial Analysis</h3>
-                        <p>Automatically extracts key information from your uploaded medical bills and EOBs. It organizes your documents, performs a basic comparison to spot discrepancies, and provides a concise summary.</p>
-                        <span class="status-available">Available in MVP</span>
-                        <!-- Add this inside the Agent 2 agent-card div -->
-                        <div class="agent-upload-container">
-                            <form id="agent2-upload-form">
-                                <div class="form-group">
-                                    <label for="document-upload">Upload a medical bill or EOB (PDF only):</label>
-                                    <input type="file" id="document-upload" name="document" accept=".pdf" required>
-                                </div>
-                                <button type="submit" class="cta-button">Upload & Analyze</button>
-                            </form>
-                            <div id="agent2-status-message" class="form-message"></div>
-                        </div>
-                        <!-- *** NEW CONTAINER FOR ANALYSIS RESULTS *** -->
-                        <div id="agent2-results-container">
-                            <h4 class="results-header">Analysis Results</h4>
-                            <div id="agent2-results-list">
-                                <!-- Analysis results will be dynamically inserted here by app.js -->
-                                <p class="no-results-message">No documents have been analyzed yet.</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Agent 3 Card (Coming Soon) -->
-                    <div class="agent-card locked">
-                        <h3>Agent 3: Bill Challenger</h3>
-                        <div class="coming-soon-badge">Coming Soon</div>
-                        <p>Identifies specific billing errors like upcoding, unbundling of services, and duplicate charges, and assists in drafting dispute communications to your provider.</p>
-                    </div>
-
-                    <!-- Agent 4 Card (Coming Soon) -->
-                    <div class="agent-card locked">
-                        <h3>Agent 4: Insurance Denied Fighter</h3>
-                        <div class="coming-soon-badge">Coming Soon</div>
-                        <p>Focuses on helping you understand and context insurance claim denials by analyzing denial reasons, referencing policies, and helping generate comprehensive appeal letters and tracks the appeal process.</p>
-                    </div>
-
-                </div>
+                    <h3>Step 3: Generate Challenge Letter</h3>
+                    <button type="submit" class="btn-primary" disabled>Generate Letter</button>
+                    
+                    <div class="form-group" style="margin-top: 2rem;"><label for="challenge-letter">Challenge Letter</label><textarea id="challenge-letter" rows="8" placeholder="Your generated letter will appear here..." readonly disabled></textarea></div>
+                    <button type="button" class="btn-secondary" disabled>Download Letter</button>
+                </form>
             </div>
-        </section>
-    </main>
+        </main>
 
-    <footer>
-        <p>&copy; 2025 PeopleHealth.Ai Medical Bill Agentic. All rights reserved.</p>
-    </footer>
+        <!-- PAGE: AGENT 4 - FIGHT DENIALS -->
+        <main id="agent-4-page" class="page hidden" style="position: relative;">
+            <div class="coming-soon-overlay">
+                <h2>Coming Soon</h2>
+                <p>This agent is currently under development. Check back later for updates!</p>
+            </div>
+             <div class="agent4-container">
+                <aside class="agent4-sidebar">
+                    <div class="sidebar-profile">
+                        <h4>Sophia</h4>
+                        <p>Patient</p>
+                    </div>
+                    <nav class="sidebar-nav">
+                        <a href="#" class="active">Appeals</a>
+                        <a href="#">Dashboard</a>
+                        <a href="#">Bills</a>
+                        <a href="#">Resources</a>
+                        <a href="#">Settings</a>
+                    </nav>
+                </aside>
+                <div class="agent4-content">
+                    <div class="page-header">
+                        <h1>Appeals</h1>
+                        <button class="btn-primary" disabled>Submit New Appeal</button>
+                    </div>
+                    <div class="tabs">
+                        <button class="tab" disabled>All</button>
+                        <button class="tab" disabled>In Progress</button>
+                        <button class="tab" disabled>Completed</button>
+                    </div>
+                    <div class="appeals-table">
+                        <div class="table-header">
+                            <div>Date</div>
+                            <div>Bill</div>
+                            <div>Status</div>
+                            <div>Actions</div>
+                        </div>
+                        <div class="table-row">
+                            <div>07/15/2024</div>
+                            <div>Bill for MRI Scan</div>
+                            <div><span class="status in-progress">In Progress</span></div>
+                            <div><button class="btn-view" disabled>View</button></div>
+                        </div>
+                        <div class="table-row">
+                            <div>06/20/2024</div>
+                            <div>Bill for Physical Therapy</div>
+                            <div><span class="status completed">Completed</span></div>
+                            <div><button class="btn-view" disabled>View</button></div>
+                        </div>
+                         <div class="table-row">
+                            <div>05/05/2024</div>
+                            <div>Bill for Emergency Room Visit</div>
+                            <div><span class="status in-progress">In Progress</span></div>
+                            <div><button class="btn-view" disabled>View</button></div>
+                        </div>
+                    </div>
+                    <div class="resources-section">
+                        <h2>Resources</h2>
+                        <div class="resource-cards">
+                            <div class="resource-card">Appeal Templates</div>
+                            <div class="resource-card">Legal Advice</div>
+                            <div class="resource-card">Negotiation Strategies</div>
+                        </div>
+                    </div>
+                </div>
+             </div>
+        </main>
+
+    </div>
 
     <script type="module" src="app.js"></script>
 </body>
