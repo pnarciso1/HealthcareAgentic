@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://js.stripe.com/v3/"></script>
 </head>
 <body>
 
@@ -20,8 +21,8 @@
             </div>
             <nav class="main-nav">
                 <a href="#" id="nav-how-it-works">How it works</a>
-                <a href="#">Pricing</a>
-                <a href="#">Resources</a>
+                <a href="#" id="nav-pricing">Pricing</a>
+                <a href="#" id="nav-resources">Resources</a>
             </nav>
             <div class="auth-buttons">
                 <button id="login-nav-button" class="btn-secondary">Log in</button>
@@ -29,28 +30,32 @@
             </div>
         </header>
 
-        <main id="landing-page-content" class="landing-main">
+        <main id="landing-page-content" class="page-content">
             <h1>Your Personal AI Team for Navigating Medical Bills & Insurance</h1>
             <p class="landing-subheader">Let our AI agents simplify the most frustrating parts of healthcare — bills, claims, and denials.</p>
             <div class="agent-showcase">
                 <!-- Landing Page Agent Cards -->
                 <div class="agent-showcase-card">
                     <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></div>
+                    <div class="agent-badge free">Free</div>
                     <h3>Research and Q&A</h3>
                     <p>Get answers to your questions about medical bills, insurance, and more.</p>
                 </div>
                 <div class="agent-showcase-card">
                     <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg></div>
+                    <div class="agent-badge premium">Premium</div>
                     <h3>Bill and Claim Analysis</h3>
                     <p>Upload your bills and claims for a detailed analysis to identify errors and savings.</p>
                 </div>
                 <div class="agent-showcase-card">
                     <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.89 1.45l8 4A2 2 0 0 1 22 7.24v9.53a2 2 0 0 1-1.11 1.79l-8 4a2 2 0 0 1-1.79 0l-8-4A2 2 0 0 1 2 16.77V7.24a2 2 0 0 1 1.11-1.79l8-4a2 2 0 0 1 1.78 0z"></path><polyline points="2.32 6.16 12 11 21.68 6.16"></polyline><line x1="12" y1="22.76" x2="12" y2="11"></line><line x1="7" y1="3.5" x2="17" y2="8.5"></line></svg></div>
+                    <div class="agent-badge premium">Premium</div>
                     <h3>Challenging Bills</h3>
                     <p>Our AI agent can help you challenge errors and overcharges on your medical bills.</p>
                 </div>
                 <div class="agent-showcase-card">
                     <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg></div>
+                    <div class="agent-badge premium">Premium</div>
                     <h3>Fighting Denials</h3>
                     <p>Our AI agent can help you fight insurance denials and navigate the appeals process.</p>
                 </div>
@@ -81,10 +86,10 @@
                         <h2>Get Support from Specialized AI Agents</h2>
                         <p>We've built a growing team of task-specific agents that act like your own personal healthcare support staff:</p>
                         <ul class="agent-list">
-                            <li><strong>🟣 Research & Q&A Agent:</strong> Ask anything — from "What is this charge for?" to "How do I file an appeal?" This agent pulls from trusted sources to give you instant, easy-to-understand answers.</li>
-                            <li><strong>📝 Bill & Claim Explainer Agent:</strong> Upload your documents, and this agent will analyze and translate confusing bill and claim language into plain English — highlighting errors and opportunities to save.</li>
-                            <li><strong>⚠️ Challenging Bills Agent (Coming Soon):</strong> This agent helps you push back on overcharges and billing mistakes — crafting dispute letters and guiding you through the challenge process.</li>
-                            <li><strong>📄 Denials & Appeals Agent (Coming Soon):</strong> If your insurance denied a claim, this agent helps you understand why and walks you through the appeals process with templates and advice.</li>
+                            <li><strong>🟣 Research & Q&A Agent (FREE):</strong> Ask anything — from "What is this charge for?" to "How do I file an appeal?" This agent pulls from trusted sources to give you instant, easy-to-understand answers.</li>
+                            <li><strong>📝 Bill & Claim Explainer Agent (PREMIUM):</strong> Upload your documents, and this agent will analyze and translate confusing bill and claim language into plain English — highlighting errors and opportunities to save.</li>
+                            <li><strong>⚠️ Challenging Bills Agent (PREMIUM - Coming Soon):</strong> This agent helps you push back on overcharges and billing mistakes — crafting dispute letters and guiding you through the challenge process.</li>
+                            <li><strong>📄 Denials & Appeals Agent (PREMIUM - Coming Soon):</strong> If your insurance denied a claim, this agent helps you understand why and walks you through the appeals process with templates and advice.</li>
                         </ul>
                     </div>
                 </div>
@@ -103,6 +108,117 @@
                     <button id="get-started-cta-button" class="btn-primary">Get started</button>
                     <button id="login-cta-button" class="btn-secondary">Log In</button>
                 </div>
+            </div>
+        </main>
+
+        <!-- RESOURCES PAGE -->
+        <main id="resources-page" class="page-content hidden">
+            <div class="page-header">
+                <h1>Resources</h1>
+                <p>Guides, templates, and tools to help you navigate the healthcare system with confidence.</p>
+            </div>
+            <div class="resources-container">
+                <div class="resource-category">
+                    <h2>Guides & How-To Articles</h2>
+                    <div class="resource-grid">
+                        <article id="read-bill-article" class="resource-article-card">
+                            <h3>How to Read Your Medical Bill Without Losing Your Mind</h3>
+                            <p>A quick guide to help you decode your bill and spot red flags.</p>
+                        </article>
+                        <article id="denial-article" class="resource-article-card">
+                            <h3>What to Do When Your Insurance Denies a Claim</h3>
+                            <p>A denied claim doesn't mean the end of the road. Here's what you can do to fight back.</p>
+                        </article>
+                    </div>
+                </div>
+                <div class="resource-category">
+                    <h2>Toolkits & Templates</h2>
+                    <div class="resource-grid">
+                        <div class="resource-template-card">
+                            <h3>Simple Insurance Appeal Letter</h3>
+                            <p>A ready-to-use template to formally appeal a denied claim.</p>
+                            <button id="download-appeal-template" class="btn-secondary">Download Template</button>
+                        </div>
+                        <div class="resource-template-card">
+                            <h3>Bill Review Checklist</h3>
+                            <p>Use this checklist before paying any medical bill to ensure accuracy.</p>
+                            <button id="download-checklist-template" class="btn-secondary">Download Checklist</button>
+                        </div>
+                    </div>
+                </div>
+                <!-- NEW: CTA SECTION -->
+                <div class="cta-section">
+                    <h2>Have a specific question?</h2>
+                    <p>Our AI Agent is ready to help. Get instant answers grounded in reliable information.</p>
+                    <div class="cta-buttons">
+                        <button id="ask-agent-cta-button" class="btn-primary">Ask the AI Agent Now</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- NEW: PRICING PAGE -->
+        <main id="pricing-page" class="page-content hidden">
+            <div class="page-header">
+                <h1>Finally — Relief from Medical Bills Without the Headache</h1>
+                <p>You shouldn't need a PhD to understand your medical bills or fight a denied claim. With MyCareClaim, our growing team of AI agents helps you simplify the most confusing, frustrating parts of healthcare — for less than a latte.</p>
+                <div class="pricing-value-prop">
+                    <h3>Start Free, Upgrade When You Need More</h3>
+                    <p><strong>Free Plan:</strong> Get instant answers to your medical billing questions with our Q&A Agent</p>
+                    <p><strong>Complete Care:</strong> Unlock document analysis, bill challenging, and denial fighting agents</p>
+                </div>
+            </div>
+            <div class="pricing-container">
+                <h2>Choose Your Plan</h2>
+                <p class="pricing-subheader">We keep it simple. Start free. Upgrade when you're ready. Cancel anytime.</p>
+                <div class="pricing-grid">
+                    <!-- Starter Plan -->
+                    <div class="pricing-card">
+                        <h3>Starter</h3>
+                        <div class="price">$0</div>
+                        <button class="btn-secondary" data-plan="free">Get Started Free</button>
+                        <ul class="features-list">
+                            <li>✅ Ask our Q&A Agent Anything</li>
+                            <li>❌ Bill & Claim Analysis Agent</li>
+                            <li>❌ Challenge Bills Agent (Coming Soon)</li>
+                            <li>❌ Fight Denials Agent (Coming Soon)</li>
+                            <li>❌ Document Uploads</li>
+                            <li>❌ Priority Email Support</li>
+                        </ul>
+                    </div>
+                    <!-- Complete Care Plan -->
+                    <div class="pricing-card popular">
+                        <h3>Complete Care</h3>
+                        <div class="price">$7.99/month</div>
+                        <button class="btn-primary" data-plan="monthly">Upgrade to Complete Care</button>
+                        <ul class="features-list">
+                            <li>✅ Ask our Q&A Agent Anything</li>
+                            <li>✅ Bill & Claim Analysis Agent</li>
+                            <li>✅ Challenge Bills Agent (Coming Soon)</li>
+                            <li>✅ Fight Denials Agent (Coming Soon)</li>
+                            <li>✅ Unlimited Document Uploads</li>
+                            <li>✅ Priority Email Support</li>
+                        </ul>
+                    </div>
+                    <!-- Complete Care+ Plan -->
+                    <div class="pricing-card">
+                        <h3>Complete Care+ <span class="save-badge">(Save 17%)</span></h3>
+                        <div class="price">$79/year</div>
+                        <button class="btn-secondary" data-plan="yearly">Save with Complete Care+</button>
+                        <ul class="features-list">
+                            <li>✅ Ask our Q&A Agent Anything</li>
+                            <li>✅ Bill & Claim Analysis Agent</li>
+                            <li>✅ Challenge Bills Agent (Coming Soon)</li>
+                            <li>✅ Fight Denials Agent (Coming Soon)</li>
+                            <li>✅ Unlimited Document Uploads</li>
+                            <li>✅ Priority Email Support</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="cta-section">
+                <h2>🚀 Why Upgrade?</h2>
+                <p>✔ Save hours of time calling billing departments<br>✔ Understand what you actually owe (and what's a mistake)<br>✔ Get support appealing denied claims and overcharges</p>
             </div>
         </main>
 
@@ -149,6 +265,14 @@
         </div>
     </div>
 
+    <!-- NEW: MODAL FOR RESOURCE ARTICLES -->
+    <div id="resource-modal" class="hidden">
+        <div class="resource-modal-content">
+            <button class="close-modal">&times;</button>
+            <div id="resource-modal-body"></div>
+        </div>
+    </div>
+
     <!-- MAIN APP CONTAINER FOR LOGGED-IN USERS -->
     <div id="app-container" class="hidden">
         <header class="app-header">
@@ -158,8 +282,6 @@
             </div>
             <nav class="app-nav">
                 <a href="#" id="nav-agents">Agents</a>
-                <a href="#">Bills</a>
-                <a href="#">Settings</a>
             </nav>
             <button id="logout-button" class="btn-secondary">Log Out</button>
         </header>
@@ -172,18 +294,22 @@
             </div>
             <div class="agent-selection-container">
                 <div class="agent-selection-card" data-page="agent-1-page">
+                    <div class="agent-badge free">Free</div>
                     <h3>Research and Q&A</h3>
                     <p>Ask questions about medical bills and insurance.</p>
                 </div>
                 <div class="agent-selection-card" data-page="agent-2-page">
+                    <div class="agent-badge premium">Premium</div>
                     <h3>Bill and Claim Analysis</h3>
                     <p>Upload documents to find errors and savings.</p>
                 </div>
                 <div class="agent-selection-card" data-page="agent-3-page">
+                    <div class="agent-badge premium">Premium</div>
                     <h3>Challenge Bills</h3>
                     <p>Generate letters to dispute incorrect charges.</p>
                 </div>
                 <div class="agent-selection-card" data-page="agent-4-page">
+                    <div class="agent-badge premium">Premium</div>
                     <h3>Fight Denials</h3>
                     <p>Get help with the insurance appeals process.</p>
                 </div>
@@ -281,9 +407,7 @@
                     <nav class="sidebar-nav">
                         <a href="#" class="active">Appeals</a>
                         <a href="#">Dashboard</a>
-                        <a href="#">Bills</a>
                         <a href="#">Resources</a>
-                        <a href="#">Settings</a>
                     </nav>
                 </aside>
                 <div class="agent4-content">

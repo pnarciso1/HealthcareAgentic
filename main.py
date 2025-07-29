@@ -1,40 +1,35 @@
-print("--- RUNNING FLASK BACKEND SERVER ---")
-
 import os
 import stripe
 from dotenv import load_dotenv
-from flask import Flask, request, jsonify, make_response
+from flask import Flask, request, jsonify
 from flask_cors import CORS
-from datetime import datetime, timezone
 from werkzeug.utils import secure_filename
 
 from google.cloud import firestore
 from google.cloud import storage
 from google.oauth2 import id_token
 from google.auth.transport import requests
-from google.api_core import client_options
 import vertexai
 from vertexai.generative_models import GenerativeModel
 
 # --- INITIALIZATION ---
-
 load_dotenv()
-
 app = Flask(__name__)
-# This more explicit configuration ensures that the browser's preflight
-# request for file uploads is handled correctly.
-CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
-
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 db = firestore.Client(project=os.getenv('GCP_PROJECT_ID'))
 storage_client = storage.Client(project=os.getenv('GCP_PROJECT_ID'))
 UPLOAD_BUCKET_NAME = os.getenv('GCS_UPLOAD_BUCKET')
-
 stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
-STRIPE_PRICE_ID = os.getenv('STRIPE_PRICE_ID')
-YOUR_DOMAIN = 'http://localhost:3000' 
+YOUR_DOMAIN = os.getenv('FRONTEND_DOMAIN', 'http://localhost:8000')  # Use environment variable with fallback
 
 vertexai.init(project=os.getenv('GCP_PROJECT_ID'), location="us-central1")
+
+# --- IMPORTANT: Add your Stripe Price IDs from your .env file ---
+PRICE_IDS = {
+    'monthly': os.getenv('STRIPE_MONTHLY_PRICE_ID'),
+    'yearly': os.getenv('STRIPE_YEARLY_PRICE_ID')
+}
 
 # --- AUTHENTICATION HELPER ---
 def verify_firebase_token(token):
@@ -57,61 +52,91 @@ def create_checkout_session():
     auth_header = request.headers.get('Authorization')
     if not auth_header or not auth_header.startswith('Bearer '):
         return jsonify({'error': 'Authorization header is missing or invalid'}), 401
+    
     token = auth_header.split('Bearer ')[1]
     decoded_token = verify_firebase_token(token)
     if not decoded_token:
         return jsonify({'error': 'Invalid or expired authentication token'}), 401
+
     uid = decoded_token.get('user_id') or decoded_token.get('uid')
     email = decoded_token.get('email', '')
-    if not uid:
-        return jsonify({'error': 'User ID not found in token'}), 400
+    data = request.get_json()
+    plan = data.get('plan') # 'monthly' or 'yearly'
+    price_id = PRICE_IDS.get(plan)
+
+    if not price_id:
+        return jsonify({'error': 'Invalid plan specified'}), 400
+
     try:
         user_ref = db.collection('users').document(uid)
         user_doc = user_ref.get()
+        
         stripe_customer_id = None
         if user_doc.exists and 'stripeCustomerId' in user_doc.to_dict():
             stripe_customer_id = user_doc.to_dict()['stripeCustomerId']
         else:
-            customer = stripe.Customer.create(email=email, name=email, metadata={'firebase_uid': uid})
+            customer = stripe.Customer.create(email=email, metadata={'firebase_uid': uid})
             stripe_customer_id = customer.id
-            user_data = {
-                'email': email,
-                'createdAt': firestore.SERVER_TIMESTAMP,
-                'preSubscriptionDate': firestore.SERVER_TIMESTAMP,
-                'preSubscriptionStatus': 'pending_commitment',
-                'stripeCustomerId': stripe_customer_id
-            }
-            user_ref.set(user_data, merge=True)
+            user_ref.set({'stripeCustomerId': stripe_customer_id}, merge=True)
+
         checkout_session = stripe.checkout.Session.create(
             customer=stripe_customer_id,
-            line_items=[{'price': STRIPE_PRICE_ID, 'quantity': 1}],
-            payment_method_types=['card'],
+            line_items=[{'price': price_id, 'quantity': 1}],
             mode='subscription',
-            success_url=YOUR_DOMAIN + '/success?session_id={CHECKOUT_SESSION_ID}',
-            cancel_url=YOUR_DOMAIN + '/cancel',
-            client_reference_id=uid
+            success_url=YOUR_DOMAIN + '?payment=success',
+            cancel_url=YOUR_DOMAIN + '?payment=cancelled',
+            metadata={'firebase_uid': uid}
         )
         return jsonify({'id': checkout_session.id})
     except Exception as e:
-        import traceback
-        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
+
+@app.route('/stripe-webhook', methods=['POST'])
+def stripe_webhook():
+    payload = request.get_data(as_text=True)
+    sig_header = request.headers.get('Stripe-Signature')
+    endpoint_secret = os.getenv('STRIPE_WEBHOOK_SECRET')
+
+    try:
+        event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
+    except ValueError as e:
+        return 'Invalid payload', 400
+    except stripe.error.SignatureVerificationError as e:
+        return 'Invalid signature', 400
+
+    if event['type'] == 'checkout.session.completed':
+        session = event['data']['object']
+        firebase_uid = session.get('metadata', {}).get('firebase_uid')
+        
+        if firebase_uid:
+            user_ref = db.collection('users').document(firebase_uid)
+            user_ref.update({
+                'subscriptionTier': 'complete_care',
+                'stripeSubscriptionId': session.get('subscription')
+            })
+            print(f"Successfully updated subscription for user {firebase_uid}")
+
+    return 'Success', 200
 
 @app.route('/ask-agent1', methods=['POST'])
 def ask_agent1():
     auth_header = request.headers.get('Authorization')
     if not auth_header or not auth_header.startswith('Bearer '):
         return jsonify({'error': 'Authorization header is missing or invalid'}), 401
+    
     token = auth_header.split('Bearer ')[1]
     decoded_token = verify_firebase_token(token)
     if not decoded_token:
         return jsonify({'error': 'Invalid or expired authentication token'}), 401
+    
     data = request.get_json()
     if not data or 'question' not in data:
         return jsonify({'error': 'Request must include a question'}), 400
+    
     question = data['question']
     chat_history = data.get('history', [])
     context = ""
+    
     try:
         PROJECT_ID = os.getenv('GCP_PROJECT_ID')
         LOCATION = "global"
@@ -142,6 +167,7 @@ def ask_agent1():
     except Exception as e:
         print(f"--- ERROR during Vertex AI Search: {e}")
         return jsonify({'error': 'Failed to retrieve information from knowledge base.'}), 500
+    
     try:
         if not context:
             final_answer = "I could not find any specific information related to your question in my knowledge base. Please try rephrasing your question."
@@ -149,8 +175,9 @@ def ask_agent1():
             history_string = ""
             for turn in chat_history:
                 history_string += f"User: {turn['user']}\nAI: {turn['ai']}\n"
+            
             prompt = f"""
-            You are PeopleHealth Advocate, a helpful and conversational AI assistant. 
+            You are MyCareClaim Advocate, a helpful and conversational AI assistant. 
             Your tone should be clear, helpful, and empathetic.
 
             CONVERSATION HISTORY:
@@ -162,7 +189,7 @@ def ask_agent1():
             Based on the CONVERSATION HISTORY and the new CONTEXT, answer the new user question.
             - If the conversation history is empty, you can start with a friendly greeting like "Of course, I can help with that." For subsequent questions, get straight to the point.
             - Synthesize the information into a helpful, conversational paragraph.
-            - After answering, proactively ask a follow-up question to guide the user. For example, if you mention an "external review," you could ask, "Would you like me to explain what an external review involves?" or "Is there anything else I can help you with regarding this?"
+            - After answering, proactively ask a follow-up question to guide the user.
 
             New User Question:
             {question}
@@ -175,13 +202,11 @@ def ask_agent1():
     except Exception as e:
         print(f"--- ERROR during Gemini call: {e}")
         return jsonify({'error': 'The AI failed to generate an answer.'}), 500
+    
     return jsonify({'answer': final_answer})
 
-
-# --- UPDATED ENDPOINT FOR AGENT 2 DOCUMENT UPLOAD ---
 @app.route('/upload-document', methods=['POST'])
 def upload_document():
-    # --- 1. Authenticate the user ---
     auth_header = request.headers.get('Authorization')
     if not auth_header or not auth_header.startswith('Bearer '):
         return jsonify({'error': 'Authorization header is missing or invalid'}), 401
@@ -195,7 +220,6 @@ def upload_document():
     if not uid:
         return jsonify({'error': 'User ID not found in token'}), 400
 
-    # --- 2. Check for the file in the request ---
     if 'document' not in request.files:
         return jsonify({'error': 'No document file part in the request'}), 400
 
@@ -203,21 +227,20 @@ def upload_document():
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
 
-    # --- 3. Upload the file to Google Cloud Storage ---
-    if file and file.filename.lower().endswith('.pdf'):
+    if file:
         try:
             filename = secure_filename(file.filename)
             bucket = storage_client.bucket(UPLOAD_BUCKET_NAME)
             blob = bucket.blob(f"user_uploads/{uid}/{filename}")
 
-            print(f"--- Uploading file {filename} to gs://{UPLOAD_BUCKET_NAME}/user_uploads/{uid}/{filename} ---")
             blob.upload_from_file(file.stream, content_type=file.content_type)
-            print("--- File upload successful ---")
-
+            
             return jsonify({'message': f'File {filename} uploaded successfully. Processing has started.'}), 200
-
         except Exception as e:
             print(f"--- ERROR during file upload: {e}")
             return jsonify({'error': 'An error occurred during the upload process.'}), 500
     else:
-        return jsonify({'error': 'Invalid file type. Only PDF files are allowed.'}), 400       
+        return jsonify({'error': 'Invalid file type.'}), 400
+
+if __name__ == '__main__':
+    app.run(port=5000, debug=True)       

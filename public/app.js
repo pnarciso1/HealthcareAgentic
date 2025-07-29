@@ -17,7 +17,10 @@ import {
     orderBy,
     onSnapshot,
     addDoc,
-    serverTimestamp
+    serverTimestamp,
+    doc,
+    setDoc,
+    getDoc
 } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
 
 
@@ -37,6 +40,8 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+        // Initialize Stripe - TEST MODE for local development
+        const stripe = Stripe('pk_test_51Q1BbeH0nOEj29DyC8yCJIq8elEieHjz3f2LaUAPFILAk0TR1SfqrWdNNNeprOEpEfCjtQLWP15yDykhXEzugu1200z3flyMhO'); 
 
 // --- MAIN SCRIPT LOGIC ---
 
@@ -49,6 +54,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Logged-out pages
     const landingPageContent = document.getElementById('landing-page-content');
     const howItWorksPage = document.getElementById('how-it-works-page');
+    const resourcesPage = document.getElementById('resources-page');
+    const pricingPage = document.getElementById('pricing-page');
 
     // Logged-in pages
     const pages = document.querySelectorAll('.page');
@@ -56,8 +63,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Navigation buttons
     const logoLink = document.getElementById('logo-link');
     const navHowItWorksLink = document.getElementById('nav-how-it-works');
+    const navPricingLink = document.getElementById('nav-pricing');
+    const navResourcesLink = document.getElementById('nav-resources');
     const navAgentsLink = document.getElementById('nav-agents');
     const agentSelectionCards = document.querySelectorAll('.agent-selection-card');
+    const upgradeButtons = document.querySelectorAll('.pricing-card button');
     
     // Modal elements
     const loginNavButton = document.getElementById('login-nav-button');
@@ -65,6 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const getStartedMainButton = document.getElementById('get-started-main-button');
     const getStartedCtaButton = document.getElementById('get-started-cta-button');
     const loginCtaButton = document.getElementById('login-cta-button');
+    const askAgentCtaButton = document.getElementById('ask-agent-cta-button');
     const formsContainer = document.getElementById('forms-container');
     const loginFormWrapper = document.getElementById('login-form-wrapper');
     const signupFormWrapper = document.getElementById('signup-form-wrapper');
@@ -72,6 +83,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeModalButtons = document.querySelectorAll('.close-modal');
     const forgotPasswordLink = document.getElementById('forgot-password-link');
     const backToLoginLink = document.getElementById('back-to-login-link');
+    
+    // Resource Modal elements
+    const resourceModal = document.getElementById('resource-modal');
+    const resourceModalBody = document.getElementById('resource-modal-body');
+    const readBillArticle = document.getElementById('read-bill-article');
+    const denialArticle = document.getElementById('denial-article');
+    const downloadAppealTemplate = document.getElementById('download-appeal-template');
+    const downloadChecklistTemplate = document.getElementById('download-checklist-template');
 
     // Form elements
     const signupForm = document.getElementById('signup-form');
@@ -99,15 +118,23 @@ document.addEventListener('DOMContentLoaded', () => {
     let agent1ChatHistory = [];
     let unsubscribeAnalyses = null;
     let unsubscribeChatHistory = null;
+    let currentUserSubscriptionTier = 'free';
     
     // --- PAGE NAVIGATION LOGIC ---
     const showLandingPage = (pageName) => {
+        landingPageContent.classList.add('hidden');
+        howItWorksPage.classList.add('hidden');
+        resourcesPage.classList.add('hidden');
+        pricingPage.classList.add('hidden');
+
         if (pageName === 'how-it-works') {
-            landingPageContent.classList.add('hidden');
             howItWorksPage.classList.remove('hidden');
+        } else if (pageName === 'resources') {
+            resourcesPage.classList.remove('hidden');
+        } else if (pageName === 'pricing') {
+            pricingPage.classList.remove('hidden');
         } else { // Default to main landing page
             landingPageContent.classList.remove('hidden');
-            howItWorksPage.classList.add('hidden');
         }
     };
 
@@ -145,12 +172,134 @@ document.addEventListener('DOMContentLoaded', () => {
         if (resetMessage) resetMessage.textContent = '';
     };
 
-    // Event listeners for modals and navigation
+    const showUpgradePrompt = () => {
+        // Create upgrade prompt modal
+        const upgradePrompt = document.createElement('div');
+        upgradePrompt.id = 'upgrade-prompt';
+        upgradePrompt.className = 'upgrade-prompt-overlay';
+        upgradePrompt.innerHTML = `
+            <div class="upgrade-prompt-content">
+                <button class="close-upgrade-prompt">&times;</button>
+                <div class="upgrade-prompt-header">
+                    <h2>🔒 Unlock Premium Agents</h2>
+                    <p>This agent requires a Complete Care subscription to access.</p>
+                </div>
+                <div class="upgrade-prompt-features">
+                    <h3>What you'll get with Complete Care:</h3>
+                    <ul>
+                        <li>✅ Bill & Claim Analysis Agent</li>
+                        <li>✅ Challenge Bills Agent (Coming Soon)</li>
+                        <li>✅ Fight Denials Agent (Coming Soon)</li>
+                        <li>✅ Unlimited Document Uploads</li>
+                        <li>✅ Priority Email Support</li>
+                    </ul>
+                </div>
+                <div class="upgrade-prompt-actions">
+                    <button class="btn-primary upgrade-now-btn">Upgrade Now - $7.99/month</button>
+                    <button class="btn-secondary upgrade-yearly-btn">Save 17% - $79/year</button>
+                    <button class="btn-text close-upgrade-prompt-btn">Maybe Later</button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(upgradePrompt);
+        
+        // Add event listeners
+        const closeButtons = upgradePrompt.querySelectorAll('.close-upgrade-prompt, .close-upgrade-prompt-btn');
+        const upgradeNowBtn = upgradePrompt.querySelector('.upgrade-now-btn');
+        const upgradeYearlyBtn = upgradePrompt.querySelector('.upgrade-yearly-btn');
+        
+        closeButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.body.removeChild(upgradePrompt);
+            });
+        });
+        
+        upgradeNowBtn.addEventListener('click', () => {
+            document.body.removeChild(upgradePrompt);
+            initiateStripeCheckout('monthly');
+        });
+        
+        upgradeYearlyBtn.addEventListener('click', () => {
+            document.body.removeChild(upgradePrompt);
+            initiateStripeCheckout('yearly');
+        });
+        
+        // Close on outside click
+        upgradePrompt.addEventListener('click', (e) => {
+            if (e.target === upgradePrompt) {
+                document.body.removeChild(upgradePrompt);
+            }
+        });
+    };
+
+    const initiateStripeCheckout = (plan) => {
+        auth.currentUser.getIdToken().then(idToken => {
+            fetch('http://127.0.0.1:5000/create-checkout-session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${idToken}`
+                },
+                body: JSON.stringify({ plan: plan })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(session => {
+                return stripe.redirectToCheckout({ sessionId: session.id });
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('There was an error creating your checkout session. Please try again.');
+            });
+        });
+    };
+
+    // --- RESOURCE CONTENT ---
+    const resourceContent = {
+        "read-bill-article": `
+            <h2>How to Read Your Medical Bill Without Losing Your Mind</h2>
+            <p>Medical bills are notoriously confusing. Between the codes, unclear charges, and insurance jargon, it's easy to feel overwhelmed. Here's a quick guide to help you decode your bill and spot red flags.</p>
+            <h3>1. Check the Basics</h3>
+            <p>Make sure the following info is correct: Your name and date of service, Provider name (hospital, doctor, lab), Account number and bill date.</p>
+            <h3>2. Understand the Key Sections</h3>
+            <p>Service Descriptions, Billing Codes, Charged Amount vs. Allowed Amount, Insurance Payment, Patient Responsibility.</p>
+            <h3>3. Look for Common Errors</h3>
+            <p>Charges for canceled or duplicate services, Wrong patient info or insurance ID, Out-of-network charges that should be in-network.</p>
+            <h3>4. Pro Tip</h3>
+            <p>Request an itemized bill — this breaks down every charge and is crucial if you plan to dispute anything.</p>
+        `,
+        "denial-article": `
+            <h2>What to Do When Your Insurance Denies a Claim</h2>
+            <p>A denied insurance claim doesn't mean the end of the road. Here's what you can do to fight back and get your claim reconsidered.</p>
+            <h3>1. Understand Why It Was Denied</h3>
+            <p>Common reasons include: Lack of pre-authorization, Service deemed "not medically necessary", Incorrect coding.</p>
+            <h3>2. Call Your Insurance Provider</h3>
+            <p>Ask for the specific denial reason and reference number and request a copy of the claim and explanation of benefits (EOB).</p>
+            <h3>3. Gather Your Documents</h3>
+            <p>You'll need: The denied bill/claim, Doctor's notes or medical necessity letter, Appeal letter.</p>
+            <h3>4. File an Appeal</h3>
+            <p>Submit your documentation within the insurer's appeal window (often 30–60 days). Use certified mail or online portals and keep a copy of everything.</p>
+        `
+    };
+
+    // --- EVENT LISTENERS ---
     loginNavButton.addEventListener('click', () => showModal('login'));
     getStartedButton.addEventListener('click', () => showModal('signup'));
     getStartedMainButton.addEventListener('click', () => showModal('signup'));
     getStartedCtaButton.addEventListener('click', () => showModal('signup'));
     loginCtaButton.addEventListener('click', () => showModal('login'));
+    askAgentCtaButton.addEventListener('click', () => {
+        if (auth.currentUser) {
+            showAppPage('agent-1-page');
+        } else {
+            showModal('login');
+        }
+    });
     
     forgotPasswordLink.addEventListener('click', (e) => {
         e.preventDefault();
@@ -170,6 +319,16 @@ document.addEventListener('DOMContentLoaded', () => {
         showLandingPage('how-it-works');
     });
 
+    navPricingLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        showLandingPage('pricing');
+    });
+
+    navResourcesLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        showLandingPage('resources');
+    });
+
     logoLink.addEventListener('click', () => {
         if (auth.currentUser) {
             showAppPage('agent-selection-page');
@@ -186,20 +345,52 @@ document.addEventListener('DOMContentLoaded', () => {
     agentSelectionCards.forEach(card => {
         card.addEventListener('click', () => {
             const pageId = card.getAttribute('data-page');
-            showAppPage(pageId);
+            const isLocked = pageId !== 'agent-1-page' && currentUserSubscriptionTier === 'free';
+            
+            if (isLocked) {
+                showUpgradePrompt();
+            } else {
+                showAppPage(pageId);
+            }
         });
     });
+
+    readBillArticle.addEventListener('click', () => {
+        resourceModalBody.innerHTML = resourceContent['read-bill-article'];
+        resourceModal.classList.remove('hidden');
+    });
+
+    denialArticle.addEventListener('click', () => {
+        resourceModalBody.innerHTML = resourceContent['denial-article'];
+        resourceModal.classList.remove('hidden');
+    });
+
+    resourceModal.addEventListener('click', (e) => {
+        if (e.target === resourceModal) {
+            resourceModal.classList.add('hidden');
+        }
+    });
+    
+    downloadAppealTemplate.addEventListener('click', () => alert("Template download functionality is coming soon!"));
+    downloadChecklistTemplate.addEventListener('click', () => alert("Checklist download functionality is coming soon!"));
 
 
     // --- AUTH STATE LISTENER ---
     onAuthStateChanged(auth, (user) => {
         if (user) {
-            authSection.classList.add('hidden');
-            appContainer.classList.remove('hidden');
-            showAppPage('agent-selection-page');
-            hideModal();
-            listenForAnalysisResults(user.uid);
-            listenForChatHistory(user.uid);
+            const userDocRef = doc(db, 'users', user.uid);
+            getDoc(userDocRef).then(docSnap => {
+                if (docSnap.exists()) {
+                    const newSubscriptionTier = docSnap.data().subscriptionTier || 'free';
+                    const wasUpgraded = currentUserSubscriptionTier === 'free' && newSubscriptionTier === 'complete_care';
+                    currentUserSubscriptionTier = newSubscriptionTier;
+                    
+                    if (wasUpgraded) {
+                        showUpgradeSuccessMessage();
+                    }
+                }
+                updateUIAfterLogin();
+            });
         } else {
             authSection.classList.remove('hidden');
             appContainer.classList.add('hidden');
@@ -207,7 +398,64 @@ document.addEventListener('DOMContentLoaded', () => {
             if (unsubscribeAnalyses) unsubscribeAnalyses();
             if (unsubscribeChatHistory) unsubscribeChatHistory();
             agent1ChatHistory = [];
+            currentUserSubscriptionTier = 'free';
         }
+    });
+
+    const showUpgradeSuccessMessage = () => {
+        const successMessage = document.createElement('div');
+        successMessage.className = 'upgrade-success-message';
+        successMessage.innerHTML = `
+            <div class="success-content">
+                <h3>🎉 Welcome to Complete Care!</h3>
+                <p>You now have access to all premium agents. Start exploring!</p>
+                <button class="btn-primary dismiss-success">Got it!</button>
+            </div>
+        `;
+        
+        document.body.appendChild(successMessage);
+        
+        const dismissBtn = successMessage.querySelector('.dismiss-success');
+        dismissBtn.addEventListener('click', () => {
+            document.body.removeChild(successMessage);
+        });
+        
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            if (document.body.contains(successMessage)) {
+                document.body.removeChild(successMessage);
+            }
+        }, 5000);
+    };
+
+    const updateUIAfterLogin = () => {
+        authSection.classList.add('hidden');
+        appContainer.classList.remove('hidden');
+        showAppPage('agent-selection-page');
+        hideModal();
+        
+        agentSelectionCards.forEach(card => {
+            const page = card.getAttribute('data-page');
+            const isLocked = page !== 'agent-1-page' && currentUserSubscriptionTier === 'free';
+            card.classList.toggle('locked', isLocked);
+            
+            if (isLocked) {
+                card.querySelector('p').textContent = '🔒 Upgrade to Complete Care to unlock this agent';
+                card.style.opacity = '0.6';
+                card.style.cursor = 'not-allowed';
+            } else {
+                card.querySelector('p').textContent = card.dataset.originalText;
+                card.style.opacity = '1';
+                card.style.cursor = 'pointer';
+            }
+        });
+
+        listenForAnalysisResults(auth.currentUser.uid);
+        listenForChatHistory(auth.currentUser.uid);
+    };
+
+    agentSelectionCards.forEach(card => {
+        card.dataset.originalText = card.querySelector('p').textContent;
     });
 
     // --- Firestore Listeners ---
@@ -327,6 +575,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const email = signupForm['signup-email'].value;
             const password = signupForm['signup-password'].value;
             createUserWithEmailAndPassword(auth, email, password)
+                .then((userCredential) => {
+                    const userDocRef = doc(db, 'users', userCredential.user.uid);
+                    return setDoc(userDocRef, {
+                        email: email,
+                        createdAt: serverTimestamp(),
+                        subscriptionTier: 'free'
+                    });
+                })
                 .catch(error => {
                     if (error.code === 'auth/email-already-in-use') {
                         signupMessage.textContent = 'This email address is already in use. Please log in or use a different email.';
@@ -448,6 +704,49 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    upgradeButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const plan = button.getAttribute('data-plan');
+            
+            // Free plan - always show signup modal
+            if (plan === 'free') {
+                showModal('signup');
+                return;
+            }
+            
+            // Paid plans - check authentication first
+            if (!auth.currentUser) {
+                showModal('login');
+                return;
+            }
+
+            // User is authenticated - proceed to Stripe checkout
+            auth.currentUser.getIdToken().then(idToken => {
+                fetch('http://127.0.0.1:5000/create-checkout-session', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${idToken}`
+                    },
+                    body: JSON.stringify({ plan: plan })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(session => {
+                    return stripe.redirectToCheckout({ sessionId: session.id });
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('There was an error creating your checkout session. Please try again.');
+                });
+            });
+        });
+    });
 
     // Placeholder for Agent 3 form
     const agent3Form = document.getElementById('agent3-challenge-form');
