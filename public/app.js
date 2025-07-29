@@ -41,7 +41,12 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
         // Initialize Stripe - TEST MODE for local development
-        const stripe = Stripe('pk_test_51Q1BbeH0nOEj29DyC8yCJIq8elEieHjz3f2LaUAPFILAk0TR1SfqrWdNNNeprOEpEfCjtQLWP15yDykhXEzugu1200z3flyMhO'); 
+        const stripe = Stripe('pk_test_51Q1BbeH0nOEj29DyC8yCJIq8elEieHjz3f2LaUAPFILAk0TR1SfqrWdNNNeprOEpEfCjtQLWP15yDykhXEzugu1200z3flyMhO');
+
+        // Backend URL configuration
+        const BACKEND_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? 'http://127.0.0.1:5000' 
+            : 'https://healthcareagentic-backend-skqlaykqgq-uc.a.run.app'; 
 
 // --- MAIN SCRIPT LOGIC ---
 
@@ -235,7 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const initiateStripeCheckout = (plan) => {
         auth.currentUser.getIdToken().then(idToken => {
-            fetch('http://127.0.0.1:5000/create-checkout-session', {
+                            fetch(`${BACKEND_URL}/create-checkout-session`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -635,7 +640,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const user = auth.currentUser;
             if (user) {
                 user.getIdToken()
-                    .then(idToken => fetch('http://127.0.0.1:5000/ask-agent1', {
+                    .then(idToken => fetch(`${BACKEND_URL}/ask-agent1`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
                         body: JSON.stringify({ question: question, history: agent1ChatHistory })
@@ -682,7 +687,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 user.getIdToken().then(idToken => {
                     const formData = new FormData();
                     formData.append('document', file);
-                    return fetch('http://127.0.0.1:5000/upload-document', {
+                    return fetch(`${BACKEND_URL}/upload-document`, {
                         method: 'POST',
                         headers: { 'Authorization': `Bearer ${idToken}` },
                         body: formData
@@ -723,7 +728,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // User is authenticated - proceed to Stripe checkout
             auth.currentUser.getIdToken().then(idToken => {
-                fetch('http://127.0.0.1:5000/create-checkout-session', {
+                fetch(`${BACKEND_URL}/create-checkout-session`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
