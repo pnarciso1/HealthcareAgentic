@@ -20,30 +20,34 @@ body {
     margin: 0;
     background-color: var(--background-dark);
     color: var(--text-primary);
+    /* Prevent horizontal scroll on mobile */
+    overflow-x: hidden;
 }
 
 .hidden {
     display: none !important;
 }
 
-/* --- LANDING PAGE STYLES --- */
+/* --- MOBILE-FIRST LANDING PAGE STYLES --- */
 #auth-section {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 2rem;
+    padding: 0 1rem; /* Reduced padding for mobile */
 }
 
+/* Mobile-first header */
 .landing-header {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1.5rem 0;
+    flex-direction: column; /* Stack vertically on mobile */
+    gap: 1rem;
+    padding: 1rem 0;
     border-bottom: 1px solid var(--border-color);
 }
 
 .logo {
     display: flex;
     align-items: center;
+    justify-content: center; /* Center on mobile */
     font-size: 1.25rem;
     font-weight: 600;
 }
@@ -53,41 +57,33 @@ body {
 }
 
 .main-nav {
-    display: none;
-}
-@media (min-width: 768px) {
-    .main-nav {
-        display: flex;
-        gap: 2rem;
-    }
-}
-
-.main-nav a {
-    color: var(--text-secondary);
-    text-decoration: none;
-    font-weight: 500;
-    transition: color 0.2s ease-in-out;
-}
-
-.main-nav a:hover {
-    color: var(--text-primary);
+    display: none; /* Hidden on mobile */
 }
 
 .auth-buttons {
     display: flex;
-    gap: 1rem;
+    flex-direction: column; /* Stack buttons vertically on mobile */
+    gap: 0.75rem;
+    width: 100%;
 }
 
-.btn-primary {
-    background-color: var(--primary-blue);
-    color: white;
-    padding: 0.75rem 1.5rem;
+.btn-primary, .btn-secondary {
+    width: 100%; /* Full width on mobile */
+    min-height: 44px; /* Touch target minimum */
+    padding: 0.875rem 1.5rem;
     border: none;
     border-radius: 8px;
     cursor: pointer;
     font-size: 1rem;
     font-weight: 600;
     transition: background-color 0.2s ease-in-out;
+    /* Ensure touch-friendly sizing */
+    touch-action: manipulation;
+}
+
+.btn-primary {
+    background-color: var(--primary-blue);
+    color: white;
 }
 
 .btn-primary:hover {
@@ -97,98 +93,102 @@ body {
 .btn-secondary {
     background-color: var(--secondary-gray);
     color: white;
-    padding: 0.75rem 1.5rem;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 1rem;
-    font-weight: 600;
-    transition: background-color 0.2s ease-in-out;
 }
 
 .btn-secondary:hover {
     background-color: var(--secondary-gray-hover);
 }
 
+/* Mobile-first main content */
 .landing-main {
-    text-align: center;
-    padding: 5rem 1rem;
+    padding: 2rem 0;
 }
 
 .landing-main h1 {
-    font-size: 2.5rem;
+    font-size: 2rem; /* Smaller on mobile */
     font-weight: 700;
+    line-height: 1.2;
     margin-bottom: 1rem;
-}
-@media (min-width: 768px) {
-    .landing-main h1 {
-        font-size: 3rem;
-    }
+    text-align: center;
 }
 
 .landing-subheader {
-    color: var(--text-secondary);
     font-size: 1.125rem;
-    max-width: 600px;
-    margin: 0 auto 3rem auto;
+    color: var(--text-secondary);
+    text-align: center;
+    margin-bottom: 2rem;
+    line-height: 1.5;
 }
 
+/* Mobile-first agent showcase */
 .agent-showcase {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    grid-template-columns: 1fr; /* Single column on mobile */
     gap: 1.5rem;
-    text-align: left;
+    margin: 2rem 0;
 }
 
 .agent-showcase-card {
-    background-color: var(--background-light);
+    background-color: var(--background-card);
     border: 1px solid var(--border-color);
     border-radius: 12px;
-    padding: 2rem;
+    padding: 1.5rem;
+    text-align: center;
     transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    position: relative;
 }
 
 .agent-showcase-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
 }
 
 .card-icon {
-    color: var(--primary-blue);
     margin-bottom: 1rem;
 }
 
 .card-icon svg {
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
+    color: var(--primary-blue);
 }
 
 .agent-showcase-card h3 {
-    margin-top: 0;
-    margin-bottom: 0.5rem;
     font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    color: var(--text-primary);
 }
 
 .agent-showcase-card p {
     color: var(--text-secondary);
+    line-height: 1.5;
     margin: 0;
 }
 
+/* Mobile-first CTA buttons */
 .cta-buttons {
-    margin-top: 4rem;
     display: flex;
-    justify-content: center;
+    flex-direction: column; /* Stack vertically on mobile */
     gap: 1rem;
+    align-items: center;
+    margin: 2rem 0;
 }
 
+.cta-buttons .btn-primary,
+.cta-buttons .btn-secondary {
+    width: 100%; /* Full width on mobile */
+    max-width: 300px; /* Limit width for better UX */
+}
+
+/* Mobile-first landing footer */
 .landing-footer {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column; /* Stack vertically on mobile */
+    gap: 1rem;
+    text-align: center;
     padding: 2rem 0;
     border-top: 1px solid var(--border-color);
-    color: var(--text-secondary);
-    font-size: 0.875rem;
 }
 
 .landing-footer a {
@@ -199,6 +199,243 @@ body {
 
 .landing-footer a:hover {
     color: var(--text-primary);
+}
+
+/* --- TABLET BREAKPOINT (768px and up) --- */
+@media (min-width: 768px) {
+    #auth-section {
+        padding: 0 2rem;
+    }
+    
+    .landing-header {
+        flex-direction: row; /* Side by side on tablet */
+        justify-content: space-between;
+        align-items: center;
+        gap: 0;
+        padding: 1.5rem 0;
+    }
+    
+    .logo {
+        justify-content: flex-start; /* Left align on tablet */
+    }
+    
+    .main-nav {
+        display: flex;
+        gap: 2rem;
+    }
+    
+    .main-nav a {
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.2s ease-in-out;
+    }
+    
+    .main-nav a:hover {
+        color: var(--text-primary);
+    }
+    
+    .auth-buttons {
+        flex-direction: row; /* Side by side on tablet */
+        width: auto;
+        gap: 1rem;
+    }
+    
+    .btn-primary, .btn-secondary {
+        width: auto; /* Auto width on tablet */
+        min-width: 120px;
+    }
+    
+    .landing-main h1 {
+        font-size: 3rem; /* Larger on tablet */
+    }
+    
+    .agent-showcase {
+        grid-template-columns: repeat(2, 1fr); /* 2 columns on tablet */
+        gap: 2rem;
+    }
+    
+    .cta-buttons {
+        flex-direction: row; /* Side by side on tablet */
+        justify-content: center;
+    }
+    
+    .cta-buttons .btn-primary,
+    .cta-buttons .btn-secondary {
+        width: auto;
+        min-width: 160px;
+    }
+    
+    .landing-footer {
+        flex-direction: row; /* Side by side on tablet */
+        justify-content: space-between;
+        text-align: left;
+    }
+    
+    /* App container tablet styles */
+    #app-container {
+        padding: 0 2rem;
+    }
+    
+    .app-header {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0;
+        padding: 1.5rem 0;
+    }
+    
+    .app-nav {
+        flex-direction: row;
+        gap: 2rem;
+    }
+    
+    .app-nav a {
+        padding: 0;
+        border-radius: 0;
+        min-height: auto;
+    }
+    
+    .app-nav a:hover {
+        background-color: transparent;
+    }
+    
+    .page {
+        padding: 2.5rem 0;
+    }
+    
+    .page-header {
+        margin-bottom: 2.5rem;
+    }
+    
+    .page-header h1 {
+        font-size: 2.25rem;
+    }
+    
+    .page-header p {
+        font-size: 1.0625rem;
+        max-width: 500px;
+    }
+    
+    .agent-selection-container {
+        grid-template-columns: repeat(2, 1fr); /* 2 columns on tablet */
+        gap: 2rem;
+        margin-top: 2rem;
+    }
+    
+    .agent-selection-card {
+        padding: 1.75rem;
+    }
+    
+    .agent-selection-card p {
+        font-size: 0.975rem;
+    }
+}
+
+/* --- DESKTOP BREAKPOINT (1024px and up) --- */
+@media (min-width: 1024px) {
+    .agent-showcase {
+        grid-template-columns: repeat(4, 1fr); /* 4 columns on desktop */
+        gap: 2rem;
+    }
+    
+    .landing-main h1 {
+        font-size: 4rem; /* Largest on desktop */
+    }
+    
+    /* App container desktop styles */
+    #app-container {
+        padding: 0 2rem;
+    }
+    
+    .app-header {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0;
+        padding: 1.5rem 0;
+    }
+    
+    .app-nav {
+        flex-direction: row;
+        gap: 2rem;
+    }
+    
+    .app-nav a {
+        padding: 0;
+        border-radius: 0;
+        min-height: auto;
+    }
+    
+    .app-nav a:hover {
+        background-color: transparent;
+    }
+    
+    .page {
+        padding: 3rem 0;
+    }
+    
+    .page-header {
+        margin-bottom: 3rem;
+    }
+    
+    .page-header h1 {
+        font-size: 2.5rem;
+    }
+    
+    .page-header p {
+        font-size: 1.125rem;
+        max-width: 600px;
+    }
+    
+    .agent-selection-container {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 2rem;
+        margin-top: 2rem;
+    }
+    
+    .agent-selection-card {
+        padding: 2rem;
+    }
+    
+    .agent-selection-card p {
+        font-size: 1rem;
+    }
+}
+
+/* --- IPHONE-SPECIFIC BREAKPOINTS --- */
+/* iPhone SE and small phones */
+@media (max-width: 375px) {
+    #auth-section {
+        padding: 0 0.75rem;
+    }
+    
+    .landing-main h1 {
+        font-size: 1.75rem;
+    }
+    
+    .agent-showcase-card {
+        padding: 1.25rem;
+    }
+    
+    .btn-primary, .btn-secondary {
+        padding: 0.75rem 1.25rem;
+        font-size: 0.95rem;
+    }
+}
+
+/* iPhone 12/13/14 */
+@media (max-width: 390px) {
+    .landing-main h1 {
+        font-size: 1.875rem;
+    }
+}
+
+/* iPhone Plus/Pro Max */
+@media (max-width: 414px) {
+    .landing-main h1 {
+        font-size: 2rem;
+    }
 }
 
 /* --- MODAL STYLES --- */
@@ -305,24 +542,26 @@ body {
     text-align: center;
 }
 
-/* --- MAIN APP STYLES --- */
+/* --- MOBILE-FIRST MAIN APP STYLES --- */
 #app-container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 2rem;
+    padding: 0 1rem; /* Reduced padding for mobile */
 }
 
 .app-header {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1.5rem 0;
+    flex-direction: column; /* Stack vertically on mobile */
+    gap: 1rem;
+    padding: 1rem 0;
     border-bottom: 1px solid var(--border-color);
 }
 
 .app-nav {
     display: flex;
-    gap: 2rem;
+    flex-direction: column; /* Stack vertically on mobile */
+    gap: 0.75rem;
+    align-items: center;
 }
 
 .app-nav a {
@@ -330,65 +569,77 @@ body {
     text-decoration: none;
     font-weight: 500;
     transition: color 0.2s ease-in-out;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    min-height: 44px; /* Touch target minimum */
+    display: flex;
+    align-items: center;
 }
 
 .app-nav a:hover {
     color: var(--text-primary);
+    background-color: var(--background-light);
 }
 
 .page {
-    padding: 3rem 0;
+    padding: 1.5rem 0; /* Reduced padding for mobile */
 }
 
 .page-header {
     text-align: center;
-    margin-bottom: 3rem;
+    margin-bottom: 2rem; /* Reduced margin for mobile */
 }
 
 .page-header h1 {
-    font-size: 2.5rem;
+    font-size: 2rem; /* Smaller on mobile */
     font-weight: 700;
     margin-bottom: 1rem;
+    line-height: 1.2;
 }
 
 .page-header p {
     color: var(--text-secondary);
-    font-size: 1.125rem;
-    max-width: 600px;
+    font-size: 1rem; /* Smaller on mobile */
+    max-width: 100%; /* Full width on mobile */
     margin: 0 auto;
+    line-height: 1.5;
 }
 
-/* --- AGENT SELECTION PAGE --- */
+/* --- MOBILE-FIRST AGENT SELECTION PAGE --- */
 .agent-selection-container {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 2rem;
-    margin-top: 2rem;
+    grid-template-columns: 1fr; /* Single column on mobile */
+    gap: 1.5rem;
+    margin-top: 1.5rem;
 }
 
 .agent-selection-card {
     background-color: var(--background-light);
     border: 1px solid var(--border-color);
     border-radius: 12px;
-    padding: 2rem;
+    padding: 1.5rem; /* Reduced padding for mobile */
     cursor: pointer;
     transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    min-height: 44px; /* Touch target minimum */
 }
 
 .agent-selection-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.3);
 }
 
 .agent-selection-card h3 {
     margin-top: 0;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
     font-size: 1.25rem;
+    font-weight: 600;
 }
 
 .agent-selection-card p {
     color: var(--text-secondary);
     margin: 0;
+    line-height: 1.5;
+    font-size: 0.95rem; /* Smaller on mobile */
 }
 
 .agent-selection-card.locked {

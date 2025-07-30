@@ -40,13 +40,13 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-        // Initialize Stripe - TEST MODE for local development
-        const stripe = Stripe('pk_test_51Q1BbeH0nOEj29DyC8yCJIq8elEieHjz3f2LaUAPFILAk0TR1SfqrWdNNNeprOEpEfCjtQLWP15yDykhXEzugu1200z3flyMhO');
+        // Initialize Stripe - LIVE MODE for production
+        const stripe = Stripe('pk_live_51Q1BbeH0nOEj29DyC8yCJIq8elEieHjz3f2LaUAPFILAk0TR1SfqrWdNNNeprOEpEfCjtQLWP15yDykhXEzugu1200z3flyMhO');
 
         // Backend URL configuration
         const BACKEND_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
             ? 'http://127.0.0.1:5000' 
-            : 'https://healthcareagentic-backend-skqlaykqgq-uc.a.run.app'; 
+            : 'https://healthcareagentic-backend-974408923536.us-central1.run.app'; 
 
 // --- MAIN SCRIPT LOGIC ---
 
@@ -333,6 +333,15 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         showLandingPage('resources');
     });
+
+    // Learn more button functionality
+    const learnMoreButton = document.getElementById('learn-more-button');
+    if (learnMoreButton) {
+        learnMoreButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            showLandingPage('how-it-works');
+        });
+    }
 
     logoLink.addEventListener('click', () => {
         if (auth.currentUser) {

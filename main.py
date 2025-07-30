@@ -15,7 +15,13 @@ from vertexai.generative_models import GenerativeModel
 # --- INITIALIZATION ---
 load_dotenv()
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})
+CORS(app, resources={r"/*": {"origins": [
+    "https://healthcareagentic.web.app",
+    "https://mycareclaim.com",
+    "https://www.mycareclaim.com",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000"
+]}})
 
 db = firestore.Client(project=os.getenv('GCP_PROJECT_ID'))
 storage_client = storage.Client(project=os.getenv('GCP_PROJECT_ID'))
@@ -47,38 +53,84 @@ def verify_firebase_token(token):
 def hello_world():
     return "Hello, your backend server is running!"
 
+@app.route('/stripe-webhook', methods=['GET'])
+def stripe_webhook_test():
+    return "Stripe webhook endpoint is reachable!", 200
+
 @app.route('/create-checkout-session', methods=['POST'])
 def create_checkout_session():
+    print("=== STRIPE CHECKOUT DEBUG START ===")
+    print(f"Request headers: {dict(request.headers)}")
+    
     auth_header = request.headers.get('Authorization')
     if not auth_header or not auth_header.startswith('Bearer '):
+        print("ERROR: Authorization header missing or invalid")
         return jsonify({'error': 'Authorization header is missing or invalid'}), 401
     
     token = auth_header.split('Bearer ')[1]
+    print(f"Token received: {token[:20]}...")
+    
     decoded_token = verify_firebase_token(token)
     if not decoded_token:
+        print("ERROR: Token verification failed")
         return jsonify({'error': 'Invalid or expired authentication token'}), 401
 
     uid = decoded_token.get('user_id') or decoded_token.get('uid')
     email = decoded_token.get('email', '')
+    print(f"User ID: {uid}")
+    print(f"Email: {email}")
+    
     data = request.get_json()
     plan = data.get('plan') # 'monthly' or 'yearly'
+    print(f"Plan requested: {plan}")
+    
     price_id = PRICE_IDS.get(plan)
+    print(f"Price ID: {price_id}")
+    print(f"All Price IDs: {PRICE_IDS}")
+    print(f"Stripe API Key: {stripe.api_key[:10]}..." if stripe.api_key else "Stripe API Key: NOT SET")
 
     if not price_id:
+        print("ERROR: Invalid plan specified")
         return jsonify({'error': 'Invalid plan specified'}), 400
 
     try:
+        print("Attempting to access Firestore...")
         user_ref = db.collection('users').document(uid)
         user_doc = user_ref.get()
+        print(f"Firestore access successful. Document exists: {user_doc.exists}")
         
         stripe_customer_id = None
         if user_doc.exists and 'stripeCustomerId' in user_doc.to_dict():
-            stripe_customer_id = user_doc.to_dict()['stripeCustomerId']
-        else:
+            existing_customer_id = user_doc.to_dict()['stripeCustomerId']
+            print(f"Found existing Stripe customer: {existing_customer_id}")
+            
+            # Check if this is a test customer ID (starts with 'cus_')
+            if existing_customer_id.startswith('cus_'):
+                try:
+                    # Try to retrieve the customer to see if it exists in live mode
+                    customer = stripe.Customer.retrieve(existing_customer_id)
+                    stripe_customer_id = existing_customer_id
+                    print(f"Using existing Stripe customer: {stripe_customer_id}")
+                except stripe.error.InvalidRequestError as e:
+                    if "No such customer" in str(e):
+                        print("Test customer ID found, clearing it and creating new live customer...")
+                        user_ref.update({'stripeCustomerId': None})
+                        stripe_customer_id = None
+                    else:
+                        raise e
+            else:
+                stripe_customer_id = existing_customer_id
+                print(f"Using existing Stripe customer: {stripe_customer_id}")
+        
+        if not stripe_customer_id:
+            print("Creating new Stripe customer...")
             customer = stripe.Customer.create(email=email, metadata={'firebase_uid': uid})
             stripe_customer_id = customer.id
+            print(f"Created new Stripe customer: {stripe_customer_id}")
             user_ref.set({'stripeCustomerId': stripe_customer_id}, merge=True)
+            print("Updated Firestore with customer ID")
 
+        print("Creating Stripe checkout session...")
         checkout_session = stripe.checkout.Session.create(
             customer=stripe_customer_id,
             line_items=[{'price': price_id, 'quantity': 1}],
@@ -87,35 +139,61 @@ def create_checkout_session():
             cancel_url=YOUR_DOMAIN + '?payment=cancelled',
             metadata={'firebase_uid': uid}
         )
+        print(f"Checkout session created successfully: {checkout_session.id}")
+        print("=== STRIPE CHECKOUT DEBUG END ===")
         return jsonify({'id': checkout_session.id})
     except Exception as e:
+        print(f"ERROR in Stripe checkout: {str(e)}")
+        print(f"Error type: {type(e)}")
+        import traceback
+        print(f"Full traceback: {traceback.format_exc()}")
+        print("=== STRIPE CHECKOUT DEBUG END ===")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/stripe-webhook', methods=['POST'])
 def stripe_webhook():
+    print("=== STRIPE WEBHOOK DEBUG START ===")
+    print(f"Webhook received at: {request.url}")
+    print(f"Request method: {request.method}")
+    print(f"Request headers: {dict(request.headers)}")
+    
     payload = request.get_data(as_text=True)
     sig_header = request.headers.get('Stripe-Signature')
     endpoint_secret = os.getenv('STRIPE_WEBHOOK_SECRET')
+    
+    print(f"Payload length: {len(payload)}")
+    print(f"Signature header present: {sig_header is not None}")
+    print(f"Endpoint secret present: {endpoint_secret is not None}")
 
     try:
         event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
+        print(f"Webhook event type: {event['type']}")
     except ValueError as e:
+        print(f"ERROR: Invalid payload - {e}")
         return 'Invalid payload', 400
     except stripe.error.SignatureVerificationError as e:
+        print(f"ERROR: Invalid signature - {e}")
         return 'Invalid signature', 400
 
     if event['type'] == 'checkout.session.completed':
         session = event['data']['object']
         firebase_uid = session.get('metadata', {}).get('firebase_uid')
+        print(f"Processing checkout.session.completed for user: {firebase_uid}")
         
         if firebase_uid:
-            user_ref = db.collection('users').document(firebase_uid)
-            user_ref.update({
-                'subscriptionTier': 'complete_care',
-                'stripeSubscriptionId': session.get('subscription')
-            })
-            print(f"Successfully updated subscription for user {firebase_uid}")
+            try:
+                user_ref = db.collection('users').document(firebase_uid)
+                user_ref.update({
+                    'subscriptionTier': 'complete_care',
+                    'stripeSubscriptionId': session.get('subscription')
+                })
+                print(f"Successfully updated subscription for user {firebase_uid}")
+            except Exception as e:
+                print(f"ERROR updating user subscription: {e}")
+        else:
+            print("WARNING: No firebase_uid found in session metadata")
 
+    print("=== STRIPE WEBHOOK DEBUG END ===")
     return 'Success', 200
 
 @app.route('/ask-agent1', methods=['POST'])
