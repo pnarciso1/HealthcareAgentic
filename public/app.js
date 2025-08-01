@@ -120,6 +120,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const agent2StatusMessage = document.getElementById('agent2-status-message');
     const agent2ResultsList = document.getElementById('agent2-results-list');
 
+    // New Agent 2 elements
+    const categoryUploads = document.querySelectorAll('.category-upload');
+    const browseCategoryButtons = document.querySelectorAll('.browse-category-btn');
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    const dateFilter = document.getElementById('date-filter');
+    const financialMetrics = document.querySelectorAll('.metric-card .amount, .metric-card .percentage, .metric-card .trend');
+
     let agent1ChatHistory = [];
     let unsubscribeAnalyses = null;
     let unsubscribeChatHistory = null;
@@ -716,6 +723,67 @@ document.addEventListener('DOMContentLoaded', () => {
                     setTimeout(() => agent2ProgressContainer.classList.add('hidden'), 5000);
                 });
             }
+        });
+    }
+
+    // New Agent 2: Category Upload Logic
+    categoryUploads.forEach(uploadZone => {
+        uploadZone.addEventListener('click', () => {
+            fileInput.click();
+        });
+        
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.style.borderColor = 'var(--primary-blue)';
+            uploadZone.style.backgroundColor = 'var(--background-card)';
+        });
+        
+        uploadZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            uploadZone.style.borderColor = 'var(--border-color)';
+            uploadZone.style.backgroundColor = 'transparent';
+        });
+        
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.style.borderColor = 'var(--border-color)';
+            uploadZone.style.backgroundColor = 'transparent';
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                uploadForm.dispatchEvent(new Event('submit', { cancelable: true }));
+            }
+        });
+    });
+
+    browseCategoryButtons.forEach(button => {
+        button.addEventListener('click', (e) => {
+            e.stopPropagation();
+            fileInput.click();
+        });
+    });
+
+    // Filter functionality
+    filterButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            // Remove active class from all buttons
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            // Add active class to clicked button
+            button.classList.add('active');
+            
+            const filter = button.getAttribute('data-filter');
+            // For now, just log the filter - we'll implement actual filtering when backend supports it
+            console.log('Filter selected:', filter);
+        });
+    });
+
+    // Date filter functionality
+    if (dateFilter) {
+        dateFilter.addEventListener('change', () => {
+            const selectedRange = dateFilter.value;
+            console.log('Date range selected:', selectedRange);
+            // For now, just log the selection - we'll implement actual filtering when backend supports it
         });
     }
 

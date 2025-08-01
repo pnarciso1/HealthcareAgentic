@@ -736,6 +736,352 @@ body {
 }
 
 /* --- AGENT 2 STYLES --- */
+
+/* Financial Dashboard */
+.financial-dashboard {
+    background-color: var(--background-light);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.dashboard-header h2 {
+    margin: 0;
+    color: var(--text-primary);
+}
+
+.date-range select {
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background-color: white;
+    font-size: 0.875rem;
+}
+
+.financial-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.metric-card {
+    background-color: var(--background-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+}
+
+.metric-card h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.metric-card .amount {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.metric-card .percentage {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.metric-card .trend {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.metric-card.alert {
+    border-color: #EF4444;
+    background-color: #FEF2F2;
+}
+
+.metric-card.alert .amount {
+    color: #EF4444;
+}
+
+/* Document Categories */
+.document-categories {
+    margin-bottom: 2rem;
+}
+
+.document-categories h3 {
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+.document-categories > p {
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+}
+
+.category-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.category-zone {
+    background-color: var(--background-light);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+}
+
+.category-header {
+    margin-bottom: 1rem;
+}
+
+.category-header h4 {
+    margin: 0 0 0.25rem 0;
+    color: var(--text-primary);
+}
+
+.category-header p {
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.category-upload {
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
+    padding: 2rem 1rem;
+    text-align: center;
+    transition: border-color 0.2s ease-in-out;
+    cursor: pointer;
+    margin-bottom: 1rem;
+}
+
+.category-upload:hover {
+    border-color: var(--primary-blue);
+}
+
+.upload-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.upload-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.upload-content p {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.upload-content p strong {
+    color: var(--text-primary);
+}
+
+.upload-hint {
+    font-size: 0.75rem !important;
+    opacity: 0.7;
+}
+
+.browse-category-btn {
+    margin-top: 0.5rem;
+}
+
+.category-stats {
+    text-align: center;
+}
+
+.category-stats .stat {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+/* Results Header and Filters */
+.results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.results-header h3 {
+    margin: 0;
+    color: var(--text-primary);
+}
+
+.timeline-filters {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.filter-btn {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    background-color: var(--background-light);
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.filter-btn:hover {
+    border-color: var(--primary-blue);
+    color: var(--primary-blue);
+}
+
+.filter-btn.active {
+    background-color: var(--primary-blue);
+    border-color: var(--primary-blue);
+    color: white;
+}
+
+.timeline-container {
+    background-color: var(--background-light);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 2rem;
+}
+
+/* Timeline Items (for future use) */
+.timeline-item {
+    border-left: 3px solid var(--primary-blue);
+    padding-left: 1.5rem;
+    margin-bottom: 2rem;
+    position: relative;
+}
+
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -6px;
+    top: 0;
+    width: 9px;
+    height: 9px;
+    background-color: var(--primary-blue);
+    border-radius: 50%;
+}
+
+.timeline-date {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.timeline-content {
+    background-color: var(--background-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.document-info h4 {
+    margin: 0 0 0.5rem 0;
+    color: var(--text-primary);
+}
+
+.document-info p {
+    margin: 0 0 0.5rem 0;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.amounts {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.amounts span {
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.amounts .charged {
+    color: #EF4444;
+}
+
+.amounts .paid {
+    color: #10B981;
+}
+
+.amounts .owed {
+    color: #F59E0B;
+}
+
+.red-flags {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.flag-badge {
+    background-color: #FEF2F2;
+    color: #EF4444;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+/* Mobile Responsiveness for new components */
+@media (max-width: 768px) {
+    .dashboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .financial-metrics {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .category-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .results-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .timeline-filters {
+        width: 100%;
+        justify-content: flex-start;
+    }
+    
+    .amounts {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .financial-metrics {
+        grid-template-columns: 1fr;
+    }
+    
+    .timeline-filters {
+        justify-content: center;
+    }
+}
+
 .agent2-upload-area {
     background-color: var(--background-light);
     border: 2px dashed var(--border-color);

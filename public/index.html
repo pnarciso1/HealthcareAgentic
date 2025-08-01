@@ -340,25 +340,145 @@
         <!-- PAGE: AGENT 2 - BILL & CLAIM ANALYSIS -->
         <main id="agent-2-page" class="page hidden">
             <div class="page-header">
-                <h1>Upload Your Medical Bills and Claims</h1>
-                <p>Our AI-powered system will analyze your documents to identify discrepancies and potential issues.</p>
+                <h1>📊 Bill & Claim Analysis Dashboard</h1>
+                <p>Upload your medical documents to get insights, identify issues, and track your healthcare costs.</p>
             </div>
-            <form id="agent2-upload-form" class="agent2-upload-area">
+
+            <!-- Financial Summary Dashboard -->
+            <div class="financial-dashboard">
+                <div class="dashboard-header">
+                    <h2>💰 Financial Summary</h2>
+                    <div class="date-range">
+                        <select id="date-filter">
+                            <option value="all">All Time</option>
+                            <option value="30">Last 30 Days</option>
+                            <option value="90">Last 90 Days</option>
+                            <option value="365">Last Year</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="financial-metrics">
+                    <div class="metric-card">
+                        <h4>Total Charges</h4>
+                        <div class="amount">$0.00</div>
+                        <div class="trend">No documents yet</div>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <h4>Insurance Paid</h4>
+                        <div class="amount">$0.00</div>
+                        <div class="percentage">0%</div>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <h4>Your Responsibility</h4>
+                        <div class="amount">$0.00</div>
+                        <div class="percentage">0%</div>
+                    </div>
+                    
+                    <div class="metric-card alert">
+                        <h4>Red Flags</h4>
+                        <div class="amount">$0.00</div>
+                        <div class="percentage">0% of total</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Document Upload Categories -->
+            <div class="document-categories">
+                <h3>📁 Upload Documents by Category</h3>
+                <p>Organize your documents to get better insights and tracking</p>
+                
+                <div class="category-grid">
+                    <div class="category-zone" data-category="bills">
+                        <div class="category-header">
+                            <h4>📄 Medical Bills</h4>
+                            <p>Hospital, doctor, and facility bills</p>
+                        </div>
+                        <div class="upload-area category-upload" data-category="bills">
+                            <div class="upload-content">
+                                <div class="upload-icon">📄</div>
+                                <p><strong>Drop bills here or click to browse</strong></p>
+                                <p class="upload-hint">PDF, JPG, PNG files</p>
+                                <button type="button" class="btn-secondary browse-category-btn" data-category="bills">Browse Bills</button>
+                            </div>
+                        </div>
+                        <div class="category-stats">
+                            <span class="stat">0 documents</span>
+                        </div>
+                    </div>
+                    
+                    <div class="category-zone" data-category="eobs">
+                        <div class="category-header">
+                            <h4>📋 Explanation of Benefits</h4>
+                            <p>Insurance EOB statements</p>
+                        </div>
+                        <div class="upload-area category-upload" data-category="eobs">
+                            <div class="upload-content">
+                                <div class="upload-icon">📋</div>
+                                <p><strong>Drop EOBs here or click to browse</strong></p>
+                                <p class="upload-hint">PDF, JPG, PNG files</p>
+                                <button type="button" class="btn-secondary browse-category-btn" data-category="eobs">Browse EOBs</button>
+                            </div>
+                        </div>
+                        <div class="category-stats">
+                            <span class="stat">0 documents</span>
+                        </div>
+                    </div>
+                    
+                    <div class="category-zone" data-category="insurance">
+                        <div class="category-header">
+                            <h4>📋 Insurance Plans</h4>
+                            <p>Policy documents and coverage details</p>
+                        </div>
+                        <div class="upload-area category-upload" data-category="insurance">
+                            <div class="upload-content">
+                                <div class="upload-icon">📋</div>
+                                <p><strong>Drop insurance docs here or click to browse</strong></p>
+                                <p class="upload-hint">PDF, JPG, PNG files</p>
+                                <button type="button" class="btn-secondary browse-category-btn" data-category="insurance">Browse Insurance</button>
+                            </div>
+                        </div>
+                        <div class="category-stats">
+                            <span class="stat">0 documents</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Legacy Upload Form (Hidden but functional) -->
+            <form id="agent2-upload-form" class="agent2-upload-area" style="display: none;">
                 <p><strong>Drag and drop your files here, or</strong></p>
                 <p>Supported formats: PDF, JPG, PNG</p>
                 <input type="file" id="document-upload" name="document" accept=".pdf,.jpg,.jpeg,.png" hidden>
                 <button type="button" id="browse-files-button" class="btn-secondary">Browse Files</button>
             </form>
+
+            <!-- Progress Container -->
             <div id="agent2-progress-container" class="hidden">
                 <h3>Analysis Progress</h3>
                 <p>Analyzing your documents</p>
                 <div class="progress-bar"><div class="progress-bar-inner"></div></div>
                 <p id="agent2-status-message"></p>
             </div>
+
+            <!-- Results Container with Timeline View -->
             <div id="agent2-results-container">
-                <h3>Analysis Results</h3>
-                <div id="agent2-results-list">
-                    <p class="placeholder">Once the analysis is complete, you'll see a detailed report here.</p>
+                <div class="results-header">
+                    <h3>📅 Document Timeline & Analysis</h3>
+                    <div class="timeline-filters">
+                        <button class="filter-btn active" data-filter="all">All Documents</button>
+                        <button class="filter-btn" data-filter="bills">Bills Only</button>
+                        <button class="filter-btn" data-filter="eobs">EOBs Only</button>
+                        <button class="filter-btn" data-filter="flags">Red Flags</button>
+                    </div>
+                </div>
+                
+                <div class="timeline-container">
+                    <div id="agent2-results-list">
+                        <p class="placeholder">Once you upload and analyze documents, you'll see a detailed timeline and financial breakdown here.</p>
+                    </div>
                 </div>
             </div>
         </main>
