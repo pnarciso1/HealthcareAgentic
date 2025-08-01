@@ -19,6 +19,7 @@ CORS(app, resources={r"/*": {"origins": [
     "https://healthcareagentic.web.app",
     "https://mycareclaim.com",
     "https://www.mycareclaim.com",
+    "https://healthcareagentic--agent2-ui-improvements-4maxho39.web.app",
     "http://localhost:8000",
     "http://127.0.0.1:8000"
 ]}})
