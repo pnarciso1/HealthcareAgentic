@@ -1158,6 +1158,41 @@ body {
     margin: 0.5rem 0;
 }
 
+.financial-summary {
+    background-color: var(--background-light);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+
+.financial-summary p {
+    margin: 0 0 0.5rem 0;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.financial-summary ul {
+    margin: 0;
+    padding-left: 1.5rem;
+    list-style-type: none;
+}
+
+.financial-summary li {
+    margin: 0.25rem 0;
+    padding: 0.25rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.financial-summary li:last-child {
+    border-bottom: none;
+}
+
+.financial-summary li:contains("Red Flags") {
+    color: #EF4444;
+    font-weight: 500;
+}
+
 .status-badge {
     display: inline-block;
     padding: 0.25rem 0.75rem;

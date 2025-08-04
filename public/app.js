@@ -543,11 +543,17 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!agent2ResultsList) return;
             if (snapshot.empty) {
                 agent2ResultsList.innerHTML = '<p class="placeholder">Once the analysis is complete, you\'ll see a detailed report here.</p>';
+                updateFinancialDashboard([]);
                 return;
             }
+            
+            const analyses = [];
             agent2ResultsList.innerHTML = '';
+            
             snapshot.forEach(doc => {
                 const analysis = doc.data();
+                analyses.push(analysis);
+                
                 const itemDiv = document.createElement('div');
                 itemDiv.classList.add('analysis-item');
                 
@@ -571,6 +577,23 @@ document.addEventListener('DOMContentLoaded', () => {
                         analysisP.textContent = results.initial_analysis || 'No analysis provided.';
                         itemDiv.appendChild(analysisP);
 
+                        // Add financial data display if available
+                        if (analysis.financial_data) {
+                            const financialDiv = document.createElement('div');
+                            financialDiv.classList.add('financial-summary');
+                            financialDiv.innerHTML = `
+                                <p><strong>Financial Summary:</strong></p>
+                                <ul>
+                                    <li>Total Charged: $${analysis.financial_data.total_charged?.toFixed(2) || '0.00'}</li>
+                                    <li>Insurance Paid: $${analysis.financial_data.insurance_paid?.toFixed(2) || '0.00'}</li>
+                                    <li>Patient Owed: $${analysis.financial_data.patient_owed?.toFixed(2) || '0.00'}</li>
+                                    ${analysis.financial_data.red_flags?.length > 0 ? 
+                                        `<li>Red Flags: ${analysis.financial_data.red_flags.join(', ')}</li>` : ''}
+                                </ul>
+                            `;
+                            itemDiv.appendChild(financialDiv);
+                        }
+
                     } catch (e) {
                         console.error("Error parsing analysis JSON:", e);
                         const errorP = document.createElement('p');
@@ -585,6 +608,90 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 agent2ResultsList.appendChild(itemDiv);
             });
+            
+            // Update financial dashboard with aggregated data
+            updateFinancialDashboard(analyses);
+        });
+    }
+
+    function updateFinancialDashboard(analyses) {
+        // Calculate totals from all analyses
+        let totalCharged = 0;
+        let totalInsurancePaid = 0;
+        let totalPatientOwed = 0;
+        let totalRedFlags = 0;
+        let redFlagAmount = 0;
+        
+        analyses.forEach(analysis => {
+            if (analysis.financial_data) {
+                const fd = analysis.financial_data;
+                totalCharged += fd.total_charged || 0;
+                totalInsurancePaid += fd.insurance_paid || 0;
+                totalPatientOwed += fd.patient_owed || 0;
+                
+                // Count red flags and their associated amounts
+                if (fd.red_flags && fd.red_flags.length > 0) {
+                    totalRedFlags += fd.red_flags.length;
+                    // If there are red flags, consider the patient owed amount as potentially problematic
+                    redFlagAmount += fd.patient_owed || 0;
+                }
+            }
+        });
+        
+        // Update metric cards
+        const metricCards = document.querySelectorAll('.metric-card');
+        metricCards.forEach(card => {
+            const amountElement = card.querySelector('.amount');
+            const percentageElement = card.querySelector('.percentage');
+            const trendElement = card.querySelector('.trend');
+            
+            if (amountElement) {
+                const cardTitle = card.querySelector('h4').textContent;
+                
+                switch (cardTitle) {
+                    case 'Total Charges':
+                        amountElement.textContent = `$${totalCharged.toFixed(2)}`;
+                        if (trendElement) {
+                            trendElement.textContent = analyses.length > 0 ? `${analyses.length} document(s) processed` : 'No documents yet';
+                        }
+                        break;
+                    case 'Insurance Paid':
+                        amountElement.textContent = `$${totalInsurancePaid.toFixed(2)}`;
+                        if (percentageElement) {
+                            const percentage = totalCharged > 0 ? (totalInsurancePaid / totalCharged * 100) : 0;
+                            percentageElement.textContent = `${percentage.toFixed(1)}%`;
+                        }
+                        break;
+                    case 'Your Responsibility':
+                        amountElement.textContent = `$${totalPatientOwed.toFixed(2)}`;
+                        if (percentageElement) {
+                            const percentage = totalCharged > 0 ? (totalPatientOwed / totalCharged * 100) : 0;
+                            percentageElement.textContent = `${percentage.toFixed(1)}%`;
+                        }
+                        break;
+                    case 'Red Flags':
+                        amountElement.textContent = `$${redFlagAmount.toFixed(2)}`;
+                        if (percentageElement) {
+                            const percentage = totalCharged > 0 ? (redFlagAmount / totalCharged * 100) : 0;
+                            percentageElement.textContent = `${percentage.toFixed(1)}% of total`;
+                        }
+                        break;
+                }
+            }
+        });
+        
+        // Update category stats
+        const categoryStats = document.querySelectorAll('.category-stats .stat');
+        categoryStats.forEach(stat => {
+            const categoryZone = stat.closest('.category-zone');
+            if (categoryZone) {
+                const category = categoryZone.getAttribute('data-category');
+                const count = analyses.filter(analysis => 
+                    analysis.financial_data && 
+                    analysis.financial_data.document_type === category
+                ).length;
+                stat.textContent = `${count} document${count !== 1 ? 's' : ''}`;
+            }
         });
     }
 

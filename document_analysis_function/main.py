@@ -1,5 +1,7 @@
 import os
 import time
+import json
+import re
 from google.cloud import firestore
 from google.cloud.firestore_v1.transaction import transactional
 from google.cloud import documentai_v1beta3 as documentai
@@ -7,6 +9,125 @@ from google.cloud import storage
 import vertexai
 from vertexai.generative_models import GenerativeModel
 import traceback
+
+def extract_financial_data(analysis_json, extracted_text):
+    """
+    Extract structured financial data from the analysis results and document text.
+    Returns a dictionary with financial amounts, dates, providers, and red flags.
+    """
+    try:
+        # Parse the analysis JSON
+        analysis_data = json.loads(analysis_json)
+        
+        # Initialize financial data structure
+        financial_data = {
+            'total_charged': 0.0,
+            'insurance_paid': 0.0,
+            'patient_owed': 0.0,
+            'red_flags': [],
+            'date_of_service': None,
+            'provider': None,
+            'document_type': None,
+            'account_number': None,
+            'patient_name': None
+        }
+        
+        # Extract basic information from analysis
+        if 'key_information' in analysis_data:
+            key_info = analysis_data['key_information']
+            financial_data['patient_name'] = key_info.get('patient_name', 'Not Found')
+            financial_data['provider'] = key_info.get('provider_name', 'Not Found')
+            financial_data['account_number'] = key_info.get('account_number', 'Not Found')
+            
+            # Try to extract date
+            statement_date = key_info.get('statement_date', 'Not Found')
+            if statement_date != 'Not Found':
+                financial_data['date_of_service'] = statement_date
+        
+        # Extract amounts using regex patterns
+        amount_patterns = {
+            'total_charged': [
+                r'total.*?charged.*?\$?([\d,]+\.?\d*)',
+                r'amount.*?due.*?\$?([\d,]+\.?\d*)',
+                r'balance.*?due.*?\$?([\d,]+\.?\d*)',
+                r'total.*?amount.*?\$?([\d,]+\.?\d*)'
+            ],
+            'insurance_paid': [
+                r'insurance.*?paid.*?\$?([\d,]+\.?\d*)',
+                r'plan.*?paid.*?\$?([\d,]+\.?\d*)',
+                r'benefits.*?paid.*?\$?([\d,]+\.?\d*)'
+            ],
+            'patient_owed': [
+                r'patient.*?responsibility.*?\$?([\d,]+\.?\d*)',
+                r'amount.*?you.*?owe.*?\$?([\d,]+\.?\d*)',
+                r'you.*?may.*?owe.*?\$?([\d,]+\.?\d*)',
+                r'patient.*?owed.*?\$?([\d,]+\.?\d*)'
+            ]
+        }
+        
+        # Search for amounts in both analysis and extracted text
+        search_text = f"{analysis_json} {extracted_text}".lower()
+        
+        for amount_type, patterns in amount_patterns.items():
+            for pattern in patterns:
+                match = re.search(pattern, search_text, re.IGNORECASE)
+                if match:
+                    amount_str = match.group(1).replace(',', '')
+                    try:
+                        amount = float(amount_str)
+                        if amount > 0:
+                            financial_data[amount_type] = amount
+                            break
+                    except ValueError:
+                        continue
+        
+        # Determine document type
+        if 'eob' in search_text or 'explanation of benefits' in search_text:
+            financial_data['document_type'] = 'eob'
+        elif 'bill' in search_text or 'statement' in search_text:
+            financial_data['document_type'] = 'bill'
+        else:
+            financial_data['document_type'] = 'unknown'
+        
+        # Extract red flags from analysis
+        if 'initial_analysis' in analysis_data:
+            analysis_text = analysis_data['initial_analysis'].lower()
+            
+            # Define red flag keywords
+            red_flag_keywords = [
+                'duplicate', 'duplicate charge', 'duplicate billing',
+                'remark code', 'remark_code', 'b8', 'b9',
+                'unbundling', 'improper', 'error', 'incorrect',
+                'overcharge', 'overcharged', 'excessive',
+                'not medically necessary', 'experimental',
+                'out of network', 'out-of-network'
+            ]
+            
+            for keyword in red_flag_keywords:
+                if keyword in analysis_text:
+                    financial_data['red_flags'].append(keyword)
+        
+        # Calculate patient owed if not found but we have other amounts
+        if financial_data['patient_owed'] == 0.0 and financial_data['total_charged'] > 0:
+            if financial_data['insurance_paid'] > 0:
+                financial_data['patient_owed'] = financial_data['total_charged'] - financial_data['insurance_paid']
+        
+        return financial_data
+        
+    except Exception as e:
+        print(f"Error extracting financial data: {e}")
+        # Return default structure if extraction fails
+        return {
+            'total_charged': 0.0,
+            'insurance_paid': 0.0,
+            'patient_owed': 0.0,
+            'red_flags': [],
+            'date_of_service': None,
+            'provider': None,
+            'document_type': None,
+            'account_number': None,
+            'patient_name': None
+        }
 
 def process_medical_bill(event, context):
     # --- FINAL ATOMIC VERSION - July 24, 2025 ---
@@ -137,7 +258,12 @@ def process_medical_bill(event, context):
         
         print("--- Gemini analysis successful. ---")
         
-        # --- 8. SAVING THE ANALYSIS TO FIRESTORE ---
+        # --- 8. EXTRACT STRUCTURED FINANCIAL DATA ---
+        print("--- Extracting structured financial data. ---")
+        financial_data = extract_financial_data(analysis_json, extracted_text)
+        print(f"--- Financial data extracted: {financial_data} ---")
+        
+        # --- 9. SAVING THE ANALYSIS TO FIRESTORE ---
         print("--- Saving analysis to Firestore. ---")
         
         user_ref = firestore_client.collection('users').document(uid)
@@ -145,6 +271,7 @@ def process_medical_bill(event, context):
         
         new_analysis_doc = {
             'analysis_results': analysis_json,
+            'financial_data': financial_data,  # Add structured financial data
             'original_filename': original_filename,
             'gcs_uri': gcs_uri,
             'status': 'completed',
