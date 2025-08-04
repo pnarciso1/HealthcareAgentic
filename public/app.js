@@ -20,7 +20,8 @@ import {
     serverTimestamp,
     doc,
     setDoc,
-    getDoc
+    getDoc,
+    getDocs
 } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
 
 
@@ -553,64 +554,110 @@ document.addEventListener('DOMContentLoaded', () => {
             snapshot.forEach(doc => {
                 const analysis = doc.data();
                 analyses.push(analysis);
-                
-                const itemDiv = document.createElement('div');
-                itemDiv.classList.add('analysis-item');
-                
-                const filenameP = document.createElement('p');
-                filenameP.innerHTML = `<strong>File:</strong> ${analysis.original_filename || 'Unknown File'}`;
-                itemDiv.appendChild(filenameP);
-
-                if (analysis.status === 'completed') {
-                    try {
-                        const results = JSON.parse(analysis.analysis_results);
-                        
-                        const summaryP = document.createElement('p');
-                        summaryP.innerHTML = `<strong>Summary:</strong> ${results.concise_summary || 'Not available.'}`;
-                        itemDiv.appendChild(summaryP);
-
-                        const analysisHeader = document.createElement('p');
-                        analysisHeader.innerHTML = `<strong>Initial Analysis:</strong>`;
-                        itemDiv.appendChild(analysisHeader);
-
-                        const analysisP = document.createElement('p');
-                        analysisP.textContent = results.initial_analysis || 'No analysis provided.';
-                        itemDiv.appendChild(analysisP);
-
-                        // Add financial data display if available
-                        if (analysis.financial_data) {
-                            const financialDiv = document.createElement('div');
-                            financialDiv.classList.add('financial-summary');
-                            financialDiv.innerHTML = `
-                                <p><strong>Financial Summary:</strong></p>
-                                <ul>
-                                    <li>Total Charged: $${analysis.financial_data.total_charged?.toFixed(2) || '0.00'}</li>
-                                    <li>Insurance Paid: $${analysis.financial_data.insurance_paid?.toFixed(2) || '0.00'}</li>
-                                    <li>Patient Owed: $${analysis.financial_data.patient_owed?.toFixed(2) || '0.00'}</li>
-                                    ${analysis.financial_data.red_flags?.length > 0 ? 
-                                        `<li>Red Flags: ${analysis.financial_data.red_flags.join(', ')}</li>` : ''}
-                                </ul>
-                            `;
-                            itemDiv.appendChild(financialDiv);
-                        }
-
-                    } catch (e) {
-                        console.error("Error parsing analysis JSON:", e);
-                        const errorP = document.createElement('p');
-                        errorP.innerHTML = `<strong>Error:</strong> Could not display analysis results due to a formatting issue.`;
-                        itemDiv.appendChild(errorP);
-                    }
-                } else if (analysis.status === 'failed') {
-                    const errorP = document.createElement('p');
-                    errorP.innerHTML = `<strong>Status:</strong> <span style="color: red;">Failed</span> - ${analysis.error_message || 'Unknown error'}`;
-                    itemDiv.appendChild(errorP);
-                }
-
-                agent2ResultsList.appendChild(itemDiv);
             });
             
-            // Update financial dashboard with aggregated data
+            // Get current filter
+            const activeFilter = document.querySelector('.filter-btn.active')?.getAttribute('data-filter') || 'all';
+            
+            // Filter analyses based on current selection
+            const filteredAnalyses = filterAnalyses(analyses, activeFilter);
+            
+            // Display filtered results
+            displayAnalyses(filteredAnalyses);
+            
+            // Update financial dashboard with all analyses (not filtered)
             updateFinancialDashboard(analyses);
+        });
+    }
+
+    function filterAnalyses(analyses, filter) {
+        switch (filter) {
+            case 'bills':
+                return analyses.filter(analysis => 
+                    analysis.financial_data && 
+                    analysis.financial_data.document_type === 'bill'
+                );
+            case 'eobs':
+                return analyses.filter(analysis => 
+                    analysis.financial_data && 
+                    analysis.financial_data.document_type === 'eob'
+                );
+            case 'flags':
+                return analyses.filter(analysis => 
+                    analysis.financial_data && 
+                    analysis.financial_data.red_flags && 
+                    analysis.financial_data.red_flags.length > 0
+                );
+            case 'all':
+            default:
+                return analyses;
+        }
+    }
+
+    function displayAnalyses(analyses) {
+        if (!agent2ResultsList) return;
+        
+        if (analyses.length === 0) {
+            agent2ResultsList.innerHTML = '<p class="placeholder">No documents match the current filter.</p>';
+            return;
+        }
+        
+        agent2ResultsList.innerHTML = '';
+        
+        analyses.forEach(analysis => {
+            const itemDiv = document.createElement('div');
+            itemDiv.classList.add('analysis-item');
+            
+            const filenameP = document.createElement('p');
+            filenameP.innerHTML = `<strong>File:</strong> ${analysis.original_filename || 'Unknown File'}`;
+            itemDiv.appendChild(filenameP);
+
+            if (analysis.status === 'completed') {
+                try {
+                    const results = JSON.parse(analysis.analysis_results);
+                    
+                    const summaryP = document.createElement('p');
+                    summaryP.innerHTML = `<strong>Summary:</strong> ${results.concise_summary || 'Not available.'}`;
+                    itemDiv.appendChild(summaryP);
+
+                    const analysisHeader = document.createElement('p');
+                    analysisHeader.innerHTML = `<strong>Initial Analysis:</strong>`;
+                    itemDiv.appendChild(analysisHeader);
+
+                    const analysisP = document.createElement('p');
+                    analysisP.textContent = results.initial_analysis || 'No analysis provided.';
+                    itemDiv.appendChild(analysisP);
+
+                    // Add financial data display if available
+                    if (analysis.financial_data) {
+                        const financialDiv = document.createElement('div');
+                        financialDiv.classList.add('financial-summary');
+                        financialDiv.innerHTML = `
+                            <p><strong>Financial Summary:</strong></p>
+                            <ul>
+                                <li>Total Charged: $${analysis.financial_data.total_charged?.toFixed(2) || '0.00'}</li>
+                                <li>Insurance Paid: $${analysis.financial_data.insurance_paid?.toFixed(2) || '0.00'}</li>
+                                <li>Patient Owed: $${analysis.financial_data.patient_owed?.toFixed(2) || '0.00'}</li>
+                                ${analysis.financial_data.red_flags?.length > 0 ? 
+                                    `<li>Red Flags: ${analysis.financial_data.red_flags.join(', ')}</li>` : ''}
+                            </ul>
+                        `;
+                        itemDiv.appendChild(financialDiv);
+                    }
+
+                } catch (e) {
+                    console.error("Error parsing analysis JSON:", e);
+                    const errorP = document.createElement('p');
+                    errorP.innerHTML = `<strong>Error:</strong> Could not display analysis results due to a formatting issue.`;
+                    itemDiv.appendChild(errorP);
+                }
+            } else if (analysis.status === 'failed') {
+                const errorP = document.createElement('p');
+                errorP.innerHTML = `<strong>Status:</strong> <span style="color: red;">Failed</span> - ${analysis.error_message || 'Unknown error'}`;
+                itemDiv.appendChild(errorP);
+            }
+
+            agent2ResultsList.appendChild(itemDiv);
         });
     }
 
@@ -871,17 +918,40 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Filter functionality
+    // Filter functionality - moved inside DOMContentLoaded
     filterButtons.forEach(button => {
         button.addEventListener('click', () => {
+            console.log('Filter button clicked:', button.getAttribute('data-filter'));
+            
             // Remove active class from all buttons
             filterButtons.forEach(btn => btn.classList.remove('active'));
             // Add active class to clicked button
             button.classList.add('active');
             
             const filter = button.getAttribute('data-filter');
-            // For now, just log the filter - we'll implement actual filtering when backend supports it
             console.log('Filter selected:', filter);
+            
+            // Trigger re-filtering of current data
+            if (auth.currentUser) {
+                // Re-trigger the analysis listener to apply the new filter
+                const analysesCollectionRef = collection(db, 'users', auth.currentUser.uid, 'analyses');
+                const q = query(analysesCollectionRef, orderBy('created_at', 'desc'));
+                
+                // Get current data and re-filter
+                getDocs(q).then(snapshot => {
+                    const analyses = [];
+                    snapshot.forEach(doc => {
+                        analyses.push(doc.data());
+                    });
+                    
+                    console.log('Total analyses found:', analyses.length);
+                    const filteredAnalyses = filterAnalyses(analyses, filter);
+                    console.log('Filtered analyses:', filteredAnalyses.length);
+                    displayAnalyses(filteredAnalyses);
+                }).catch(error => {
+                    console.error('Error fetching analyses:', error);
+                });
+            }
         });
     });
 
