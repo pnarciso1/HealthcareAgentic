@@ -21,7 +21,8 @@ import {
     doc,
     setDoc,
     getDoc,
-    getDocs
+    getDocs,
+    deleteDoc
 } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
 
 
@@ -127,6 +128,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const filterButtons = document.querySelectorAll('.filter-btn');
     const dateFilter = document.getElementById('date-filter');
     const financialMetrics = document.querySelectorAll('.metric-card .amount, .metric-card .percentage, .metric-card .trend');
+
+    // New Agent 1 elements
+    const clearHistoryBtn = document.getElementById('clear-history-btn');
+    const viewAllBtn = document.getElementById('view-all-btn');
+    const viewAllContainer = document.getElementById('view-all-questions');
+    const copyAnswerBtn = document.getElementById('copy-answer-btn');
+    const feedbackSection = document.getElementById('feedback-section');
+    const feedbackHelpful = document.getElementById('feedback-helpful');
+    const feedbackNotHelpful = document.getElementById('feedback-not-helpful');
+    const feedbackThanks = document.getElementById('feedback-thanks');
 
     let agent1ChatHistory = [];
     let unsubscribeAnalyses = null;
@@ -501,16 +512,43 @@ document.addEventListener('DOMContentLoaded', () => {
                     fullChatHtml += `<p><strong>You:</strong> ${message.question}</p><p><strong>Agent:</strong> ${message.answer}</p><hr>`;
                     
                     if (message.question && !recentQuestions.includes(message.question)) {
-                        recentQuestions.push(message.question);
+                        // Debug: Log the timestamp to see what we're getting
+                        console.log('Message timestamp:', message.created_at);
+                        console.log('Message data:', message);
+                        
+                        recentQuestions.push({
+                            question: message.question,
+                            timestamp: message.created_at,
+                            id: doc.id
+                        });
                     }
                 });
             }
 
             if (answerBox) answerBox.innerHTML = fullChatHtml;
 
+            // Show/hide copy button and feedback based on whether there's an answer
+            if (copyAnswerBtn && feedbackSection) {
+                if (docs.length > 0) {
+                    copyAnswerBtn.style.display = 'inline-block';
+                    feedbackSection.style.display = 'block';
+                    
+                    // Reset feedback buttons
+                    feedbackHelpful.style.display = 'inline-block';
+                    feedbackNotHelpful.style.display = 'inline-block';
+                    feedbackThanks.style.display = 'none';
+                } else {
+                    copyAnswerBtn.style.display = 'none';
+                    feedbackSection.style.display = 'none';
+                }
+            }
+
             if (recentQuestionsList) {
                 recentQuestionsList.innerHTML = ''; 
-                const questionsToDisplay = recentQuestions.slice(-3).reverse();
+                
+                // Limit to 5 questions for display
+                const questionsToDisplay = recentQuestions.slice(-5).reverse();
+                const hasMoreQuestions = recentQuestions.length > 5;
                 
                 if (questionsToDisplay.length === 0) {
                     const li = document.createElement('li');
@@ -519,23 +557,98 @@ document.addEventListener('DOMContentLoaded', () => {
                     li.style.color = 'var(--text-secondary)';
                     recentQuestionsList.appendChild(li);
                 } else {
-                    questionsToDisplay.forEach(question => {
+                    questionsToDisplay.forEach(questionData => {
                         const li = document.createElement('li');
-                        li.textContent = question;
-                        const arrowSpan = document.createElement('span');
-                        arrowSpan.classList.add('arrow');
-                        arrowSpan.innerHTML = '&rarr;';
-                        li.appendChild(arrowSpan);
+                        li.className = 'question-item answered';
+                        
+                        // Create question preview (truncate if too long)
+                        const questionPreview = questionData.question.length > 60 
+                            ? questionData.question.substring(0, 60) + '...'
+                            : questionData.question;
+                        
+                        // Create timestamp
+                        const timestamp = questionData.timestamp ? formatTimestamp(questionData.timestamp) : '';
+                        
+                        li.innerHTML = `
+                            <div class="question-content">
+                                <div class="question-text">${questionPreview}</div>
+                                <div class="question-timestamp">${timestamp}</div>
+                            </div>
+                            <div class="question-indicators">
+                                <span class="status-indicator answered">✓</span>
+                                <span class="arrow">→</span>
+                            </div>
+                        `;
 
                         li.addEventListener('click', () => {
-                            questionInput.value = question;
+                            questionInput.value = questionData.question;
                             qaForm.dispatchEvent(new Event('submit', { cancelable: true }));
                         });
                         recentQuestionsList.appendChild(li);
                     });
                 }
+                
+                // Show/hide "View All" button
+                if (viewAllContainer) {
+                    if (hasMoreQuestions) {
+                        viewAllContainer.classList.remove('hidden');
+                    } else {
+                        viewAllContainer.classList.add('hidden');
+                    }
+                }
             }
         });
+    }
+
+    function formatTimestamp(timestamp) {
+        console.log('formatTimestamp called with:', timestamp);
+        
+        if (!timestamp) {
+            console.log('No timestamp provided');
+            return '';
+        }
+        
+        try {
+            const now = new Date();
+            let messageTime;
+            
+            // Handle different timestamp formats
+            if (timestamp.toDate) {
+                // Firestore Timestamp object
+                messageTime = timestamp.toDate();
+                console.log('Firestore timestamp converted to:', messageTime);
+            } else if (timestamp.seconds) {
+                // Firestore Timestamp with seconds/nanoseconds
+                messageTime = new Date(timestamp.seconds * 1000);
+                console.log('Firestore timestamp with seconds converted to:', messageTime);
+            } else if (timestamp instanceof Date) {
+                // Already a Date object
+                messageTime = timestamp;
+                console.log('Already a Date object:', messageTime);
+            } else {
+                // Try to parse as string or number
+                messageTime = new Date(timestamp);
+                console.log('Parsed as Date:', messageTime);
+            }
+            
+            // Check if the date is valid
+            if (isNaN(messageTime.getTime())) {
+                console.log('Invalid date, returning empty string');
+                return '';
+            }
+            
+            const diffInMinutes = Math.floor((now - messageTime) / (1000 * 60));
+            console.log('Time difference in minutes:', diffInMinutes);
+            
+            if (diffInMinutes < 1) return 'Just now';
+            if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+            if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
+            return `${Math.floor(diffInMinutes / 1440)}d ago`;
+            
+        } catch (error) {
+            console.error('Error formatting timestamp:', error);
+            return '';
+        }
     }
     function listenForAnalysisResults(uid) {
         const analysesCollectionRef = collection(db, 'users', uid, 'analyses');
@@ -962,6 +1075,147 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Date range selected:', selectedRange);
             // For now, just log the selection - we'll implement actual filtering when backend supports it
         });
+    }
+
+    // Agent 1: Clear History functionality
+    if (clearHistoryBtn) {
+        clearHistoryBtn.addEventListener('click', async () => {
+            if (confirm('Are you sure you want to clear your question history? This action cannot be undone.')) {
+                if (auth.currentUser) {
+                    try {
+                        // Show loading state
+                        clearHistoryBtn.textContent = 'Clearing...';
+                        clearHistoryBtn.disabled = true;
+                        
+                        // Get all chat history documents
+                        const chatHistoryCollectionRef = collection(db, 'users', auth.currentUser.uid, 'chat_history');
+                        const snapshot = await getDocs(chatHistoryCollectionRef);
+                        
+                        // Delete all documents
+                        const deletePromises = snapshot.docs.map(doc => {
+                            return deleteDoc(doc.ref);
+                        });
+                        
+                        await Promise.all(deletePromises);
+                        
+                        // Clear local state
+                        agent1ChatHistory = [];
+                        
+                        // Update UI
+                        if (recentQuestionsList) {
+                            recentQuestionsList.innerHTML = '<li style="justify-content: center; color: var(--text-secondary);">Your recent questions will appear here.</li>';
+                        }
+                        if (viewAllContainer) {
+                            viewAllContainer.classList.add('hidden');
+                        }
+                        if (answerBox) {
+                            answerBox.innerHTML = '<p class="placeholder">Your answer will appear here...</p>';
+                        }
+                        
+                        // Reset button
+                        clearHistoryBtn.textContent = 'Clear History';
+                        clearHistoryBtn.disabled = false;
+                        
+                        console.log('Chat history cleared successfully');
+                        
+                    } catch (error) {
+                        console.error('Error clearing chat history:', error);
+                        alert('Error clearing chat history. Please try again.');
+                        
+                        // Reset button on error
+                        clearHistoryBtn.textContent = 'Clear History';
+                        clearHistoryBtn.disabled = false;
+                    }
+                }
+            }
+        });
+    }
+
+    // Agent 1: View All Questions functionality
+    if (viewAllBtn) {
+        viewAllBtn.addEventListener('click', () => {
+            // For now, just show a message. In a full implementation, this would show a modal with all questions
+            alert('View All functionality would show all your questions in a modal or expanded view. This requires additional UI implementation.');
+        });
+    }
+
+    // Agent 1: Question Chips functionality
+    const questionChips = document.querySelectorAll('.question-chip');
+    questionChips.forEach(chip => {
+        chip.addEventListener('click', () => {
+            const question = chip.getAttribute('data-question');
+            if (questionInput && question) {
+                questionInput.value = question;
+                questionInput.focus();
+                
+                // Optional: Auto-submit the question
+                // qaForm.dispatchEvent(new Event('submit', { cancelable: true }));
+            }
+        });
+    });
+
+    // Agent 1: Copy Answer functionality
+    if (copyAnswerBtn) {
+        copyAnswerBtn.addEventListener('click', async () => {
+            try {
+                const answerText = answerBox ? answerBox.innerText : '';
+                if (answerText && answerText !== 'Your answer will appear here...') {
+                    await navigator.clipboard.writeText(answerText);
+                    
+                    // Show success feedback
+                    const originalText = copyAnswerBtn.textContent;
+                    copyAnswerBtn.textContent = '✅ Copied!';
+                    copyAnswerBtn.style.color = '#10B981';
+                    
+                    setTimeout(() => {
+                        copyAnswerBtn.textContent = originalText;
+                        copyAnswerBtn.style.color = '';
+                    }, 2000);
+                    
+                    console.log('Answer copied to clipboard');
+                }
+            } catch (error) {
+                console.error('Failed to copy answer:', error);
+                alert('Failed to copy answer. Please try again.');
+            }
+        });
+    }
+
+    // Agent 1: Feedback functionality
+    if (feedbackHelpful) {
+        feedbackHelpful.addEventListener('click', () => {
+            handleFeedback('helpful');
+        });
+    }
+
+    if (feedbackNotHelpful) {
+        feedbackNotHelpful.addEventListener('click', () => {
+            handleFeedback('not-helpful');
+        });
+    }
+
+    function handleFeedback(type) {
+        // Hide feedback buttons
+        feedbackHelpful.style.display = 'none';
+        feedbackNotHelpful.style.display = 'none';
+        
+        // Show thank you message
+        feedbackThanks.style.display = 'block';
+        
+        // Log feedback (in a real app, this would be sent to your backend)
+        console.log(`Feedback received: ${type}`);
+        
+        // Store feedback in localStorage to prevent showing again for this answer
+        const currentAnswer = answerBox ? answerBox.innerText : '';
+        if (currentAnswer) {
+            const feedbackKey = `feedback_${btoa(currentAnswer.substring(0, 50))}`;
+            localStorage.setItem(feedbackKey, type);
+        }
+        
+        // Hide feedback section after 3 seconds
+        setTimeout(() => {
+            feedbackSection.style.display = 'none';
+        }, 3000);
     }
 
     upgradeButtons.forEach(button => {

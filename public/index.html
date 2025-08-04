@@ -319,20 +319,85 @@
         <!-- PAGE: AGENT 1 - RESEARCH & Q&A -->
         <main id="agent-1-page" class="page hidden">
             <div class="page-header">
-                <h1>Research and Q&A Agent</h1>
+                <h1>🔍 Research and Q&A Agent</h1>
+                <p>Get expert answers to your medical billing and insurance questions. Ask anything about claims, denials, coverage, or billing disputes.</p>
             </div>
-            <form id="agent1-qa-form" class="agent1-form">
-                <input type="text" id="agent1-question" placeholder="Ask a question about your medical bills...">
-                <button type="submit" class="btn-primary">Ask</button>
-            </form>
-            <div class="agent1-results">
-                <h3>Recent Questions</h3>
-                <ul id="recent-questions-list" class="recent-questions">
-                    <!-- Questions will be dynamically inserted here by app.js -->
-                </ul>
-                <h3>Answer</h3>
-                <div id="agent1-answer" class="agent1-answer-box">
-                    <p class="placeholder">Your answer will appear here...</p>
+            
+            <div class="agent1-container">
+                <!-- Left Column: Input and Recent Questions -->
+                <div class="agent1-left-column">
+                    <div class="input-section">
+                        <h3>💬 Ask Your Question</h3>
+                        <form id="agent1-qa-form" class="agent1-form">
+                            <input type="text" id="agent1-question" placeholder="Ask a question about your medical bills...">
+                            <button type="submit" class="btn-primary">Ask</button>
+                        </form>
+                        <div class="suggested-questions">
+                            <p class="suggested-label">Common questions:</p>
+                            <div class="question-chips">
+                                <button class="question-chip" data-question="What should I do if my insurance claim is denied?">
+                                    Claim Denials
+                                </button>
+                                <button class="question-chip" data-question="How do I read and understand my medical bill?">
+                                    Reading Bills
+                                </button>
+                                <button class="question-chip" data-question="What is the difference between in-network and out-of-network providers?">
+                                    Network Coverage
+                                </button>
+                                <button class="question-chip" data-question="How do I appeal a denied claim?">
+                                    Appeals Process
+                                </button>
+                                <button class="question-chip" data-question="What are my rights when dealing with medical billing?">
+                                    Patient Rights
+                                </button>
+                                <button class="question-chip" data-question="How do I dispute incorrect charges on my medical bill?">
+                                    Disputing Charges
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="recent-questions-section">
+                        <div class="recent-questions-header">
+                            <h3>⏰ Recent Questions</h3>
+                            <button id="clear-history-btn" class="btn-text">Clear History</button>
+                        </div>
+                        <ul id="recent-questions-list" class="recent-questions">
+                            <!-- Questions will be dynamically inserted here by app.js -->
+                        </ul>
+                        <div id="view-all-questions" class="view-all-container hidden">
+                            <button id="view-all-btn" class="btn-secondary">View All Questions</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right Column: Answer Display -->
+                <div class="agent1-right-column">
+                    <div class="answer-section">
+                        <div class="answer-header">
+                            <h3>💡 Answer</h3>
+                            <button id="copy-answer-btn" class="btn-text" style="display: none;">
+                                📋 Copy Answer
+                            </button>
+                        </div>
+                        <div id="agent1-answer" class="agent1-answer-box">
+                            <p class="placeholder">Your answer will appear here...</p>
+                        </div>
+                        <div id="feedback-section" class="feedback-section" style="display: none;">
+                            <p class="feedback-text">Was this answer helpful?</p>
+                            <div class="feedback-buttons">
+                                <button id="feedback-helpful" class="feedback-btn helpful">
+                                    👍 Yes
+                                </button>
+                                <button id="feedback-not-helpful" class="feedback-btn not-helpful">
+                                    👎 No
+                                </button>
+                            </div>
+                            <div id="feedback-thanks" class="feedback-thanks" style="display: none;">
+                                <p>Thank you for your feedback!</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>
