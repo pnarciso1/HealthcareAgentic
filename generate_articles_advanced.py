@@ -70,10 +70,7 @@ class ArticleGenerator:
         </div>
         """
         
-        # Add related articles footer
-        footer_html = self.generate_related_articles(article_data, articles_data)
-        
-        return body_html + footer_html
+        return body_html
     
     def generate_placeholder_content(self, article_data: Dict) -> str:
         """Generate placeholder content when no content is provided"""
