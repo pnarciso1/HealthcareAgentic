@@ -350,7 +350,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     navResourcesLink.addEventListener('click', (e) => {
         e.preventDefault();
-        showLandingPage('resources');
+        window.location.href = '/resources';
     });
 
     // Learn more button functionality
