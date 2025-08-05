@@ -235,7 +235,7 @@
                     <span class="article-read-time">${article.readTime}</span>
                 </div>
                 <h3 class="article-card-title">
-                    <a href="/resources/${article.id}/">${article.title}</a>
+                    <a href="/resources/${article.id}.html">${article.title}</a>
                 </h3>
                 <p class="article-card-description">${article.description}</p>
                 <div class="article-card-meta">
@@ -297,7 +297,7 @@
             latestArticles.forEach(article => {
                 const articleItem = document.createElement('a');
                 articleItem.className = 'related-article-item';
-                articleItem.href = `/resources/${article.id}/`;
+                articleItem.href = `/resources/${article.id}.html`;
 
                 articleItem.innerHTML = `
                     <h4>${article.title}</h4>

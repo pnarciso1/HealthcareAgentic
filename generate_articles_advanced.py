@@ -63,23 +63,7 @@ class ArticleGenerator:
             # Generate placeholder content
             content_html = self.generate_placeholder_content(article_data)
         
-        # Add article header
-        header_html = f"""
-        <header class="article-header">
-            <div class="article-meta">
-                <span class="article-category">{article_data['category']}</span>
-                <span class="article-read-time">{article_data['readTime']}</span>
-                <span class="article-date">{article_data['publishDate']}</span>
-            </div>
-            <h1 class="article-title">{article_data['title']}</h1>
-            <p class="article-description">{article_data['description']}</p>
-            <div class="article-tags">
-                {''.join([f'<span class="tag">{tag}</span>' for tag in article_data['tags']])}
-            </div>
-        </header>
-        """
-        
-        # Add article body
+        # Add article body (no duplicate header since template already has it)
         body_html = f"""
         <div class="article-body">
             {content_html}
@@ -89,7 +73,7 @@ class ArticleGenerator:
         # Add related articles footer
         footer_html = self.generate_related_articles(article_data, articles_data)
         
-        return header_html + body_html + footer_html
+        return body_html + footer_html
     
     def generate_placeholder_content(self, article_data: Dict) -> str:
         """Generate placeholder content when no content is provided"""
@@ -121,16 +105,16 @@ class ArticleGenerator:
             for related_id in article_data['relatedArticles']:
                 related_article = next((a for a in articles_data['articles'] if a['id'] == related_id), None)
                 if related_article:
-                    related_html += f"""
-                    <article class="related-article">
-                        <h4><a href="/resources/{related_article['id']}/">{related_article['title']}</a></h4>
-                        <p>{related_article['description'][:100]}...</p>
-                        <div class="related-article-meta">
-                            <span class="category">{related_article['category']}</span>
-                            <span class="read-time">{related_article['readTime']}</span>
-                        </div>
-                    </article>
-                    """
+                                    related_html += f"""
+                <article class="related-article">
+                    <h4><a href="/resources/{related_article['id']}.html">{related_article['title']}</a></h4>
+                    <p>{related_article['description'][:100]}...</p>
+                    <div class="related-article-meta">
+                        <span class="category">{related_article['category']}</span>
+                        <span class="read-time">{related_article['readTime']}</span>
+                    </div>
+                </article>
+                """
         
         related_html += """
                 </div>
