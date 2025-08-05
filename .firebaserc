@@ -1,5 +1,15 @@
 {
   "projects": {
     "default": "healthcareagentic"
-  }
+  },
+  "targets": {
+    "healthcareagentic": {
+      "hosting": {
+        "live": [
+          "healthcareagentic"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }
