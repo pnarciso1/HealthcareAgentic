@@ -3,64 +3,64 @@
   <!-- Main Pages -->
   <url>
     <loc>https://mycareclaim.com/</loc>
-    <lastmod>2025-01-12</lastmod>
+    <lastmod>2025-01-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   
   <!-- Resources Page -->
   <url>
-    <loc>https://mycareclaim.com/resources/</loc>
-    <lastmod>2025-01-12</lastmod>
+    <loc>https://mycareclaim.com/resources</loc>
+    <lastmod>2025-01-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   
   <!-- Article Pages -->
   <url>
-    <loc>https://mycareclaim.com/resources/smart-questions-medical-bills/</loc>
+    <loc>https://mycareclaim.com/resources/smart-questions-medical-bills.html</loc>
     <lastmod>2025-01-10</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   
   <url>
-    <loc>https://mycareclaim.com/resources/navigate-health-insurance-claims/</loc>
+    <loc>https://mycareclaim.com/resources/navigate-health-insurance-claims.html</loc>
     <lastmod>2025-01-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   
   <url>
-    <loc>https://mycareclaim.com/resources/appeal-denied-claims/</loc>
+    <loc>https://mycareclaim.com/resources/appeal-denied-claims.html</loc>
     <lastmod>2025-01-12</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   
   <url>
-    <loc>https://mycareclaim.com/resources/talk-to-your-doctor-billing/</loc>
+    <loc>https://mycareclaim.com/resources/talk-to-your-doctor-billing.html</loc>
     <lastmod>2025-01-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   
   <url>
-    <loc>https://mycareclaim.com/resources/medical-bill-questions-script/</loc>
+    <loc>https://mycareclaim.com/resources/medical-bill-questions-script.html</loc>
     <lastmod>2025-01-14</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   
   <url>
-    <loc>https://mycareclaim.com/resources/dispute-medical-bills/</loc>
+    <loc>https://mycareclaim.com/resources/dispute-medical-bills.html</loc>
     <lastmod>2025-01-15</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   
   <url>
-    <loc>https://mycareclaim.com/resources/cant-pay-medical-bill/</loc>
+    <loc>https://mycareclaim.com/resources/cant-pay-medical-bill.html</loc>
     <lastmod>2025-01-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
