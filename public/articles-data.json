@@ -1,0 +1,115 @@
+{
+  "articles": [
+    {
+      "id": "smart-questions-medical-bills",
+      "title": "6 Smart Questions to Lower Your Medical Bills and Avoid Surprise Costs",
+      "description": "Learn how to reduce medical expenses by asking the right questions before treatment. Discover tips for lowering bills, avoiding surprise charges, and getting financial help.",
+      "category": "Medical Billing",
+      "tags": ["medical bills", "healthcare costs", "surprise billing", "insurance coverage", "patient advocacy"],
+      "publishDate": "2025-01-10",
+      "readTime": "5 min read",
+      "author": "MyCareClaim Team",
+      "lastUpdated": "2025-01-10",
+      "relatedArticles": ["navigate-health-insurance-claims", "appeal-denied-claims"]
+    },
+    {
+      "id": "navigate-health-insurance-claims",
+      "title": "The Smart Patient's Guide to Navigating Health Insurance Claims",
+      "description": "Confused by health insurance claims? This step-by-step guide explains how to file, track, and appeal claims while maximizing your insurance coverage.",
+      "category": "Insurance Claims",
+      "tags": ["insurance claims", "health insurance", "EOB", "claim status", "filing claims"],
+      "publishDate": "2025-01-11",
+      "readTime": "6 min read",
+      "author": "MyCareClaim Team",
+      "lastUpdated": "2025-01-11",
+      "relatedArticles": ["smart-questions-medical-bills", "appeal-denied-claims"]
+    },
+    {
+      "id": "appeal-denied-claims",
+      "title": "How to Appeal a Denied Health Insurance Claim: A Step-by-Step Guide to Get the Coverage You Deserve",
+      "description": "Denied a health insurance claim? Learn how to file an internal appeal, request an external review, and use your legal rights to fight unfair denials.",
+      "category": "Insurance Claims",
+      "tags": ["claim denial", "insurance appeals", "external review", "health insurance rights", "coverage denial"],
+      "publishDate": "2025-01-12",
+      "readTime": "6 min read",
+      "author": "MyCareClaim Team",
+      "lastUpdated": "2025-01-12",
+      "relatedArticles": ["smart-questions-medical-bills", "navigate-health-insurance-claims"]
+    },
+    {
+      "id": "talk-to-your-doctor-billing",
+      "title": "How to Talk to Your Doctor About Medical Bills and Payment Options",
+      "description": "Not sure how to discuss healthcare costs with your doctor? Use this guide to ask about billing, understand your options, and reduce your out-of-pocket expenses.",
+      "category": "Patient Communication",
+      "tags": ["billing questions", "talking to your doctor", "healthcare costs", "payment plans", "medical expenses"],
+      "publishDate": "2025-01-13",
+      "readTime": "4 min read",
+      "author": "MyCareClaim Team",
+      "lastUpdated": "2025-01-13",
+      "relatedArticles": ["smart-questions-medical-bills", "dispute-medical-bills"]
+    },
+    {
+      "id": "medical-bill-questions-script",
+      "title": "Questions to Ask About Medical Bills: Phone Script for Patients",
+      "description": "Use this ready-to-go phone script to ask your doctor's office the right questions about billing, insurance coverage, and payment plans.",
+      "category": "Patient Resources",
+      "tags": ["medical billing script", "billing questions", "insurance verification", "patient tools", "financial planning"],
+      "publishDate": "2025-01-14",
+      "readTime": "3 min read",
+      "author": "MyCareClaim Team",
+      "lastUpdated": "2025-01-14",
+      "relatedArticles": ["talk-to-your-doctor-billing", "dispute-medical-bills"]
+    },
+    {
+      "id": "dispute-medical-bills",
+      "title": "Why You Should Always Double-Check (and Dispute) Your Medical Bill",
+      "description": "Many medical bills contain errors — and disputing them can save you money. Learn why it's worth checking your bill and how to take action if it's wrong.",
+      "category": "Medical Billing",
+      "tags": ["disputing bills", "medical bill errors", "billing disputes", "surprise billing", "financial advocacy"],
+      "publishDate": "2025-01-15",
+      "readTime": "6 min read",
+      "author": "MyCareClaim Team",
+      "lastUpdated": "2025-01-15",
+      "relatedArticles": ["smart-questions-medical-bills", "cant-pay-medical-bill"]
+    },
+    {
+      "id": "cant-pay-medical-bill",
+      "title": "What to Do If You Can't Afford a Medical Bill: A Step-by-Step Guide",
+      "description": "Struggling to pay a medical bill? This guide covers how to verify charges, dispute errors, access financial help, and understand your legal rights.",
+      "category": "Financial Assistance",
+      "tags": ["medical debt", "charity care", "bill negotiation", "no surprises act", "patient financial rights"],
+      "publishDate": "2025-01-16",
+      "readTime": "7 min read",
+      "author": "MyCareClaim Team",
+      "lastUpdated": "2025-01-16",
+      "relatedArticles": ["dispute-medical-bills", "appeal-denied-claims"]
+    }
+  ],
+  "categories": [
+    {
+      "id": "medical-billing",
+      "name": "Medical Billing",
+      "description": "Learn how to understand, dispute, and manage your medical bills effectively."
+    },
+    {
+      "id": "insurance-claims",
+      "name": "Insurance Claims",
+      "description": "Navigate the complex world of health insurance claims and appeals."
+    },
+    {
+      "id": "patient-communication",
+      "name": "Patient Communication",
+      "description": "Learn how to effectively communicate with healthcare providers about costs and billing."
+    },
+    {
+      "id": "patient-resources",
+      "name": "Patient Resources",
+      "description": "Tools, scripts, and resources to help you navigate the healthcare system."
+    },
+    {
+      "id": "financial-assistance",
+      "name": "Financial Assistance",
+      "description": "Find help when you can't afford medical bills and understand your rights."
+    }
+  ]
+} 

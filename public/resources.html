@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Healthcare Resources & Guides - MyCareClaim</title>
+    <meta name="description" content="Expert guides and resources to help you navigate medical bills, insurance claims, and healthcare costs. Learn how to dispute charges and maximize your coverage.">
+    <meta name="keywords" content="medical billing, health insurance, claims, appeals, healthcare costs, patient advocacy">
+    <meta name="author" content="MyCareClaim Team">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://mycareclaim.com/resources/">
+    <meta property="og:title" content="Healthcare Resources & Guides - MyCareClaim">
+    <meta property="og:description" content="Expert guides and resources to help you navigate medical bills, insurance claims, and healthcare costs.">
+    <meta property="og:image" content="https://mycareclaim.com/img/resources-og-image.jpg">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://mycareclaim.com/resources/">
+    <meta property="twitter:title" content="Healthcare Resources & Guides - MyCareClaim">
+    <meta property="twitter:description" content="Expert guides and resources to help you navigate medical bills, insurance claims, and healthcare costs.">
+    <meta property="twitter:image" content="https://mycareclaim.com/img/resources-og-image.jpg">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://mycareclaim.com/resources/">
+    
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebPage",
+        "name": "Healthcare Resources & Guides",
+        "description": "Expert guides and resources to help you navigate medical bills, insurance claims, and healthcare costs.",
+        "url": "https://mycareclaim.com/resources/",
+        "publisher": {
+            "@type": "Organization",
+            "name": "MyCareClaim",
+            "logo": {
+                "@type": "ImageObject",
+                "url": "https://mycareclaim.com/img/logo.png"
+            }
+        }
+    }
+    </script>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="/style.css">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+</head>
+<body>
+    <!-- Header -->
+    <header class="article-header">
+        <div class="container">
+            <div class="header-content">
+                <a href="/" class="logo">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" stroke="#4F46E5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M2 7L12 12L22 7" stroke="#4F46E5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M12 12V22" stroke="#4F46E5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span>MyCareClaim</span>
+                </a>
+                <nav class="article-nav">
+                    <a href="/#how-it-works">How It Works</a>
+                    <a href="/#pricing">Pricing</a>
+                    <a href="/#get-started">Get Started</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Breadcrumb -->
+    <nav class="breadcrumb">
+        <div class="container">
+            <a href="/">Home</a>
+            <span class="separator">/</span>
+            <span class="current">Resources</span>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="article-main">
+        <div class="container">
+            <div class="resources-content">
+                <!-- Resources Header -->
+                <header class="resources-header">
+                    <h1>Healthcare Resources & Guides</h1>
+                    <p>Expert guides and resources to help you navigate medical bills, insurance claims, and healthcare costs. Learn how to dispute charges, maximize your coverage, and become a more informed healthcare consumer.</p>
+                </header>
+
+                <!-- Category Filters -->
+                <div class="category-filters">
+                    <h3>Browse by Category</h3>
+                    <div class="filter-buttons" id="category-filters">
+                        <button class="filter-btn active" data-category="all">All Articles</button>
+                        <!-- Category buttons will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Articles Grid -->
+                <div class="articles-grid" id="articles-grid">
+                    <!-- Articles will be populated by JavaScript -->
+                </div>
+
+                <!-- Call to Action -->
+                <div class="article-cta">
+                    <h3>Have a specific question?</h3>
+                    <p>Our AI Agent is ready to help. Get instant answers grounded in reliable information.</p>
+                    <div class="cta-buttons">
+                        <a href="/#get-started" class="btn-primary">Ask the AI Agent Now</a>
+                        <a href="/" class="btn-secondary">Back to Home</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <aside class="article-sidebar">
+                <!-- Categories Summary -->
+                <div class="categories-summary">
+                    <h3>Categories</h3>
+                    <div id="categories-summary-list">
+                        <!-- Categories will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Latest Articles -->
+                <div class="latest-articles">
+                    <h3>Latest Articles</h3>
+                    <div id="latest-articles-list">
+                        <!-- Latest articles will be populated by JavaScript -->
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="article-footer">
+        <div class="container">
+            <p>&copy; 2025 MyCareClaim. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="/app.js"></script>
+    <script>
+        // Resources page specific JavaScript
+        let articlesData = null;
+        let categories = [];
+
+        // Load articles data
+        async function loadArticlesData() {
+            try {
+                const response = await fetch('/articles-data.json');
+                articlesData = await response.json();
+                renderResourcesPage();
+            } catch (error) {
+                console.error('Error loading articles data:', error);
+            }
+        }
+
+        // Render the resources page
+        function renderResourcesPage() {
+            if (!articlesData) return;
+
+            // Extract categories
+            categories = articlesData.categories || [];
+            
+            // Render category filters
+            renderCategoryFilters();
+            
+            // Render articles grid
+            renderArticlesGrid();
+            
+            // Render sidebar
+            renderSidebar();
+        }
+
+        // Render category filter buttons
+        function renderCategoryFilters() {
+            const filterContainer = document.getElementById('category-filters');
+            if (!filterContainer) return;
+
+            // Clear existing filters (except "All Articles")
+            const existingFilters = filterContainer.querySelectorAll('.filter-btn:not([data-category="all"])');
+            existingFilters.forEach(filter => filter.remove());
+
+            // Add category filters
+            categories.forEach(category => {
+                const filterBtn = document.createElement('button');
+                filterBtn.className = 'filter-btn';
+                filterBtn.setAttribute('data-category', category.id);
+                filterBtn.textContent = category.name;
+                filterBtn.addEventListener('click', () => filterArticles(category.id));
+                filterContainer.appendChild(filterBtn);
+            });
+        }
+
+        // Render articles grid
+        function renderArticlesGrid(categoryFilter = 'all') {
+            const gridContainer = document.getElementById('articles-grid');
+            if (!gridContainer || !articlesData.articles) return;
+
+            gridContainer.innerHTML = '';
+
+            const filteredArticles = categoryFilter === 'all' 
+                ? articlesData.articles 
+                : articlesData.articles.filter(article => 
+                    article.category.toLowerCase().includes(categoryFilter.replace('-', ' '))
+                );
+
+            filteredArticles.forEach(article => {
+                const articleCard = createArticleCard(article);
+                gridContainer.appendChild(articleCard);
+            });
+        }
+
+        // Create article card
+        function createArticleCard(article) {
+            const card = document.createElement('article');
+            card.className = 'article-card';
+            
+            const publishDate = new Date(article.publishDate).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+
+            card.innerHTML = `
+                <div class="article-card-header">
+                    <span class="article-category">${article.category}</span>
+                    <span class="article-read-time">${article.readTime}</span>
+                </div>
+                <h3 class="article-card-title">
+                    <a href="/resources/${article.id}/">${article.title}</a>
+                </h3>
+                <p class="article-card-description">${article.description}</p>
+                <div class="article-card-meta">
+                    <span class="article-date">${publishDate}</span>
+                    <div class="article-tags">
+                        ${article.tags.slice(0, 3).map(tag => `<span class="tag">${tag}</span>`).join('')}
+                    </div>
+                </div>
+            `;
+
+            return card;
+        }
+
+        // Render sidebar
+        function renderSidebar() {
+            renderCategoriesSummary();
+            renderLatestArticles();
+        }
+
+        // Render categories summary
+        function renderCategoriesSummary() {
+            const container = document.getElementById('categories-summary-list');
+            if (!container) return;
+
+            container.innerHTML = '';
+            categories.forEach(category => {
+                const categoryItem = document.createElement('a');
+                categoryItem.className = 'category-item';
+                categoryItem.href = '#';
+                categoryItem.setAttribute('data-category', category.id);
+                categoryItem.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    filterArticles(category.id);
+                });
+
+                const articleCount = articlesData.articles.filter(article => 
+                    article.category.toLowerCase().includes(category.id.replace('-', ' '))
+                ).length;
+
+                categoryItem.innerHTML = `
+                    <div class="category-name">${category.name}</div>
+                    <div class="category-count">${articleCount} articles</div>
+                `;
+
+                container.appendChild(categoryItem);
+            });
+        }
+
+        // Render latest articles
+        function renderLatestArticles() {
+            const container = document.getElementById('latest-articles-list');
+            if (!container) return;
+
+            container.innerHTML = '';
+            const latestArticles = articlesData.articles
+                .sort((a, b) => new Date(b.publishDate) - new Date(a.publishDate))
+                .slice(0, 3);
+
+            latestArticles.forEach(article => {
+                const articleItem = document.createElement('a');
+                articleItem.className = 'related-article-item';
+                articleItem.href = `/resources/${article.id}/`;
+
+                articleItem.innerHTML = `
+                    <h4>${article.title}</h4>
+                    <p>${article.description.substring(0, 100)}...</p>
+                `;
+
+                container.appendChild(articleItem);
+            });
+        }
+
+        // Filter articles by category
+        function filterArticles(categoryId) {
+            // Update active filter button
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-category="${categoryId}"]`).classList.add('active');
+
+            // Render filtered articles
+            renderArticlesGrid(categoryId);
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', loadArticlesData);
+    </script>
+</body>
+</html> 

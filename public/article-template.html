@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARTICLE_TITLE - MyCareClaim</title>
+    <meta name="description" content="ARTICLE_DESCRIPTION">
+    <meta name="keywords" content="ARTICLE_TAGS">
+    <meta name="author" content="MyCareClaim Team">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://mycareclaim.com/resources/ARTICLE_ID/">
+    <meta property="og:title" content="ARTICLE_TITLE">
+    <meta property="og:description" content="ARTICLE_DESCRIPTION">
+    <meta property="og:image" content="https://mycareclaim.com/img/article-og-image.jpg">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://mycareclaim.com/resources/ARTICLE_ID/">
+    <meta property="twitter:title" content="ARTICLE_TITLE">
+    <meta property="twitter:description" content="ARTICLE_DESCRIPTION">
+    <meta property="twitter:image" content="https://mycareclaim.com/img/article-og-image.jpg">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://mycareclaim.com/resources/ARTICLE_ID/">
+    
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": "ARTICLE_TITLE",
+        "description": "ARTICLE_DESCRIPTION",
+        "image": "https://mycareclaim.com/img/article-og-image.jpg",
+        "author": {
+            "@type": "Organization",
+            "name": "MyCareClaim"
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": "MyCareClaim",
+            "logo": {
+                "@type": "ImageObject",
+                "url": "https://mycareclaim.com/img/logo.png"
+            }
+        },
+        "datePublished": "ARTICLE_PUBLISH_DATE",
+        "dateModified": "ARTICLE_LAST_UPDATED",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https://mycareclaim.com/resources/ARTICLE_ID/"
+        }
+    }
+    </script>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="/style.css">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+</head>
+<body>
+    <!-- Header -->
+    <header class="article-header">
+        <div class="container">
+            <div class="header-content">
+                <a href="/" class="logo">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" stroke="#4F46E5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M2 7L12 12L22 7" stroke="#4F46E5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M12 12V22" stroke="#4F46E5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span>MyCareClaim</span>
+                </a>
+                <nav class="article-nav">
+                    <a href="/resources">Resources</a>
+                    <a href="/#how-it-works">How It Works</a>
+                    <a href="/#pricing">Pricing</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Breadcrumb -->
+    <nav class="breadcrumb">
+        <div class="container">
+            <a href="/">Home</a>
+            <span class="separator">/</span>
+            <a href="/resources">Resources</a>
+            <span class="separator">/</span>
+            <span class="current">ARTICLE_TITLE</span>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="article-main">
+        <div class="container">
+            <article class="article-content">
+                <!-- Article Header -->
+                <header class="article-meta">
+                    <div class="article-category">ARTICLE_CATEGORY</div>
+                    <h1 class="article-title">ARTICLE_TITLE</h1>
+                    <div class="article-info">
+                        <span class="article-author">By ARTICLE_AUTHOR</span>
+                        <span class="article-date">ARTICLE_PUBLISH_DATE</span>
+                        <span class="article-read-time">ARTICLE_READ_TIME</span>
+                    </div>
+                    <p class="article-description">ARTICLE_DESCRIPTION</p>
+                </header>
+
+                <!-- Article Body -->
+                <div class="article-body">
+                    <p class="article-placeholder">
+                        This article is currently being written. Check back soon for the full content!
+                    </p>
+                    <p class="article-placeholder">
+                        In the meantime, you can use our AI agents to get answers to your medical billing and insurance questions.
+                    </p>
+                </div>
+
+                <!-- Call to Action -->
+                <div class="article-cta">
+                    <h3>Need Help with Your Medical Bills?</h3>
+                    <p>Our AI agents can help you understand, dispute, and manage your healthcare costs.</p>
+                    <div class="cta-buttons">
+                        <a href="/#get-started" class="btn-primary">Get Started Free</a>
+                        <a href="/resources" class="btn-secondary">Browse More Resources</a>
+                    </div>
+                </div>
+            </article>
+
+            <!-- Sidebar -->
+            <aside class="article-sidebar">
+                <!-- Related Articles -->
+                <div class="related-articles">
+                    <h3>Related Articles</h3>
+                    <div id="related-articles-list">
+                        <!-- Related articles will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Categories -->
+                <div class="article-categories">
+                    <h3>Browse by Category</h3>
+                    <div id="categories-list">
+                        <!-- Categories will be populated by JavaScript -->
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="article-footer">
+        <div class="container">
+            <p>&copy; 2025 MyCareClaim. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="/app.js"></script>
+    <script>
+        // Article-specific JavaScript will be added here
+        const articleId = 'ARTICLE_ID';
+    </script>
+</body>
+</html> 
