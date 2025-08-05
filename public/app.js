@@ -353,6 +353,70 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.href = '/resources';
     });
 
+    // Contact Human functionality
+    const navContactHumanLink = document.getElementById('nav-contact-human');
+    const contactHumanModal = document.getElementById('contact-human-modal');
+    const contactHumanButtons = document.querySelectorAll('.contact-human-btn');
+    const contactOptions = document.querySelectorAll('.contact-option');
+
+    // Show Contact Human modal
+    const showContactHumanModal = () => {
+        contactHumanModal.classList.remove('hidden');
+    };
+
+    // Hide Contact Human modal
+    const hideContactHumanModal = () => {
+        contactHumanModal.classList.add('hidden');
+    };
+
+    // Handle contact option clicks
+    const handleContactOptionClick = (option) => {
+        const email = option.getAttribute('data-email');
+        const subject = option.getAttribute('data-subject');
+        const body = option.getAttribute('data-body');
+        
+        // Create mailto link
+        const mailtoLink = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        
+        // Open email client
+        window.location.href = mailtoLink;
+        
+        // Close modal after a short delay
+        setTimeout(() => {
+            hideContactHumanModal();
+        }, 500);
+    };
+
+    // Event listeners for Contact Human
+    if (navContactHumanLink) {
+        navContactHumanLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            showContactHumanModal();
+        });
+    }
+
+    // Contact Human modal close functionality
+    contactHumanModal.addEventListener('click', (e) => {
+        if (e.target === contactHumanModal) {
+            hideContactHumanModal();
+        }
+    });
+
+    // Contact option clicks
+    contactOptions.forEach(option => {
+        option.addEventListener('click', () => {
+            handleContactOptionClick(option);
+        });
+    });
+
+    // Contact Human buttons on agent pages
+    contactHumanButtons.forEach(button => {
+        button.addEventListener('click', (e) => {
+            e.preventDefault();
+            showContactHumanModal();
+        });
+    });
+
     // Learn more button functionality
     const learnMoreButton = document.getElementById('learn-more-button');
     if (learnMoreButton) {

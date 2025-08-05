@@ -23,6 +23,7 @@
                 <a href="#" id="nav-how-it-works">How it works</a>
                 <a href="#" id="nav-pricing">Pricing</a>
                 <a href="#" id="nav-resources">Resources</a>
+                <a href="#" id="nav-contact-human">Contact Human</a>
             </nav>
             <div class="auth-buttons">
                 <button id="login-nav-button" class="btn-secondary">Log in</button>
@@ -273,6 +274,55 @@
         </div>
     </div>
 
+    <!-- NEW: MODAL FOR CONTACT HUMAN -->
+    <div id="contact-human-modal" class="hidden">
+        <div class="contact-human-modal-content">
+            <button class="close-modal">&times;</button>
+            
+            <div class="contact-human-header">
+                <h2>Need a Human to Step In? We've Got You.</h2>
+                <p class="contact-hero-text">Sometimes AI isn't enough.</p>
+                <p class="contact-hero-description">If our AI agents didn't fully answer your question or you're facing a more complex issue, our human team is here to help. We're not just a tech platform — we're real people who care.</p>
+                <p class="contact-subheading">We review every message personally. No bots. No forms. Just humans helping humans.</p>
+            </div>
+
+            <div class="contact-options-section">
+                <h3>Choose What You Need Help With</h3>
+                <p>Click the option below that best describes your issue. Your email app will open with everything pre-filled. Just hit send, or add any extra details.</p>
+                
+                <div class="contact-options-grid">
+                    <div class="contact-option" data-email="ContactUs@peoplecare.ai" data-subject="Confusing Bill" data-body="Hi Team, I used the AI agent but still have questions about my bill...">
+                        <div class="contact-option-icon">📄</div>
+                        <h4>Bill Still Doesn't Make Sense?</h4>
+                        <p>Get help understanding a confusing charge or document.</p>
+                    </div>
+                    
+                    <div class="contact-option" data-email="ContactUs@peoplecare.ai" data-subject="Possible Billing Error" data-body="Hi, I think there may be an error on my recent claim...">
+                        <div class="contact-option-icon">⚠️</div>
+                        <h4>I Think There's a Mistake</h4>
+                        <p>Tell us about a possible billing error or insurance denial.</p>
+                    </div>
+                    
+                    <div class="contact-option" data-email="ContactUs@peoplecare.ai" data-subject="Denied Claim Help" data-body="Hi, my claim was denied and I'd like help understanding or appealing it...">
+                        <div class="contact-option-icon">🧾</div>
+                        <h4>I Need Help Fighting a Denial</h4>
+                        <p>Let us know if your insurance denied something you believe should've been covered.</p>
+                    </div>
+                    
+                    <div class="contact-option" data-email="ContactUs@peoplecare.ai" data-subject="Other Help Needed" data-body="Hi, I'd like to speak with someone about a healthcare billing issue not covered by the AI agents...">
+                        <div class="contact-option-icon">❓</div>
+                        <h4>Something Else</h4>
+                        <p>Your situation is unique — tell us what's going on.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="contact-footer">
+                <p>Our Human-in-the-Loop team reads and responds to every message. You'll hear from us within 1–2 business days, often sooner. Because healthcare is too important to leave entirely to machines.</p>
+            </div>
+        </div>
+    </div>
+
     <!-- MAIN APP CONTAINER FOR LOGGED-IN USERS -->
     <div id="app-container" class="hidden">
         <header class="app-header">
@@ -399,6 +449,11 @@
                         </div>
                     </div>
                 </div>
+            </div>
+            
+            <!-- Contact Human Section -->
+            <div class="contact-human-section">
+                <button id="contact-human-agent1" class="btn-secondary contact-human-btn">Contact Human</button>
             </div>
         </main>
 
@@ -546,6 +601,11 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- Contact Human Section -->
+            <div class="contact-human-section">
+                <button id="contact-human-agent2" class="btn-secondary contact-human-btn">Contact Human</button>
+            </div>
         </main>
 
         <!-- PAGE: AGENT 3 - CHALLENGE BILLS -->
@@ -574,6 +634,11 @@
                     <div class="form-group" style="margin-top: 2rem;"><label for="challenge-letter">Challenge Letter</label><textarea id="challenge-letter" rows="8" placeholder="Your generated letter will appear here..." readonly disabled></textarea></div>
                     <button type="button" class="btn-secondary" disabled>Download Letter</button>
                 </form>
+            </div>
+            
+            <!-- Contact Human Section -->
+            <div class="contact-human-section">
+                <button id="contact-human-agent3" class="btn-secondary contact-human-btn">Contact Human</button>
             </div>
         </main>
 
@@ -639,6 +704,11 @@
                             <div class="resource-card">Negotiation Strategies</div>
                         </div>
                     </div>
+                </div>
+                
+                <!-- Contact Human Section -->
+                <div class="contact-human-section">
+                    <button id="contact-human-agent4" class="btn-secondary contact-human-btn">Contact Human</button>
                 </div>
              </div>
         </main>
