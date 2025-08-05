@@ -2338,8 +2338,8 @@ button:disabled, input:disabled, textarea:disabled {
 
 /* Article Page Styles */
 .article-header {
-    background-color: var(--background-light);
-    border-bottom: 1px solid var(--border-color);
+    background-color: #1f2937;
+    border-bottom: 1px solid #374151;
     padding: 1rem 0;
     position: sticky;
     top: 0;
@@ -2360,7 +2360,7 @@ button:disabled, input:disabled, textarea:disabled {
     align-items: center;
     gap: 0.5rem;
     text-decoration: none;
-    color: var(--text-primary);
+    color: white;
     font-weight: 600;
     font-size: 1.25rem;
 }
@@ -2371,21 +2371,21 @@ button:disabled, input:disabled, textarea:disabled {
 }
 
 .article-nav a {
-    color: var(--text-secondary);
+    color: #d1d5db;
     text-decoration: none;
     font-weight: 500;
     transition: color 0.2s ease-in-out;
 }
 
 .article-nav a:hover {
-    color: var(--primary-blue);
+    color: #4F46E5;
 }
 
 /* Breadcrumb */
 .breadcrumb {
-    background-color: white;
+    background-color: #111827;
     padding: 1rem 0;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid #374151;
 }
 
 .breadcrumb .container {
@@ -2399,7 +2399,7 @@ button:disabled, input:disabled, textarea:disabled {
 }
 
 .breadcrumb a {
-    color: var(--primary-blue);
+    color: #4F46E5;
     text-decoration: none;
 }
 
@@ -2408,11 +2408,11 @@ button:disabled, input:disabled, textarea:disabled {
 }
 
 .breadcrumb .separator {
-    color: var(--text-secondary);
+    color: #9ca3af;
 }
 
 .breadcrumb .current {
-    color: var(--text-secondary);
+    color: #9ca3af;
     font-weight: 500;
 }
 
@@ -2424,25 +2424,28 @@ button:disabled, input:disabled, textarea:disabled {
     display: grid;
     grid-template-columns: 1fr 300px;
     gap: 3rem;
+    background-color: #111827;
+    min-height: 100vh;
 }
 
 .article-content {
-    background-color: white;
+    background-color: #1f2937;
     border-radius: 12px;
     padding: 2rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    border: 1px solid #374151;
 }
 
 /* Article Meta */
 .article-meta {
     margin-bottom: 2rem;
     padding-bottom: 2rem;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid #374151;
 }
 
 .article-category {
     display: inline-block;
-    background-color: var(--primary-blue);
+    background-color: #4F46E5;
     color: white;
     padding: 0.25rem 0.75rem;
     border-radius: 20px;
@@ -2456,7 +2459,7 @@ button:disabled, input:disabled, textarea:disabled {
 .article-title {
     font-size: 2.5rem;
     font-weight: 700;
-    color: var(--text-primary);
+    color: white;
     line-height: 1.2;
     margin-bottom: 1rem;
 }
@@ -2466,7 +2469,7 @@ button:disabled, input:disabled, textarea:disabled {
     gap: 1.5rem;
     margin-bottom: 1rem;
     font-size: 0.875rem;
-    color: var(--text-secondary);
+    color: #9ca3af;
 }
 
 .article-info span {
@@ -2478,7 +2481,7 @@ button:disabled, input:disabled, textarea:disabled {
 .article-description {
     font-size: 1.125rem;
     line-height: 1.6;
-    color: var(--text-secondary);
+    color: #d1d5db;
     margin: 0;
 }
 
@@ -2490,17 +2493,17 @@ button:disabled, input:disabled, textarea:disabled {
 .article-placeholder {
     font-size: 1.125rem;
     line-height: 1.7;
-    color: var(--text-secondary);
+    color: #d1d5db;
     margin-bottom: 1.5rem;
     padding: 2rem;
-    background-color: var(--background-light);
+    background-color: #374151;
     border-radius: 8px;
-    border-left: 4px solid var(--primary-blue);
+    border-left: 4px solid #4F46E5;
 }
 
 /* Article CTA */
 .article-cta {
-    background: linear-gradient(135deg, var(--primary-blue) 0%, #6366f1 100%);
+    background: linear-gradient(135deg, #4F46E5 0%, #6366f1 100%);
     color: white;
     padding: 2rem;
     border-radius: 12px;
@@ -2529,7 +2532,7 @@ button:disabled, input:disabled, textarea:disabled {
 
 .article-cta .btn-primary {
     background-color: white;
-    color: var(--primary-blue);
+    color: #4F46E5;
     border: none;
     padding: 0.75rem 1.5rem;
     border-radius: 8px;
@@ -2556,7 +2559,7 @@ button:disabled, input:disabled, textarea:disabled {
 
 .article-cta .btn-secondary:hover {
     background-color: white;
-    color: var(--primary-blue);
+    color: #4F46E5;
 }
 
 /* Article Sidebar */
@@ -2568,20 +2571,21 @@ button:disabled, input:disabled, textarea:disabled {
 
 .related-articles,
 .article-categories {
-    background-color: white;
+    background-color: #1f2937;
     border-radius: 12px;
     padding: 1.5rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    border: 1px solid #374151;
 }
 
 .related-articles h3,
 .article-categories h3 {
     font-size: 1.25rem;
     font-weight: 600;
-    color: var(--text-primary);
+    color: white;
     margin-bottom: 1rem;
     padding-bottom: 0.5rem;
-    border-bottom: 2px solid var(--border-color);
+    border-bottom: 2px solid #374151;
 }
 
 .related-article-item {
@@ -2590,14 +2594,14 @@ button:disabled, input:disabled, textarea:disabled {
     margin-bottom: 0.75rem;
     border-radius: 8px;
     text-decoration: none;
-    color: var(--text-primary);
+    color: white;
     transition: all 0.2s ease-in-out;
     border: 1px solid transparent;
 }
 
 .related-article-item:hover {
-    background-color: var(--background-light);
-    border-color: var(--border-color);
+    background-color: #374151;
+    border-color: #4F46E5;
     transform: translateX(4px);
 }
 
@@ -2610,7 +2614,7 @@ button:disabled, input:disabled, textarea:disabled {
 
 .related-article-item p {
     font-size: 0.875rem;
-    color: var(--text-secondary);
+    color: #9ca3af;
     margin: 0;
     line-height: 1.4;
 }
@@ -2621,13 +2625,13 @@ button:disabled, input:disabled, textarea:disabled {
     margin-bottom: 0.5rem;
     border-radius: 8px;
     text-decoration: none;
-    color: var(--text-primary);
-    background-color: var(--background-light);
+    color: white;
+    background-color: #374151;
     transition: all 0.2s ease-in-out;
 }
 
 .category-item:hover {
-    background-color: var(--primary-blue);
+    background-color: #4F46E5;
     color: white;
     transform: translateX(4px);
 }
@@ -2644,8 +2648,8 @@ button:disabled, input:disabled, textarea:disabled {
 
 /* Article Footer */
 .article-footer {
-    background-color: var(--background-light);
-    border-top: 1px solid var(--border-color);
+    background-color: #1f2937;
+    border-top: 1px solid #374151;
     padding: 2rem 0;
     text-align: center;
     margin-top: 3rem;
@@ -2658,7 +2662,7 @@ button:disabled, input:disabled, textarea:disabled {
 }
 
 .article-footer p {
-    color: var(--text-secondary);
+    color: #9ca3af;
     margin: 0;
 }
 
@@ -2752,23 +2756,24 @@ button:disabled, input:disabled, textarea:disabled {
 
 /* Resources Page Styles */
 .resources-content {
-    background-color: white;
+    background-color: #1f2937;
     border-radius: 12px;
     padding: 2rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    border: 1px solid #374151;
 }
 
 .resources-header {
     text-align: center;
     margin-bottom: 3rem;
     padding-bottom: 2rem;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid #374151;
 }
 
 .resources-header h1 {
     font-size: 2.5rem;
     font-weight: 700;
-    color: var(--text-primary);
+    color: white;
     margin-bottom: 1rem;
     line-height: 1.2;
 }
@@ -2776,7 +2781,7 @@ button:disabled, input:disabled, textarea:disabled {
 .resources-header p {
     font-size: 1.125rem;
     line-height: 1.6;
-    color: var(--text-secondary);
+    color: #d1d5db;
     max-width: 800px;
     margin: 0 auto;
 }
