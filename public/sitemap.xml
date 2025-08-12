@@ -3,7 +3,7 @@
   <!-- Main Pages -->
   <url>
     <loc>https://mycareclaim.com/</loc>
-    <lastmod>2025-01-19</lastmod>
+    <lastmod>2025-01-20</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
@@ -11,7 +11,7 @@
   <!-- Resources Page -->
   <url>
     <loc>https://mycareclaim.com/resources</loc>
-    <lastmod>2025-01-19</lastmod>
+    <lastmod>2025-01-20</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -76,6 +76,13 @@
   <url>
     <loc>https://mycareclaim.com/resources/appeal-health-insurance-denial.html</loc>
     <lastmod>2025-01-19</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <url>
+    <loc>https://mycareclaim.com/resources/no-surprises-act-cms-guide.html</loc>
+    <lastmod>2025-01-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
