@@ -31,7 +31,7 @@
       ]
     },
     {
-      "target": "agent2-ui-improvements",
+      "target": "agent1-chat-improvements",
       "public": "public",
       "ignore": [
         "firebase.json",

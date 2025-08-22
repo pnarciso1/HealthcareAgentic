@@ -111,7 +111,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Agent 1 elements
     const qaForm = document.getElementById('agent1-qa-form');
     const questionInput = document.getElementById('agent1-question');
-    const answerBox = document.getElementById('agent1-answer');
+    const chatContainer = document.getElementById('agent1-chat');
+    const chatMessages = document.querySelector('.chat-messages');
     const recentQuestionsList = document.getElementById('recent-questions-list');
     
     // Agent 2 elements
@@ -143,6 +144,37 @@ document.addEventListener('DOMContentLoaded', () => {
     let unsubscribeAnalyses = null;
     let unsubscribeChatHistory = null;
     let currentUserSubscriptionTier = 'free';
+    
+    // Chat helper functions
+    function addMessageToChat(sender, message, isThinking = false) {
+        if (!chatMessages) return;
+        
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${sender}-message`;
+        if (isThinking) {
+            messageDiv.id = 'thinking-message';
+        }
+        
+        const bubbleDiv = document.createElement('div');
+        bubbleDiv.className = 'message-bubble';
+        
+        const messageP = document.createElement('p');
+        messageP.textContent = message;
+        
+        bubbleDiv.appendChild(messageP);
+        messageDiv.appendChild(bubbleDiv);
+        chatMessages.appendChild(messageDiv);
+        
+        // Scroll to bottom
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+    
+    function removeThinkingMessage() {
+        const thinkingMessage = document.getElementById('thinking-message');
+        if (thinkingMessage) {
+            thinkingMessage.remove();
+        }
+    }
     
     // --- PAGE NAVIGATION LOGIC ---
     const showLandingPage = (pageName) => {
@@ -205,23 +237,36 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="upgrade-prompt-content">
                 <button class="close-upgrade-prompt">&times;</button>
                 <div class="upgrade-prompt-header">
-                    <h2>🔒 Unlock Premium Agents</h2>
-                    <p>This agent requires a Complete Care subscription to access.</p>
+                    <h2>🚀 Unlock Your Full Healthcare Power</h2>
+                    <p>Get access to AI agents that can save you hundreds or thousands on medical bills.</p>
+                </div>
+                <div class="upgrade-prompt-value">
+                    <div class="value-stat">
+                        <span class="stat-number">$800+</span>
+                        <span class="stat-label">Average savings per user</span>
+                    </div>
+                    <div class="value-stat">
+                        <span class="stat-number">75%</span>
+                        <span class="stat-label">Success rate on disputes</span>
+                    </div>
                 </div>
                 <div class="upgrade-prompt-features">
-                    <h3>What you'll get with Complete Care:</h3>
+                    <h3>Complete Care includes:</h3>
                     <ul>
-                        <li>✅ Bill & Claim Analysis Agent</li>
-                        <li>✅ Challenge Bills Agent (Coming Soon)</li>
-                        <li>✅ Fight Denials Agent (Coming Soon)</li>
-                        <li>✅ Unlimited Document Uploads</li>
-                        <li>✅ Priority Email Support</li>
+                        <li>✅ <strong>Bill & Claim Analysis:</strong> Upload documents to find errors and savings</li>
+                        <li>✅ <strong>Challenge Bills:</strong> Generate professional dispute letters</li>
+                        <li>✅ <strong>Fight Denials:</strong> Appeal insurance denials with expert guidance</li>
+                        <li>✅ <strong>Unlimited Uploads:</strong> Analyze all your medical documents</li>
+                        <li>✅ <strong>Priority Support:</strong> Get help when you need it most</li>
                     </ul>
                 </div>
                 <div class="upgrade-prompt-actions">
-                    <button class="btn-primary upgrade-now-btn">Upgrade Now - $7.99/month</button>
-                    <button class="btn-secondary upgrade-yearly-btn">Save 17% - $79/year</button>
-                    <button class="btn-text close-upgrade-prompt-btn">Maybe Later</button>
+                    <button class="btn-primary upgrade-now-btn">Start Saving Today - $7.99/month</button>
+                    <button class="btn-secondary upgrade-yearly-btn">Best Value - $79/year (Save $17)</button>
+                    <button class="btn-text close-upgrade-prompt-btn">Continue with Free Plan</button>
+                </div>
+                <div class="upgrade-prompt-guarantee">
+                    <p>💯 30-day money-back guarantee • Cancel anytime</p>
                 </div>
             </div>
         `;
@@ -440,7 +485,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     agentSelectionCards.forEach(card => {
-        card.addEventListener('click', () => {
+        // Handle card clicks (excluding button clicks)
+        card.addEventListener('click', (e) => {
+            // Don't trigger if clicking on the button
+            if (e.target.classList.contains('agent-select-btn')) {
+                return;
+            }
+            
             const pageId = card.getAttribute('data-page');
             const isLocked = pageId !== 'agent-1-page' && currentUserSubscriptionTier === 'free';
             
@@ -450,6 +501,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 showAppPage(pageId);
             }
         });
+        
+        // Handle "Get Started" button clicks
+        const selectBtn = card.querySelector('.agent-select-btn');
+        if (selectBtn) {
+            selectBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent card click
+                
+                const pageId = card.getAttribute('data-page');
+                const isLocked = pageId !== 'agent-1-page' && currentUserSubscriptionTier === 'free';
+                
+                if (isLocked) {
+                    showUpgradePrompt();
+                } else {
+                    showAppPage(pageId);
+                }
+            });
+        }
     });
 
     readBillArticle.addEventListener('click', () => {
@@ -589,7 +657,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
-            if (answerBox) answerBox.innerHTML = fullChatHtml;
+            // Note: This function is for displaying chat history, but we're now using chat bubbles
+            // The chat history will be displayed through the addMessageToChat function
 
             // Show/hide copy button and feedback based on whether there's an answer
             if (copyAnswerBtn && feedbackSection) {
@@ -977,12 +1046,38 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // User menu functionality
+    const userMenuToggle = document.getElementById('user-menu-toggle');
+    const userMenuDropdown = document.getElementById('user-menu-dropdown');
+    
+    if (userMenuToggle && userMenuDropdown) {
+        userMenuToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            userMenuToggle.classList.toggle('active');
+            userMenuDropdown.classList.toggle('show');
+        });
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!userMenuToggle.contains(e.target) && !userMenuDropdown.contains(e.target)) {
+                userMenuToggle.classList.remove('active');
+                userMenuDropdown.classList.remove('show');
+            }
+        });
+    }
+
     if (qaForm) {
         qaForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const question = questionInput.value;
             if (!question) return;
-            answerBox.innerHTML = '<p class="placeholder">Thinking...</p>';
+            
+            // Add user message bubble
+            addMessageToChat('user', question);
+            
+            // Show thinking message
+            addMessageToChat('ai', 'Thinking...', true);
+            
             questionInput.value = '';
             const user = auth.currentUser;
             if (user) {
@@ -995,6 +1090,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     .then(response => response.json())
                     .then(data => {
                         const ai_answer = data.answer || "Sorry, I received an empty answer.";
+                        
+                        // Remove thinking message and add AI response
+                        removeThinkingMessage();
+                        addMessageToChat('ai', ai_answer);
+                        
                         const chatHistoryCollectionRef = collection(db, 'users', user.uid, 'chat_history');
                         addDoc(chatHistoryCollectionRef, {
                             question: question,
@@ -1003,7 +1103,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         });
                     })
                     .catch(error => {
-                        answerBox.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+                        removeThinkingMessage();
+                        addMessageToChat('ai', `Error: ${error.message}`);
                     });
             }
         });
@@ -1172,8 +1273,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (viewAllContainer) {
                             viewAllContainer.classList.add('hidden');
                         }
-                        if (answerBox) {
-                            answerBox.innerHTML = '<p class="placeholder">Your answer will appear here...</p>';
+                        // Clear chat messages and show welcome message
+                        if (chatMessages) {
+                            chatMessages.innerHTML = `
+                                <div class="message ai-message">
+                                    <div class="message-bubble">
+                                        <p>Hi there! 👋 I'm here to help you with your medical billing and insurance questions. Ask me anything about claims, denials, coverage, or billing disputes.</p>
+                                    </div>
+                                </div>
+                            `;
                         }
                         
                         // Reset button
@@ -1222,8 +1330,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (copyAnswerBtn) {
         copyAnswerBtn.addEventListener('click', async () => {
             try {
-                const answerText = answerBox ? answerBox.innerText : '';
-                if (answerText && answerText !== 'Your answer will appear here...') {
+                // Get the last AI message from chat
+                const lastAiMessage = chatMessages ? chatMessages.querySelector('.ai-message:last-child .message-bubble p') : null;
+                const answerText = lastAiMessage ? lastAiMessage.textContent : '';
+                
+                if (answerText && answerText !== 'Hi there! 👋 I\'m here to help you with your medical billing and insurance questions. Ask me anything about claims, denials, coverage, or billing disputes.') {
                     await navigator.clipboard.writeText(answerText);
                     
                     // Show success feedback
@@ -1270,7 +1381,8 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log(`Feedback received: ${type}`);
         
         // Store feedback in localStorage to prevent showing again for this answer
-        const currentAnswer = answerBox ? answerBox.innerText : '';
+        const lastAiMessage = chatMessages ? chatMessages.querySelector('.ai-message:last-child .message-bubble p') : null;
+        const currentAnswer = lastAiMessage ? lastAiMessage.textContent : '';
         if (currentAnswer) {
             const feedbackKey = `feedback_${btoa(currentAnswer.substring(0, 50))}`;
             localStorage.setItem(feedbackKey, type);
