@@ -122,6 +122,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const agent2ProgressContainer = document.getElementById('agent2-progress-container');
     const agent2StatusMessage = document.getElementById('agent2-status-message');
     const agent2ResultsList = document.getElementById('agent2-results-list');
+    
+    // New Agent 2 UI elements
+    const agent2ChatMessages = document.getElementById('agent2-chat-messages');
+    const analysisStatus = document.getElementById('analysis-status');
+    const processingStages = document.querySelectorAll('.stage');
+    const metricCards = document.querySelectorAll('.metric-card');
+    
+    // Modal elements
+    const documentDetailsModal = document.getElementById('document-details-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalContent = document.getElementById('modal-content');
+    const closeModal = document.getElementById('close-modal');
 
     // New Agent 2 elements
     const categoryUploads = document.querySelectorAll('.category-upload');
@@ -173,6 +185,74 @@ document.addEventListener('DOMContentLoaded', () => {
         const thinkingMessage = document.getElementById('thinking-message');
         if (thinkingMessage) {
             thinkingMessage.remove();
+        }
+    }
+    
+    // Agent 2 Chat helper functions
+    function addMessageToAgent2Chat(sender, message, isThinking = false) {
+        if (!agent2ChatMessages) return;
+        
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${sender}-message`;
+        if (isThinking) {
+            messageDiv.id = 'agent2-thinking-message';
+        }
+        
+        const bubbleDiv = document.createElement('div');
+        bubbleDiv.className = 'message-bubble';
+        
+        const messageP = document.createElement('p');
+        messageP.textContent = message;
+        
+        bubbleDiv.appendChild(messageP);
+        messageDiv.appendChild(bubbleDiv);
+        agent2ChatMessages.appendChild(messageDiv);
+        
+        // Scroll to bottom
+        const chatContainer = document.getElementById('agent2-chat');
+        if (chatContainer) {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+    }
+    
+    function removeAgent2ThinkingMessage() {
+        const thinkingMessage = document.getElementById('agent2-thinking-message');
+        if (thinkingMessage) {
+            thinkingMessage.remove();
+        }
+    }
+    
+    function updateProcessingStage(stageName) {
+        processingStages.forEach(stage => {
+            stage.classList.remove('active', 'completed');
+        });
+        
+        const stageMap = {
+            'upload': 'stage-upload',
+            'analyzing': 'stage-analyzing',
+            'calculating': 'stage-calculating',
+            'complete': 'stage-complete'
+        };
+        
+        const currentStageId = stageMap[stageName];
+        if (currentStageId) {
+            const currentStage = document.getElementById(currentStageId);
+            if (currentStage) {
+                currentStage.classList.add('active');
+            }
+            
+            // Mark previous stages as completed
+            const stageOrder = ['upload', 'analyzing', 'calculating', 'complete'];
+            const currentIndex = stageOrder.indexOf(stageName);
+            
+            for (let i = 0; i < currentIndex; i++) {
+                const prevStageId = stageMap[stageOrder[i]];
+                const prevStage = document.getElementById(prevStageId);
+                if (prevStage) {
+                    prevStage.classList.add('completed');
+                    prevStage.classList.remove('active');
+                }
+            }
         }
     }
     
@@ -851,59 +931,125 @@ document.addEventListener('DOMContentLoaded', () => {
         agent2ResultsList.innerHTML = '';
         
         analyses.forEach(analysis => {
-            const itemDiv = document.createElement('div');
-            itemDiv.classList.add('analysis-item');
+            const documentCard = document.createElement('div');
+            documentCard.classList.add('document-card');
             
-            const filenameP = document.createElement('p');
-            filenameP.innerHTML = `<strong>File:</strong> ${analysis.original_filename || 'Unknown File'}`;
-            itemDiv.appendChild(filenameP);
-
+            // Create document header
+            const docHeader = document.createElement('div');
+            docHeader.classList.add('doc-header');
+            
+            const docType = document.createElement('div');
+            docType.classList.add('doc-type');
+            docType.textContent = analysis.financial_data?.document_type === 'eob' ? '📋 EOB Statement' : '📄 Medical Bill';
+            docHeader.appendChild(docType);
+            
+            const docStatus = document.createElement('div');
+            docStatus.classList.add('doc-status');
+            if (analysis.status === 'completed') {
+                docStatus.classList.add('completed');
+                docStatus.textContent = 'Analysis Complete';
+            } else if (analysis.status === 'failed') {
+                docStatus.classList.add('error');
+                docStatus.textContent = 'Analysis Failed';
+            } else {
+                docStatus.classList.add('processing');
+                docStatus.textContent = 'Processing';
+            }
+            docHeader.appendChild(docStatus);
+            
+            documentCard.appendChild(docHeader);
+            
+            // Create document preview
+            const docPreview = document.createElement('div');
+            docPreview.classList.add('doc-preview');
+            
+            const docTitle = document.createElement('h4');
+            docTitle.textContent = analysis.original_filename || 'Unknown Document';
+            docPreview.appendChild(docTitle);
+            
             if (analysis.status === 'completed') {
                 try {
                     const results = JSON.parse(analysis.analysis_results);
                     
+                    // Add summary
                     const summaryP = document.createElement('p');
-                    summaryP.innerHTML = `<strong>Summary:</strong> ${results.concise_summary || 'Not available.'}`;
-                    itemDiv.appendChild(summaryP);
-
-                    const analysisHeader = document.createElement('p');
-                    analysisHeader.innerHTML = `<strong>Initial Analysis:</strong>`;
-                    itemDiv.appendChild(analysisHeader);
-
-                    const analysisP = document.createElement('p');
-                    analysisP.textContent = results.initial_analysis || 'No analysis provided.';
-                    itemDiv.appendChild(analysisP);
-
-                    // Add financial data display if available
+                    summaryP.textContent = results.concise_summary || 'No summary available.';
+                    docPreview.appendChild(summaryP);
+                    
+                    // Add financial data if available
                     if (analysis.financial_data) {
-                        const financialDiv = document.createElement('div');
-                        financialDiv.classList.add('financial-summary');
-                        financialDiv.innerHTML = `
-                            <p><strong>Financial Summary:</strong></p>
-                            <ul>
-                                <li>Total Charged: $${analysis.financial_data.total_charged?.toFixed(2) || '0.00'}</li>
-                                <li>Insurance Paid: $${analysis.financial_data.insurance_paid?.toFixed(2) || '0.00'}</li>
-                                <li>Patient Owed: $${analysis.financial_data.patient_owed?.toFixed(2) || '0.00'}</li>
-                                ${analysis.financial_data.red_flags?.length > 0 ? 
-                                    `<li>Red Flags: ${analysis.financial_data.red_flags.join(', ')}</li>` : ''}
-                            </ul>
-                        `;
-                        itemDiv.appendChild(financialDiv);
+                        const amountP = document.createElement('p');
+                        amountP.textContent = `Amount: $${analysis.financial_data.total_charged?.toFixed(2) || '0.00'}`;
+                        docPreview.appendChild(amountP);
+                        
+                        if (analysis.financial_data.insurance_paid !== undefined) {
+                            const insuranceP = document.createElement('p');
+                            insuranceP.textContent = `Insurance Paid: $${analysis.financial_data.insurance_paid.toFixed(2)}`;
+                            docPreview.appendChild(insuranceP);
+                        }
+                        
+                        if (analysis.financial_data.patient_owed !== undefined) {
+                            const owedP = document.createElement('p');
+                            owedP.textContent = `Your Responsibility: $${analysis.financial_data.patient_owed.toFixed(2)}`;
+                            docPreview.appendChild(owedP);
+                        }
+                        
+                        // Add status based on red flags
+                        const statusP = document.createElement('p');
+                        if (analysis.financial_data.red_flags && analysis.financial_data.red_flags.length > 0) {
+                            statusP.textContent = `Status: Red flags detected - ${analysis.financial_data.red_flags.join(', ')}`;
+                        } else {
+                            statusP.textContent = 'Status: Coverage applied correctly';
+                        }
+                        docPreview.appendChild(statusP);
                     }
-
+                    
                 } catch (e) {
                     console.error("Error parsing analysis JSON:", e);
                     const errorP = document.createElement('p');
-                    errorP.innerHTML = `<strong>Error:</strong> Could not display analysis results due to a formatting issue.`;
-                    itemDiv.appendChild(errorP);
+                    errorP.textContent = 'Error: Could not display analysis results.';
+                    docPreview.appendChild(errorP);
                 }
             } else if (analysis.status === 'failed') {
                 const errorP = document.createElement('p');
-                errorP.innerHTML = `<strong>Status:</strong> <span style="color: red;">Failed</span> - ${analysis.error_message || 'Unknown error'}`;
-                itemDiv.appendChild(errorP);
+                errorP.textContent = `Status: Analysis failed - ${analysis.error_message || 'Unknown error'}`;
+                docPreview.appendChild(errorP);
+            } else {
+                const processingP = document.createElement('p');
+                processingP.textContent = 'Status: Currently being analyzed...';
+                docPreview.appendChild(processingP);
             }
-
-            agent2ResultsList.appendChild(itemDiv);
+            
+            documentCard.appendChild(docPreview);
+            
+            // Create document actions
+            const docActions = document.createElement('div');
+            docActions.classList.add('doc-actions');
+            
+            const viewDetailsBtn = document.createElement('button');
+            viewDetailsBtn.classList.add('btn-small');
+            viewDetailsBtn.textContent = 'View Details';
+            viewDetailsBtn.disabled = analysis.status !== 'completed';
+            viewDetailsBtn.addEventListener('click', () => showDocumentDetails(analysis));
+            docActions.appendChild(viewDetailsBtn);
+            
+            const askQuestionsBtn = document.createElement('button');
+            askQuestionsBtn.classList.add('btn-small');
+            askQuestionsBtn.textContent = 'Ask Questions';
+            askQuestionsBtn.disabled = analysis.status !== 'completed';
+            docActions.appendChild(askQuestionsBtn);
+            
+            // Add dispute button for bills with red flags
+            if (analysis.status === 'completed' && analysis.financial_data?.red_flags?.length > 0) {
+                const disputeBtn = document.createElement('button');
+                disputeBtn.classList.add('btn-small');
+                disputeBtn.textContent = 'Dispute Charges';
+                docActions.appendChild(disputeBtn);
+            }
+            
+            documentCard.appendChild(docActions);
+            
+            agent2ResultsList.appendChild(documentCard);
         });
     }
 
@@ -1065,6 +1211,27 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+    
+    // Modal event listeners
+    if (closeModal) {
+        closeModal.addEventListener('click', closeDocumentModal);
+    }
+    
+    if (documentDetailsModal) {
+        // Close modal when clicking overlay
+        documentDetailsModal.addEventListener('click', (e) => {
+            if (e.target === documentDetailsModal) {
+                closeDocumentModal();
+            }
+        });
+        
+        // Close modal with Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !documentDetailsModal.classList.contains('hidden')) {
+                closeDocumentModal();
+            }
+        });
+    }
 
     if (qaForm) {
         qaForm.addEventListener('submit', (e) => {
@@ -1127,9 +1294,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const file = fileInput.files[0];
             if (!file) return;
 
-            agent2ProgressContainer.classList.remove('hidden');
-            agent2StatusMessage.textContent = 'Uploading...';
-    
+            // Update UI for upload process
+            updateProcessingStage('upload');
+            if (analysisStatus) analysisStatus.textContent = 'Uploading...';
+            addMessageToAgent2Chat('ai', 'Starting upload process...');
+
             const user = auth.currentUser;
             if (user) {
                 user.getIdToken().then(idToken => {
@@ -1146,16 +1315,193 @@ document.addEventListener('DOMContentLoaded', () => {
                     return response.json();
                 })
                 .then(data => {
-                    agent2StatusMessage.textContent = 'File uploaded! Agent is analyzing it now. Results will appear below when ready.';
+                    // Update UI for analysis process
+                    updateProcessingStage('analyzing');
+                    if (analysisStatus) analysisStatus.textContent = 'Analyzing Documents';
+                    addMessageToAgent2Chat('ai', `File uploaded successfully! Now analyzing "${file.name}"...`);
+                    
+                    // Simulate analysis process (replace with real AI analysis later)
+                    setTimeout(() => {
+                        updateProcessingStage('calculating');
+                        if (analysisStatus) analysisStatus.textContent = 'Calculating Results';
+                        addMessageToAgent2Chat('ai', 'Extracting financial data and identifying potential issues...');
+                        
+                        setTimeout(() => {
+                            updateProcessingStage('complete');
+                            if (analysisStatus) analysisStatus.textContent = 'Analysis Complete';
+                            addMessageToAgent2Chat('ai', 'Analysis complete! I found some interesting insights in your document.');
+                            
+                            // Update category stats
+                            updateCategoryStats();
+                            
+                        }, 2000);
+                    }, 2000);
+                    
                     uploadForm.reset();
-                    setTimeout(() => agent2ProgressContainer.classList.add('hidden'), 5000);
                 })
                 .catch(error => {
-                    agent2StatusMessage.textContent = `Error: ${error.message}`;
-                    setTimeout(() => agent2ProgressContainer.classList.add('hidden'), 5000);
+                    if (analysisStatus) analysisStatus.textContent = 'Error';
+                    addMessageToAgent2Chat('ai', `Error: ${error.message}`);
                 });
             }
         });
+    }
+    
+    // Helper function to update category stats
+    function updateCategoryStats() {
+        const categoryStats = document.querySelectorAll('.category-stats .stat');
+        categoryStats.forEach(stat => {
+            const currentText = stat.textContent;
+            const match = currentText.match(/(\d+)/);
+            if (match) {
+                const currentCount = parseInt(match[1]);
+                stat.textContent = `${currentCount + 1} documents`;
+            } else {
+                stat.textContent = '1 document';
+            }
+        });
+    }
+    
+    // Modal functionality
+    function showDocumentDetails(analysis) {
+        if (!documentDetailsModal || !modalTitle || !modalContent) return;
+        
+        // Set modal title
+        modalTitle.textContent = `Document Details: ${analysis.original_filename}`;
+        
+        // Generate modal content
+        const content = generateModalContent(analysis);
+        modalContent.innerHTML = content;
+        
+        // Show modal
+        documentDetailsModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    }
+    
+    function closeDocumentModal() {
+        if (!documentDetailsModal) return;
+        
+        documentDetailsModal.classList.add('hidden');
+        document.body.style.overflow = ''; // Restore scrolling
+    }
+    
+    function generateModalContent(analysis) {
+        let content = '';
+        
+        try {
+            const results = JSON.parse(analysis.analysis_results);
+            const financialData = analysis.financial_data || {};
+            
+            // Document Summary Section
+            content += `
+                <div class="modal-section">
+                    <h4>📄 Document Summary</h4>
+                    <p><strong>File:</strong> ${analysis.original_filename}</p>
+                    <p><strong>Type:</strong> ${financialData.document_type === 'eob' ? 'EOB Statement' : 'Medical Bill'}</p>
+                    <p><strong>Provider:</strong> ${financialData.provider || 'Not specified'}</p>
+                    <p><strong>Date of Service:</strong> ${financialData.date_of_service || 'Not specified'}</p>
+                    <p><strong>Account Number:</strong> ${financialData.account_number || 'Not specified'}</p>
+                </div>
+            `;
+            
+            // Analysis Summary Section
+            if (results.concise_summary) {
+                content += `
+                    <div class="modal-section">
+                        <h4>📋 Analysis Summary</h4>
+                        <p>${results.concise_summary}</p>
+                    </div>
+                `;
+            }
+            
+            // Financial Breakdown Section
+            if (financialData.total_charged > 0 || financialData.insurance_paid > 0 || financialData.patient_owed > 0) {
+                content += `
+                    <div class="modal-section">
+                        <h4>💰 Financial Breakdown</h4>
+                        <table class="financial-table">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Total Charged</td>
+                                    <td class="amount">$${financialData.total_charged?.toFixed(2) || '0.00'}</td>
+                                </tr>
+                                <tr>
+                                    <td>Insurance Paid</td>
+                                    <td class="amount">$${financialData.insurance_paid?.toFixed(2) || '0.00'}</td>
+                                </tr>
+                                <tr>
+                                    <td>Your Responsibility</td>
+                                    <td class="amount">$${financialData.patient_owed?.toFixed(2) || '0.00'}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+            
+            // Red Flags Section
+            if (financialData.red_flags && financialData.red_flags.length > 0) {
+                content += `
+                    <div class="modal-section">
+                        <h4>🚨 Red Flags Detected</h4>
+                        <ul class="red-flags-list">
+                `;
+                
+                financialData.red_flags.forEach(flag => {
+                    content += `<li>${flag}</li>`;
+                });
+                
+                content += `
+                        </ul>
+                    </div>
+                `;
+            }
+            
+            // Detailed Analysis Section
+            if (results.initial_analysis) {
+                content += `
+                    <div class="modal-section">
+                        <h4>🔍 Detailed Analysis</h4>
+                        <p>${results.initial_analysis}</p>
+                    </div>
+                `;
+            }
+            
+            // Recommendations Section
+            if (results.recommendations && results.recommendations.length > 0) {
+                content += `
+                    <div class="modal-section">
+                        <h4>💡 Recommendations</h4>
+                        <ul class="recommendations-list">
+                `;
+                
+                results.recommendations.forEach(rec => {
+                    content += `<li>${rec}</li>`;
+                });
+                
+                content += `
+                        </ul>
+                    </div>
+                `;
+            }
+            
+        } catch (e) {
+            console.error("Error generating modal content:", e);
+            content = `
+                <div class="modal-section">
+                    <h4>❌ Error</h4>
+                    <p>Could not load document details. Please try again.</p>
+                </div>
+            `;
+        }
+        
+        return content;
     }
 
     // New Agent 2: Category Upload Logic

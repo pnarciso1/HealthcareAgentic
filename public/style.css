@@ -1627,13 +1627,166 @@ body {
 
 /* --- AGENT 2 STYLES --- */
 
+/* Processing Stages */
+.processing-stages {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 2rem;
+    margin-bottom: 3rem;
+    padding: 2rem;
+    background: var(--background-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    opacity: 0.5;
+    transition: all 0.3s ease;
+}
+
+.stage.active {
+    opacity: 1;
+}
+
+.stage.completed {
+    opacity: 1;
+}
+
+.stage-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    background: var(--background-light);
+    border: 2px solid var(--border-color);
+}
+
+.stage.active .stage-icon {
+    background: var(--primary-blue);
+    color: white;
+    border-color: var(--primary-blue);
+}
+
+.stage.completed .stage-icon {
+    background: var(--success-green);
+    color: white;
+    border-color: var(--success-green);
+}
+
+.stage-text {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.stage.active .stage-text {
+    color: var(--primary-blue);
+}
+
+.stage.completed .stage-text {
+    color: var(--success-green);
+}
+
+/* Analysis Chat Section */
+.analysis-chat-section {
+    background: var(--background-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.chat-header {
+    background: var(--background-light);
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.chat-header h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.analysis-status {
+    padding: 0.5rem 1rem;
+    background: var(--success-green);
+    color: white;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+#agent2-chat {
+    height: 400px;
+    overflow-y: auto;
+    padding: 1rem;
+}
+
+#agent2-chat-messages {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+#agent2-chat .message {
+    display: flex;
+    margin-bottom: 1rem;
+}
+
+#agent2-chat .ai-message {
+    justify-content: flex-start;
+}
+
+#agent2-chat .user-message {
+    justify-content: flex-end;
+}
+
+#agent2-chat .message-bubble {
+    max-width: 70%;
+    padding: 1rem 1.5rem;
+    border-radius: 18px;
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+#agent2-chat .ai-message .message-bubble {
+    background: var(--background-light);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+#agent2-chat .user-message .message-bubble {
+    background: var(--primary-blue);
+    color: white;
+}
+
+#agent2-chat .message-bubble strong {
+    font-weight: 600;
+}
+
 /* Financial Dashboard */
 .financial-dashboard {
-    background-color: var(--background-light);
+    background-color: var(--background-card);
     border: 1px solid var(--border-color);
     border-radius: 12px;
     padding: 2rem;
     margin-bottom: 2rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 .dashboard-header {
@@ -1663,11 +1816,19 @@ body {
 }
 
 .metric-card {
-    background-color: var(--background-card);
+    background-color: var(--background-light);
     border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 1.5rem;
     text-align: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+    border-color: var(--primary-blue);
 }
 
 .metric-card h4 {
@@ -1799,8 +1960,17 @@ body {
     color: var(--text-secondary);
 }
 
-/* Results Header and Filters */
-.results-header {
+/* Document Timeline */
+.document-timeline {
+    background: var(--background-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.timeline-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -1809,9 +1979,11 @@ body {
     gap: 1rem;
 }
 
-.results-header h3 {
+.timeline-header h3 {
     margin: 0;
     color: var(--text-primary);
+    font-size: 1.25rem;
+    font-weight: 600;
 }
 
 .timeline-filters {
@@ -1843,10 +2015,113 @@ body {
 }
 
 .timeline-container {
-    background-color: var(--background-light);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* Document Cards */
+.document-card {
+    background: var(--background-light);
     border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.document-card:hover {
+    border-color: var(--primary-blue);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.doc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.doc-type {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.doc-status {
+    padding: 0.25rem 0.75rem;
     border-radius: 12px;
-    padding: 2rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.doc-status.processing {
+    background: #FEF3C7;
+    color: #92400E;
+}
+
+.doc-status.completed {
+    background: #D1FAE5;
+    color: #065F46;
+}
+
+.doc-status.error {
+    background: #FEE2E2;
+    color: #991B1B;
+}
+
+.doc-preview h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+.doc-preview p {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.doc-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.btn-small {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--background-card);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-small:hover {
+    border-color: var(--primary-blue);
+    color: var(--primary-blue);
+}
+
+.btn-small:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Results Header and Filters */
+.results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.results-header h3 {
+    margin: 0;
+    color: var(--text-primary);
 }
 
 /* Timeline Items (for future use) */
@@ -2023,11 +2298,9 @@ body {
     100% { width: 100%; }
 }
 
+/* Legacy Agent 2 Results Container - Deprecated */
 .agent2-results-container {
-    background-color: var(--background-light);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 2rem;
+    display: none; /* Hide old container */
 }
 
 .analysis-result {
@@ -2438,7 +2711,254 @@ button:disabled, input:disabled, textarea:disabled {
     opacity: 0.5;
 }
 
+/* Modal Styles */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+}
+
+.modal-content {
+    position: relative;
+    background: var(--background-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    max-width: 800px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--background-light);
+    border-radius: 12px 12px 0 0;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.modal-body {
+    padding: 2rem;
+}
+
+/* Modal Content Sections */
+.modal-section {
+    margin-bottom: 2rem;
+}
+
+.modal-section:last-child {
+    margin-bottom: 0;
+}
+
+.modal-section h4 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modal-section p {
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 1rem;
+}
+
+.modal-section p:last-child {
+    margin-bottom: 0;
+}
+
+/* Financial Breakdown Table */
+.financial-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+}
+
+.financial-table th,
+.financial-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.financial-table th {
+    background: var(--background-light);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.financial-table td {
+    color: var(--text-secondary);
+}
+
+.financial-table .amount {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.financial-table .red-flag {
+    color: var(--error-red);
+    font-weight: 500;
+}
+
+/* Red Flags Section */
+.red-flags-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.red-flags-list li {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 6px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    color: var(--error-red);
+}
+
+.red-flags-list li:last-child {
+    margin-bottom: 0;
+}
+
+/* Recommendations Section */
+.recommendations-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.recommendations-list li {
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 6px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    color: var(--success-green);
+}
+
+.recommendations-list li:last-child {
+    margin-bottom: 0;
+}
+
 /* --- RESPONSIVE DESIGN --- */
+
+/* Processing Stages Responsive */
+@media (max-width: 768px) {
+    .processing-stages {
+        flex-direction: column;
+        gap: 1rem;
+        padding: 1.5rem;
+    }
+    
+    .stage {
+        flex-direction: row;
+        gap: 1rem;
+    }
+    
+    .stage-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1.25rem;
+    }
+}
+
+/* Analysis Chat Responsive */
+@media (max-width: 768px) {
+    #agent2-chat {
+        height: 300px;
+    }
+    
+    #agent2-chat .message-bubble {
+        max-width: 85%;
+    }
+    
+    .chat-header {
+        padding: 1rem 1.5rem;
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+}
+
+/* Financial Dashboard Responsive */
+@media (max-width: 768px) {
+    .financial-metrics {
+        grid-template-columns: 1fr;
+    }
+    
+    .dashboard-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+}
+
+/* Document Timeline Responsive */
+@media (max-width: 768px) {
+    .timeline-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .doc-actions {
+        flex-direction: column;
+    }
+    
+    .btn-small {
+        width: 100%;
+        text-align: center;
+    }
+}
 @media (max-width: 768px) {
     .agent4-container {
         grid-template-columns: 1fr;

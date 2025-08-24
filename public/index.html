@@ -574,6 +574,26 @@
                 <p>Turn a pile of bills into a clear picture of what you owe. Organize your bills, claims, and insurance plans into one place.</p>
             </div>
 
+            <!-- Processing Stages -->
+            <div class="processing-stages">
+                <div class="stage" id="stage-upload">
+                    <div class="stage-icon">📤</div>
+                    <div class="stage-text">Uploading</div>
+                </div>
+                <div class="stage" id="stage-analyzing">
+                    <div class="stage-icon">🔍</div>
+                    <div class="stage-text">Analyzing</div>
+                </div>
+                <div class="stage" id="stage-calculating">
+                    <div class="stage-icon">🧮</div>
+                    <div class="stage-text">Calculating</div>
+                </div>
+                <div class="stage" id="stage-complete">
+                    <div class="stage-icon">✅</div>
+                    <div class="stage-text">Complete</div>
+                </div>
+            </div>
+
             <!-- Financial Summary Dashboard -->
             <div class="financial-dashboard">
                 <div class="dashboard-header">
@@ -589,28 +609,46 @@
                 </div>
                 
                 <div class="financial-metrics">
-                    <div class="metric-card">
+                    <div class="metric-card" data-metric="total-charges">
                         <h4>Total Charges</h4>
                         <div class="amount">$0.00</div>
                         <div class="trend">No documents yet</div>
                     </div>
                     
-                    <div class="metric-card">
+                    <div class="metric-card" data-metric="insurance-paid">
                         <h4>Insurance Paid</h4>
                         <div class="amount">$0.00</div>
                         <div class="percentage">0%</div>
                     </div>
                     
-                    <div class="metric-card">
+                    <div class="metric-card" data-metric="your-responsibility">
                         <h4>Your Responsibility</h4>
                         <div class="amount">$0.00</div>
                         <div class="percentage">0%</div>
                     </div>
                     
-                    <div class="metric-card alert">
+                    <div class="metric-card alert" data-metric="red-flags">
                         <h4>Red Flags</h4>
                         <div class="amount">$0.00</div>
                         <div class="percentage">0% of total</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analysis Chat Section -->
+            <div class="analysis-chat-section">
+                <div class="chat-header">
+                    <h3>📊 Document Analysis</h3>
+                    <div class="analysis-status" id="analysis-status">Ready to analyze</div>
+                </div>
+                <div class="chat-container" id="agent2-chat">
+                    <div class="chat-messages" id="agent2-chat-messages">
+                        <div class="message ai-message">
+                            <div class="message-bubble">
+                                <strong>Welcome to Bill & Claim Review!</strong><br>
+                                Upload your medical bills, EOBs, and insurance documents to get started. I'll analyze them and provide insights on your healthcare costs.
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -685,17 +723,9 @@
                 <button type="button" id="browse-files-button" class="btn-secondary">Browse Files</button>
             </form>
 
-            <!-- Progress Container -->
-            <div id="agent2-progress-container" class="hidden">
-                <h3>Analysis Progress</h3>
-                <p>Analyzing your documents</p>
-                <div class="progress-bar"><div class="progress-bar-inner"></div></div>
-                <p id="agent2-status-message"></p>
-            </div>
-
-            <!-- Results Container with Timeline View -->
-            <div id="agent2-results-container">
-                <div class="results-header">
+            <!-- Document Timeline -->
+            <div class="document-timeline">
+                <div class="timeline-header">
                     <h3>📅 Document Timeline & Analysis</h3>
                     <div class="timeline-filters">
                         <button class="filter-btn active" data-filter="all">All Documents</button>
@@ -717,6 +747,22 @@
                 <button id="contact-human-agent2" class="btn-secondary contact-human-btn">Contact Human</button>
             </div>
         </main>
+
+        <!-- Document Details Modal -->
+        <div id="document-details-modal" class="modal hidden">
+            <div class="modal-overlay"></div>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modal-title">Document Details</h3>
+                    <button id="close-modal" class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div id="modal-content">
+                        <!-- Content will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- PAGE: AGENT 3 - DISPUTE INCORRECT BILLS -->
         <main id="agent-3-page" class="page hidden" style="position: relative;">

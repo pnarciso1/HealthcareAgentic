@@ -26,7 +26,7 @@ CORS(app, resources={r"/*": {"origins": [
 
 db = firestore.Client(project=os.getenv('GCP_PROJECT_ID'))
 storage_client = storage.Client(project=os.getenv('GCP_PROJECT_ID'))
-UPLOAD_BUCKET_NAME = os.getenv('GCS_UPLOAD_BUCKET')
+UPLOAD_BUCKET_NAME = os.getenv('GCS_UPLOAD_BUCKET', 'healthcare_agentic_raw_phi_uploads')
 stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
 YOUR_DOMAIN = os.getenv('FRONTEND_DOMAIN', 'http://localhost:8000')  # Use environment variable with fallback
 
