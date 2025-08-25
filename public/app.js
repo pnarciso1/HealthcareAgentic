@@ -708,10 +708,14 @@ document.addEventListener('DOMContentLoaded', () => {
             // Load disputes data first, then setup UI
             loadDisputeDashboard().then(() => {
                 setupDisputeEventListeners();
+                // Show the dashboard by default
+                showDisputeDashboard();
                 console.log('✅ Agent 3 initialization complete');
             }).catch(error => {
                 console.error('❌ Error initializing Agent 3:', error);
                 setupDisputeEventListeners();
+                // Show the dashboard even if there's an error
+                showDisputeDashboard();
             });
         }
     }
@@ -1192,6 +1196,7 @@ document.addEventListener('DOMContentLoaded', () => {
             disputeDashboard.classList.remove('hidden');
             disputeCreationFlow.classList.add('hidden');
             disputeLetterPreview.classList.add('hidden');
+            disputeManagement.classList.add('hidden');
             // Refresh data when showing dashboard
             loadDisputeDashboard();
         }
@@ -2109,8 +2114,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         timestamp: new Date().toISOString()
                     }));
                     
+                    // Ensure app container is visible
+                    const appContainer = document.getElementById('app-container');
+                    if (appContainer) {
+                        appContainer.classList.remove('hidden');
+                    }
+                    
                     // Navigate to Agent 3
-                    showPage('agent-3-page');
+                    showAppPage('agent-3-page');
                     
                     // Show success message
                     setTimeout(() => {
@@ -3088,8 +3099,14 @@ document.addEventListener('DOMContentLoaded', () => {
         // Close Q&A modal
         closeQAModal();
         
+        // Ensure app container is visible
+        const appContainer = document.getElementById('app-container');
+        if (appContainer) {
+            appContainer.classList.remove('hidden');
+        }
+        
         // Navigate to Agent 3
-        showPage('agent-3-page');
+        showAppPage('agent-3-page');
         
         // Show success message
         setTimeout(() => {
@@ -3184,4 +3201,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // Make functions globally available for onclick handlers
     window.transferToAgent3 = transferToAgent3;
     window.continueQASession = continueQASession;
+    
+    // Ensure the original dispute functions are properly exposed globally
+    // These should already be defined above, but we'll make sure they're accessible
+    if (typeof window.startNewDispute === 'undefined' && typeof startNewDispute !== 'undefined') {
+        window.startNewDispute = startNewDispute;
+    }
+    
+    if (typeof window.selectDocumentForDispute === 'undefined' && typeof selectDocumentForDispute !== 'undefined') {
+        window.selectDocumentForDispute = selectDocumentForDispute;
+    }
 });
