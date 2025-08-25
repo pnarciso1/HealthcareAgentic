@@ -63,6 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const howItWorksPage = document.getElementById('how-it-works-page');
     const resourcesPage = document.getElementById('resources-page');
     const pricingPage = document.getElementById('pricing-page');
+    const aboutUsPage = document.getElementById('about-us-page');
 
     // Logged-in pages
     const pages = document.querySelectorAll('.page');
@@ -72,6 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const navHowItWorksLink = document.getElementById('nav-how-it-works');
     const navPricingLink = document.getElementById('nav-pricing');
     const navResourcesLink = document.getElementById('nav-resources');
+    const navAboutUsLink = document.getElementById('nav-about-us');
     const navAgentsLink = document.getElementById('nav-agents');
     const agentSelectionCards = document.querySelectorAll('.agent-selection-card');
     const upgradeButtons = document.querySelectorAll('.pricing-card button');
@@ -83,6 +85,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const getStartedCtaButton = document.getElementById('get-started-cta-button');
     const loginCtaButton = document.getElementById('login-cta-button');
     const askAgentCtaButton = document.getElementById('ask-agent-cta-button');
+    const getStartedAboutButton = document.getElementById('get-started-about-button');
+    const learnMoreAboutButton = document.getElementById('learn-more-about-button');
     const formsContainer = document.getElementById('forms-container');
     const loginFormWrapper = document.getElementById('login-form-wrapper');
     const signupFormWrapper = document.getElementById('signup-form-wrapper');
@@ -299,6 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
         howItWorksPage.classList.add('hidden');
         resourcesPage.classList.add('hidden');
         pricingPage.classList.add('hidden');
+        aboutUsPage.classList.add('hidden');
 
         if (pageName === 'how-it-works') {
             howItWorksPage.classList.remove('hidden');
@@ -306,6 +311,8 @@ document.addEventListener('DOMContentLoaded', () => {
             resourcesPage.classList.remove('hidden');
         } else if (pageName === 'pricing') {
             pricingPage.classList.remove('hidden');
+        } else if (pageName === 'about-us') {
+            aboutUsPage.classList.remove('hidden');
         } else { // Default to main landing page
             landingPageContent.classList.remove('hidden');
         }
@@ -525,6 +532,11 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.href = '/resources';
     });
 
+    navAboutUsLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        showLandingPage('about-us');
+    });
+
     // Contact Human functionality
     const navContactHumanLink = document.getElementById('nav-contact-human');
     const contactHumanModal = document.getElementById('contact-human-modal');
@@ -593,6 +605,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const learnMoreButton = document.getElementById('learn-more-button');
     if (learnMoreButton) {
         learnMoreButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            showLandingPage('how-it-works');
+        });
+    }
+
+    // About Us page button functionality
+    if (getStartedAboutButton) {
+        getStartedAboutButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            showModal('signup');
+        });
+    }
+
+    if (learnMoreAboutButton) {
+        learnMoreAboutButton.addEventListener('click', (e) => {
             e.preventDefault();
             showLandingPage('how-it-works');
         });
@@ -704,6 +731,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load dispute dashboard data
     async function loadDisputeDashboard() {
         console.log('📊 Loading dispute dashboard...');
+        
+        // Check for transferred context from Agent 2
+        checkForTransferredContext();
+        
         try {
             const user = auth.currentUser;
             if (!user) {
@@ -868,7 +899,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${documents.map(doc => `
                         <div class="document-card">
                             <div class="doc-header">
-                                <span class="doc-type">${doc.financial_data?.document_type === 'eob' ? '📋 EOB' : '📄 Bill'}</span>
+                                <span class="doc-type">${doc.financial_data?.document_type === 'eob' ? '📋 EOB' : doc.financial_data?.document_type === 'insurance_plan' ? '🛡️ Insurance Plan' : '📄 Bill'}</span>
                                 <span class="doc-status ${doc.status}">${doc.status}</span>
                             </div>
                             <h4>${doc.original_filename || 'Unknown Document'}</h4>
@@ -1911,12 +1942,17 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'bills':
                 return analyses.filter(analysis => 
                     analysis.financial_data && 
-                    analysis.financial_data.document_type === 'bill'
+                    analysis.financial_data.document_type === 'bill' || analysis.financial_data.document_type === 'insurance_plan'
                 );
             case 'eobs':
                 return analyses.filter(analysis => 
                     analysis.financial_data && 
                     analysis.financial_data.document_type === 'eob'
+                );
+            case 'insurance':
+                return analyses.filter(analysis => 
+                    analysis.financial_data && 
+                    analysis.financial_data.document_type === 'insurance_plan'
                 );
             case 'flags':
                 return analyses.filter(analysis => 
@@ -1950,7 +1986,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const docType = document.createElement('div');
             docType.classList.add('doc-type');
-            docType.textContent = analysis.financial_data?.document_type === 'eob' ? '📋 EOB Statement' : '📄 Medical Bill';
+            docType.textContent = analysis.financial_data?.document_type === 'eob' ? '📋 EOB Statement' : analysis.financial_data?.document_type === 'insurance_plan' ? '🛡️ Insurance Plan' : '📄 Medical Bill';
             docHeader.appendChild(docType);
             
             const docStatus = document.createElement('div');
@@ -2051,7 +2087,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('--- DEBUG: Analysis object:', analysis);
                 console.log('--- DEBUG: Analysis ID:', analysis.id);
                 const documentData = {
-                    type: analysis.financial_data?.document_type === 'eob' ? 'EOB Statement' : 'Medical Bill',
+                    type: analysis.financial_data?.document_type === 'eob' ? 'EOB Statement' : analysis.financial_data?.document_type === 'insurance_plan' ? 'Insurance Plan' : 'Medical Bill',
                     filename: analysis.original_filename,
                     analysis: analysis
                 };
@@ -2064,6 +2100,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 const disputeBtn = document.createElement('button');
                 disputeBtn.classList.add('btn-small');
                 disputeBtn.textContent = 'Dispute Charges';
+                disputeBtn.addEventListener('click', () => {
+                    // Store document context for Agent 3
+                    sessionStorage.setItem('agent3_document_context', JSON.stringify({
+                        documentId: analysis.id,
+                        documentData: analysis,
+                        source: 'agent2_document_card',
+                        timestamp: new Date().toISOString()
+                    }));
+                    
+                    // Navigate to Agent 3
+                    showPage('agent-3-page');
+                    
+                    // Show success message
+                    setTimeout(() => {
+                        alert('Successfully transferred to Dispute Resolution Agent! Your document context has been preserved.');
+                    }, 100);
+                });
                 docActions.appendChild(disputeBtn);
             }
             
@@ -2432,10 +2485,46 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="modal-section">
                     <h4>📄 Document Summary</h4>
                     <p><strong>File:</strong> ${analysis.original_filename}</p>
-                    <p><strong>Type:</strong> ${financialData.document_type === 'eob' ? 'EOB Statement' : 'Medical Bill'}</p>
+                    <p><strong>Type:</strong> ${financialData.document_type === 'eob' ? 'EOB Statement' : financialData.document_type === 'insurance_plan' ? 'Insurance Plan' : 'Medical Bill'}</p>
                     <p><strong>Provider:</strong> ${financialData.provider || 'Not specified'}</p>
-                    <p><strong>Date of Service:</strong> ${financialData.date_of_service || 'Not specified'}</p>
-                    <p><strong>Account Number:</strong> ${financialData.account_number || 'Not specified'}</p>
+                            <p><strong>Date of Service:</strong> ${financialData.date_of_service || 'Not specified'}</p>
+        <p><strong>Account Number:</strong> ${financialData.account_number || 'Not specified'}</p>
+        
+        ${financialData.document_type === 'insurance_plan' && financialData.insurance_data ? `
+        <div class="modal-section">
+            <h4>🛡️ Insurance Plan Details</h4>
+            <div class="financial-table">
+                <div class="table-row">
+                    <span class="table-label">Network Type:</span>
+                    <span class="table-value">${financialData.insurance_data.network_type || 'Not specified'}</span>
+                </div>
+                <div class="table-row">
+                    <span class="table-label">Deductible:</span>
+                    <span class="table-value">${financialData.insurance_data.deductible ? `$${financialData.insurance_data.deductible.toLocaleString()}` : 'Not specified'}</span>
+                </div>
+                <div class="table-row">
+                    <span class="table-label">Copay:</span>
+                    <span class="table-value">${financialData.insurance_data.copay ? `$${financialData.insurance_data.copay}` : 'Not specified'}</span>
+                </div>
+                <div class="table-row">
+                    <span class="table-label">Coinsurance:</span>
+                    <span class="table-value">${financialData.insurance_data.coinsurance ? `${financialData.insurance_data.coinsurance}%` : 'Not specified'}</span>
+                </div>
+                <div class="table-row">
+                    <span class="table-label">Out-of-Pocket Max:</span>
+                    <span class="table-value">${financialData.insurance_data.out_of_pocket_max ? `$${financialData.insurance_data.out_of_pocket_max.toLocaleString()}` : 'Not specified'}</span>
+                </div>
+            </div>
+            ${financialData.insurance_data.coverage_details && financialData.insurance_data.coverage_details.length > 0 ? `
+            <div class="modal-section">
+                <h4>📋 Coverage Details</h4>
+                <ul class="recommendations-list">
+                    ${financialData.insurance_data.coverage_details.map(detail => `<li>${detail}</li>`).join('')}
+                </ul>
+            </div>
+            ` : ''}
+        </div>
+        ` : ''}
                 </div>
             `;
             
@@ -3020,6 +3109,76 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             alert("Agent 3 functionality is coming soon!");
         });
+    }
+
+    // Check for transferred context from Agent 2
+    function checkForTransferredContext() {
+        const context = sessionStorage.getItem('agent3_document_context');
+        if (context) {
+            try {
+                const data = JSON.parse(context);
+                console.log('📋 Found transferred context from Agent 2:', data);
+                
+                // Show success message about transferred context
+                const successMessage = document.createElement('div');
+                successMessage.className = 'success-message';
+                successMessage.innerHTML = `
+                    <div class="success-content">
+                        <h4>✅ Document Transferred Successfully</h4>
+                        <p>Your document from Agent 2 has been loaded. You can now create a dispute for this bill.</p>
+                        <button class="btn-small" onclick="this.parentElement.parentElement.remove()">Dismiss</button>
+                    </div>
+                `;
+                
+                // Insert at the top of the agent-3-page
+                const agent3Page = document.getElementById('agent-3-page');
+                if (agent3Page) {
+                    agent3Page.insertBefore(successMessage, agent3Page.firstChild);
+                }
+                
+                // Pre-populate dispute form if it exists
+                prePopulateDisputeForm(data);
+                
+                // Clear the context after use
+                sessionStorage.removeItem('agent3_document_context');
+                
+            } catch (error) {
+                console.error('❌ Error parsing transferred context:', error);
+                sessionStorage.removeItem('agent3_document_context');
+            }
+        }
+    }
+    
+    // Pre-populate dispute form with transferred document data
+    function prePopulateDisputeForm(contextData) {
+        const documentData = contextData.documentData;
+        if (!documentData || !documentData.financial_data) return;
+        
+        const fd = documentData.financial_data;
+        
+        // Pre-fill form fields if they exist
+        const billAmountInput = document.getElementById('bill-amount');
+        const serviceDescriptionInput = document.getElementById('service-description');
+        const providerNameInput = document.getElementById('provider-name');
+        const billDateInput = document.getElementById('bill-date');
+        
+        if (billAmountInput && fd.total_charged) {
+            billAmountInput.value = fd.total_charged.toFixed(2);
+        }
+        
+        if (serviceDescriptionInput && fd.service_description) {
+            serviceDescriptionInput.value = fd.service_description;
+        }
+        
+        if (providerNameInput && fd.provider_name) {
+            providerNameInput.value = fd.provider_name;
+        }
+        
+        if (billDateInput && fd.bill_date) {
+            billDateInput.value = fd.bill_date;
+        }
+        
+        console.log('📝 Pre-populated dispute form with transferred document data');
     }
 
     // Make functions globally available for onclick handlers

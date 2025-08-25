@@ -10,6 +10,104 @@ import vertexai
 from vertexai.generative_models import GenerativeModel
 import traceback
 
+def extract_insurance_data(search_text):
+    """
+    Extract insurance plan data from document text.
+    """
+    insurance_data = {
+        'deductible': None,
+        'copay': None,
+        'coinsurance': None,
+        'out_of_pocket_max': None,
+        'network_type': None,
+        'coverage_details': []
+    }
+    
+    try:
+        # Extract deductible
+        deductible_patterns = [
+            r'deductible.*?\$?([\d,]+)',
+            r'\$?([\d,]+).*?deductible',
+            r'individual.*?deductible.*?\$?([\d,]+)',
+            r'family.*?deductible.*?\$?([\d,]+)'
+        ]
+        
+        for pattern in deductible_patterns:
+            match = re.search(pattern, search_text, re.IGNORECASE)
+            if match:
+                amount = match.group(1).replace(',', '')
+                insurance_data['deductible'] = float(amount)
+                break
+        
+        # Extract copay
+        copay_patterns = [
+            r'copay.*?\$?([\d,]+)',
+            r'\$?([\d,]+).*?copay',
+            r'office.*?visit.*?copay.*?\$?([\d,]+)',
+            r'primary.*?care.*?copay.*?\$?([\d,]+)'
+        ]
+        
+        for pattern in copay_patterns:
+            match = re.search(pattern, search_text, re.IGNORECASE)
+            if match:
+                amount = match.group(1).replace(',', '')
+                insurance_data['copay'] = float(amount)
+                break
+        
+        # Extract coinsurance
+        coinsurance_patterns = [
+            r'coinsurance.*?(\d+)%',
+            r'(\d+)%.*?coinsurance',
+            r'patient.*?responsibility.*?(\d+)%'
+        ]
+        
+        for pattern in coinsurance_patterns:
+            match = re.search(pattern, search_text, re.IGNORECASE)
+            if match:
+                insurance_data['coinsurance'] = int(match.group(1))
+                break
+        
+        # Extract out-of-pocket maximum
+        oop_patterns = [
+            r'out.*?of.*?pocket.*?maximum.*?\$?([\d,]+)',
+            r'out.*?of.*?pocket.*?max.*?\$?([\d,]+)',
+            r'\$?([\d,]+).*?out.*?of.*?pocket'
+        ]
+        
+        for pattern in oop_patterns:
+            match = re.search(pattern, search_text, re.IGNORECASE)
+            if match:
+                amount = match.group(1).replace(',', '')
+                insurance_data['out_of_pocket_max'] = float(amount)
+                break
+        
+        # Extract network type
+        if 'ppo' in search_text.lower():
+            insurance_data['network_type'] = 'PPO'
+        elif 'hmo' in search_text.lower():
+            insurance_data['network_type'] = 'HMO'
+        elif 'epo' in search_text.lower():
+            insurance_data['network_type'] = 'EPO'
+        elif 'pos' in search_text.lower():
+            insurance_data['network_type'] = 'POS'
+        
+        # Extract coverage details
+        coverage_keywords = [
+            'preventive care', 'prescription drugs', 'emergency room',
+            'urgent care', 'specialist visits', 'laboratory services',
+            'imaging', 'surgery', 'hospitalization', 'mental health'
+        ]
+        
+        for keyword in coverage_keywords:
+            if keyword in search_text.lower():
+                insurance_data['coverage_details'].append(keyword)
+        
+        return insurance_data
+        
+    except Exception as e:
+        print(f"Error extracting insurance data: {e}")
+        return insurance_data
+
 def extract_financial_data(analysis_json, extracted_text):
     """
     Extract structured financial data from the analysis results and document text.
@@ -84,6 +182,8 @@ def extract_financial_data(analysis_json, extracted_text):
         # Determine document type
         if 'eob' in search_text or 'explanation of benefits' in search_text:
             financial_data['document_type'] = 'eob'
+        elif 'insurance' in search_text or 'policy' in search_text or 'coverage' in search_text or 'benefits' in search_text:
+            financial_data['document_type'] = 'insurance_plan'
         elif 'bill' in search_text or 'statement' in search_text:
             financial_data['document_type'] = 'bill'
         else:
@@ -112,6 +212,10 @@ def extract_financial_data(analysis_json, extracted_text):
             if financial_data['insurance_paid'] > 0:
                 financial_data['patient_owed'] = financial_data['total_charged'] - financial_data['insurance_paid']
         
+        # Extract insurance plan data if this is an insurance document
+        if financial_data['document_type'] == 'insurance_plan':
+            financial_data['insurance_data'] = extract_insurance_data(search_text)
+        
         return financial_data
         
     except Exception as e:
@@ -126,7 +230,15 @@ def extract_financial_data(analysis_json, extracted_text):
             'provider': None,
             'document_type': None,
             'account_number': None,
-            'patient_name': None
+            'patient_name': None,
+            'insurance_data': {
+                'deductible': None,
+                'copay': None,
+                'coinsurance': None,
+                'out_of_pocket_max': None,
+                'network_type': None,
+                'coverage_details': []
+            }
         }
 
 def process_medical_bill(event, context):

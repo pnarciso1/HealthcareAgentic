@@ -3138,6 +3138,328 @@ button:disabled, input:disabled, textarea:disabled {
     }
 }
 
+/* --- ABOUT US PAGE STYLES --- */
+.about-us-content {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem 0;
+}
+
+.about-section {
+    margin-bottom: 3rem;
+}
+
+.about-section h2 {
+    color: var(--text-primary);
+    font-size: 1.75rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.about-section p {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    line-height: 1.7;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.problem-intro {
+    font-size: 1.25rem !important;
+    font-weight: 600;
+    color: var(--text-primary) !important;
+    margin-bottom: 2rem !important;
+}
+
+.problem-stats {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    margin: 2rem 0;
+}
+
+.stat-card {
+    background: var(--background-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    border-color: var(--primary-blue);
+    transform: translateY(-2px);
+}
+
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--primary-blue);
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    color: var(--text-secondary);
+    font-size: 1rem;
+    line-height: 1.4;
+}
+
+.problem-conclusion {
+    font-size: 1.25rem !important;
+    font-weight: 600;
+    color: var(--text-primary) !important;
+    margin-top: 2rem !important;
+}
+
+.approach-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    margin: 2rem 0;
+}
+
+.approach-card {
+    background: var(--background-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.approach-card:hover {
+    border-color: var(--primary-blue);
+    transform: translateY(-2px);
+}
+
+.approach-icon {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+}
+
+.approach-card h3 {
+    color: var(--text-primary);
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+}
+
+.approach-card p {
+    color: var(--text-secondary);
+    font-size: 1rem;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.approach-conclusion {
+    font-size: 1.1rem !important;
+    font-style: italic;
+    color: var(--text-secondary) !important;
+    margin-top: 2rem !important;
+}
+
+.commitment-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    margin: 2rem 0;
+}
+
+.commitment-card {
+    background: var(--background-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.commitment-card:hover {
+    border-color: var(--primary-blue);
+    transform: translateY(-2px);
+}
+
+.commitment-icon {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+}
+
+.commitment-card h3 {
+    color: var(--text-primary);
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+}
+
+.commitment-card p {
+    color: var(--text-secondary);
+    font-size: 1rem;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.commitment-conclusion {
+    font-size: 1.1rem !important;
+    font-weight: 600;
+    color: var(--text-primary) !important;
+    margin-top: 2rem !important;
+}
+
+.team-intro {
+    font-size: 1.1rem !important;
+    color: var(--text-secondary) !important;
+    text-align: center !important;
+    margin-bottom: 2rem !important;
+}
+
+.team-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+/* Add visual separation between founders and advisors */
+.team-member-card:nth-child(4) {
+    margin-bottom: 3rem;
+}
+
+.team-member-card:nth-child(5) {
+    margin-top: 1rem;
+}
+
+.team-member-card {
+    background: var(--background-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.team-member-card:hover {
+    border-color: var(--primary-blue);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(79, 70, 229, 0.15);
+}
+
+.team-member-card.founder {
+    border-left: 4px solid var(--primary-blue);
+}
+
+.team-member-card.advisor {
+    border-left: 4px solid var(--success-green);
+}
+
+.member-photo {
+    position: relative;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.member-photo img {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+.team-member-card:hover .member-photo img {
+    border-color: var(--primary-blue);
+}
+
+.linkedin-link {
+    position: absolute;
+    top: 0;
+    right: 50%;
+    transform: translateX(50%);
+    background: var(--primary-blue);
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    opacity: 0;
+    margin-top: 90px;
+}
+
+.team-member-card:hover .linkedin-link {
+    opacity: 1;
+}
+
+.linkedin-link:hover {
+    background: var(--primary-blue-hover);
+    transform: translateX(50%) scale(1.1);
+}
+
+.member-info {
+    text-align: center;
+}
+
+.member-info h3 {
+    color: var(--text-primary);
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem 0;
+}
+
+.member-role {
+    color: var(--primary-blue);
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.25rem;
+}
+
+.team-member-card.advisor .member-role {
+    color: var(--success-green);
+}
+
+.member-credentials {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-style: italic;
+    margin-bottom: 1rem;
+}
+
+.member-experience {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin-bottom: 1rem;
+    text-align: left;
+}
+
+.company-logos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+    align-items: center;
+}
+
+.company-logos img {
+    height: 24px;
+    width: auto;
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+    filter: grayscale(100%);
+}
+
+.company-logos img:hover {
+    opacity: 1;
+    filter: grayscale(0%);
+}
+
 /* --- NEW: PRICING PAGE STYLES --- */
 .pricing-container {
     text-align: center;
@@ -4645,6 +4967,66 @@ button:disabled, input:disabled, textarea:disabled {
 
 .btn-link {
     background: none;
+}
+
+/* Success message for transferred context */
+.success-message {
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    color: white;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+    animation: slideInDown 0.3s ease-out;
+}
+
+.success-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.success-content h4 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.success-content p {
+    margin: 0;
+    flex: 1;
+    font-size: 0.95rem;
+    opacity: 0.95;
+}
+
+.success-content button {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.success-content button:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+}
+
+@keyframes slideInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.btn-link {
     border: none;
     color: var(--primary-blue);
     text-decoration: underline;
@@ -5436,5 +5818,94 @@ button:disabled, input:disabled, textarea:disabled {
     
     .confidence-levels {
         gap: 0.75rem;
+    }
+}
+
+/* --- ABOUT US PAGE RESPONSIVE STYLES --- */
+@media (min-width: 768px) {
+    .problem-stats {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .approach-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .commitment-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .team-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .member-photo img {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .linkedin-link {
+        margin-top: 70px;
+    }
+}
+
+@media (min-width: 1024px) {
+    .about-us-content {
+        padding: 3rem 0;
+    }
+    
+    .about-section h2 {
+        font-size: 2rem;
+    }
+    
+    .about-section p {
+        font-size: 1.2rem;
+    }
+    
+    .problem-intro {
+        font-size: 1.5rem !important;
+    }
+    
+    .problem-conclusion {
+        font-size: 1.5rem !important;
+    }
+    
+    .approach-conclusion {
+        font-size: 1.2rem !important;
+    }
+    
+    .commitment-conclusion {
+        font-size: 1.3rem !important;
+    }
+    
+    .team-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.5rem;
+    }
+    
+    /* Founders row (first 4 cards) */
+    .team-grid .team-member-card:nth-child(-n+4) {
+        grid-column: span 1;
+        margin-bottom: 2rem;
+    }
+    
+    /* Advisors row (last 2 cards) - centered */
+    .team-grid .team-member-card:nth-child(5) {
+        grid-column: 2;
+        margin-top: 1rem;
+    }
+    
+    .team-grid .team-member-card:nth-child(6) {
+        grid-column: 3;
+        margin-top: 1rem;
+    }
+    
+    .member-photo img {
+        width: 110px;
+        height: 110px;
+    }
+    
+    .linkedin-link {
+        margin-top: 80px;
     }
 }
