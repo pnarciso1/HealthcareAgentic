@@ -46,7 +46,7 @@ const db = getFirestore(app);
         const stripe = Stripe('pk_live_51Q1BbeH0nOEj29DyC8yCJIq8elEieHjz3f2LaUAPFILAk0TR1SfqrWdNNNeprOEpEfCjtQLWP15yDykhXEzugu1200z3flyMhO');
 
         // Backend URL configuration
-        const BACKEND_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+        const BACKEND_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
             ? 'http://127.0.0.1:5000' 
             : 'https://healthcareagentic-backend-974408923536.us-central1.run.app'; 
 
@@ -134,6 +134,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalTitle = document.getElementById('modal-title');
     const modalContent = document.getElementById('modal-content');
     const closeModal = document.getElementById('close-modal');
+    
+    // Q&A Modal elements
+    const qaModal = document.getElementById('qa-modal');
+    const qaMessages = document.getElementById('qa-messages');
+    const qaQuestion = document.getElementById('qa-question');
+    const qaSubmit = document.getElementById('qa-submit');
+    const closeQAModalBtn = document.getElementById('close-qa-modal');
 
     // New Agent 2 elements
     const categoryUploads = document.querySelectorAll('.category-upload');
@@ -879,6 +886,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             snapshot.forEach(doc => {
                 const analysis = doc.data();
+                analysis.id = doc.id; // Add the document ID to the analysis object
                 analyses.push(analysis);
             });
             
@@ -1037,6 +1045,16 @@ document.addEventListener('DOMContentLoaded', () => {
             askQuestionsBtn.classList.add('btn-small');
             askQuestionsBtn.textContent = 'Ask Questions';
             askQuestionsBtn.disabled = analysis.status !== 'completed';
+            askQuestionsBtn.addEventListener('click', () => {
+                console.log('--- DEBUG: Analysis object:', analysis);
+                console.log('--- DEBUG: Analysis ID:', analysis.id);
+                const documentData = {
+                    type: analysis.financial_data?.document_type === 'eob' ? 'EOB Statement' : 'Medical Bill',
+                    filename: analysis.original_filename,
+                    analysis: analysis
+                };
+                showQAModal(analysis.id, documentData);
+            });
             docActions.appendChild(askQuestionsBtn);
             
             // Add dispute button for bills with red flags
@@ -1369,14 +1387,14 @@ document.addEventListener('DOMContentLoaded', () => {
         // Set modal title
         modalTitle.textContent = `Document Details: ${analysis.original_filename}`;
         
-        // Generate modal content
-        const content = generateModalContent(analysis);
-        modalContent.innerHTML = content;
-        
-        // Show modal
-        documentDetailsModal.classList.remove('hidden');
-        document.body.style.overflow = 'hidden'; // Prevent background scrolling
-    }
+                    // Generate modal content
+            const content = generateModalContent(analysis);
+            modalContent.innerHTML = content;
+            
+            // Show modal
+            documentDetailsModal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden'; // Prevent background scrolling
+        }
     
     function closeDocumentModal() {
         if (!documentDetailsModal) return;
@@ -1565,7 +1583,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 getDocs(q).then(snapshot => {
                     const analyses = [];
                     snapshot.forEach(doc => {
-                        analyses.push(doc.data());
+                        const analysis = doc.data();
+                        analysis.id = doc.id; // Add the document ID to the analysis object
+                        analyses.push(analysis);
                     });
                     
                     console.log('Total analyses found:', analyses.length);
@@ -1785,10 +1805,207 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Placeholder for Agent 3 form
     const agent3Form = document.getElementById('agent3-challenge-form');
+    
+    // Q&A Modal Event Listeners
+    if (closeQAModalBtn) {
+        closeQAModalBtn.addEventListener('click', closeQAModal);
+    }
+    
+    if (qaModal) {
+        qaModal.addEventListener('click', (e) => {
+            if (e.target === qaModal) {
+                closeQAModal();
+            }
+        });
+    }
+    
+    if (qaSubmit) {
+        qaSubmit.addEventListener('click', () => {
+            const question = qaQuestion ? qaQuestion.value.trim() : '';
+            if (question) {
+                askDocumentQuestion(question);
+                qaQuestion.value = '';
+            }
+        });
+    }
+    
+    if (qaQuestion) {
+        qaQuestion.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const question = qaQuestion.value.trim();
+                if (question) {
+                    askDocumentQuestion(question);
+                    qaQuestion.value = '';
+                }
+            }
+        });
+    }
+    
+    // Q&A Modal functionality
+    function showQAModal(documentId, documentData) {
+        console.log('--- DEBUG: showQAModal called with documentId:', documentId);
+        console.log('--- DEBUG: documentData:', documentData);
+        
+        if (!qaModal || !qaMessages) return;
+        
+        // Clear previous messages
+        qaMessages.innerHTML = '';
+        
+        // Add welcome message
+        const welcomeMessage = `
+            <div class="qa-message ai">
+                <div class="qa-message-bubble">
+                    <strong>Document Assistant</strong><br>
+                    I can help you understand this ${documentData.type || 'document'}. Ask me anything about the charges, codes, or any confusing terms you see.
+                </div>
+            </div>
+        `;
+        qaMessages.innerHTML = welcomeMessage;
+        
+        // Store document context for Q&A
+        qaModal.dataset.documentId = documentId;
+        qaModal.dataset.documentData = JSON.stringify(documentData);
+        
+        console.log('--- DEBUG: Stored documentId in dataset:', qaModal.dataset.documentId);
+        
+        // Show modal
+        qaModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+    
+    function closeQAModal() {
+        if (!qaModal) return;
+        
+        qaModal.classList.add('hidden');
+        document.body.style.overflow = '';
+        
+        // Clear input
+        if (qaQuestion) qaQuestion.value = '';
+    }
+    
+    function addQAMessage(sender, message, isAgent3Handoff = false) {
+        if (!qaMessages) return;
+        
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `qa-message ${sender}`;
+        
+        let bubbleContent = `<div class="qa-message-bubble">${message}</div>`;
+        
+        // Add Agent 3 handoff if needed
+        if (isAgent3Handoff) {
+            bubbleContent += `
+                <div class="agent3-handoff">
+                    <h4>🚨 Dispute Resolution Available</h4>
+                    <p>I can help you dispute this bill! Our Dispute Resolution Agent can challenge incorrect charges and potentially save you money.</p>
+                    <div class="agent3-handoff-buttons">
+                        <button class="btn-primary" onclick="transferToAgent3()">Transfer to Dispute Agent</button>
+                        <button class="btn-secondary" onclick="continueQASession()">Continue Q&A</button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        messageDiv.innerHTML = bubbleContent;
+        qaMessages.appendChild(messageDiv);
+        qaMessages.scrollTop = qaMessages.scrollHeight;
+    }
+    
+    async function askDocumentQuestion(question) {
+        const documentId = qaModal.dataset.documentId;
+        const documentData = JSON.parse(qaModal.dataset.documentData || '{}');
+        
+        console.log('--- DEBUG: askDocumentQuestion called with question:', question);
+        console.log('--- DEBUG: Retrieved documentId from dataset:', documentId);
+        console.log('--- DEBUG: Retrieved documentData from dataset:', documentData);
+        
+        if (!documentId || !question.trim()) return;
+        
+        // Add user question to chat
+        addQAMessage('user', question);
+        
+        // Show thinking indicator
+        const thinkingDiv = document.createElement('div');
+        thinkingDiv.className = 'qa-message ai';
+        thinkingDiv.innerHTML = '<div class="qa-message-bubble">Thinking...</div>';
+        qaMessages.appendChild(thinkingDiv);
+        qaMessages.scrollTop = qaMessages.scrollHeight;
+        
+        try {
+            const user = auth.currentUser;
+            if (!user) throw new Error('User not authenticated');
+            
+            const idToken = await user.getIdToken();
+            const response = await fetch(`${BACKEND_URL}/api/document-qa`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${idToken}`
+                },
+                body: JSON.stringify({
+                    documentId: documentId,
+                    question: question
+                })
+            });
+            
+            if (!response.ok) throw new Error('Failed to get answer');
+            
+            const data = await response.json();
+            
+            // Remove thinking indicator
+            qaMessages.removeChild(thinkingDiv);
+            
+            // Add AI response
+            addQAMessage('ai', data.answer, data.dispute_intent);
+            
+        } catch (error) {
+            // Remove thinking indicator
+            qaMessages.removeChild(thinkingDiv);
+            
+            // Add error message
+            addQAMessage('ai', `Sorry, I couldn't process your question. Please try again.`);
+            console.error('Q&A Error:', error);
+        }
+    }
+    
+    function transferToAgent3() {
+        // Store document context for Agent 3
+        const documentId = qaModal.dataset.documentId;
+        const documentData = JSON.parse(qaModal.dataset.documentData || '{}');
+        
+        // Store in session storage for Agent 3
+        sessionStorage.setItem('agent3_document_context', JSON.stringify({
+            documentId: documentId,
+            documentData: documentData,
+            source: 'agent2_qa'
+        }));
+        
+        // Close Q&A modal
+        closeQAModal();
+        
+        // Navigate to Agent 3
+        showPage('agent-3-page');
+        
+        // Show success message
+        setTimeout(() => {
+            alert('Successfully transferred to Dispute Resolution Agent! Your document context has been preserved.');
+        }, 100);
+    }
+    
+    function continueQASession() {
+        // Remove the handoff UI and continue with Q&A
+        const handoffElement = qaMessages.querySelector('.agent3-handoff');
+        if (handoffElement) {
+            handoffElement.remove();
+        }
+    }
     if (agent3Form) {
         agent3Form.addEventListener('submit', (e) => {
             e.preventDefault();
             alert("Agent 3 functionality is coming soon!");
         });
     }
+
+    // Make functions globally available for onclick handlers
+    window.transferToAgent3 = transferToAgent3;
+    window.continueQASession = continueQASession;
 });

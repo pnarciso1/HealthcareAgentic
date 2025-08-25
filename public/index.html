@@ -764,6 +764,28 @@
             </div>
         </div>
 
+        <!-- Document Q&A Modal -->
+        <div id="qa-modal" class="modal hidden">
+            <div class="modal-overlay"></div>
+            <div class="modal-content qa-modal-content">
+                <div class="modal-header">
+                    <h3>Ask About This Document</h3>
+                    <button id="close-qa-modal" class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="qa-chat-container">
+                        <div class="qa-messages" id="qa-messages">
+                            <!-- Q&A messages will appear here -->
+                        </div>
+                        <div class="qa-input-area">
+                            <input type="text" id="qa-question" placeholder="Ask a question about this document...">
+                            <button id="qa-submit" class="btn-primary">Ask</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- PAGE: AGENT 3 - DISPUTE INCORRECT BILLS -->
         <main id="agent-3-page" class="page hidden" style="position: relative;">
             <div class="coming-soon-overlay">
@@ -873,6 +895,6 @@
 
     </div>
 
-    <script type="module" src="app.js"></script>
+    <script type="module" src="app.js?v=1.4"></script>
 </body>
 </html>
