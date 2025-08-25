@@ -4552,3 +4552,889 @@ button:disabled, input:disabled, textarea:disabled {
         font-size: 1rem;
     }
 }
+
+/* --- AGENT 3 DISPUTE DASHBOARD STYLES --- */
+
+.dispute-dashboard {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+.dashboard-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.dashboard-header h2 {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+.dashboard-header p {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+}
+
+.quick-actions {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.quick-actions button {
+    min-width: 150px;
+}
+
+.dispute-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background-color: var(--background-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.2s ease-in-out;
+}
+
+.stat-card:hover {
+    border-color: var(--primary-blue);
+    transform: translateY(-2px);
+}
+
+.stat-card h4 {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.recent-disputes-section {
+    background-color: var(--background-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.section-header h3 {
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.btn-link {
+    background: none;
+    border: none;
+    color: var(--primary-blue);
+    text-decoration: underline;
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 0;
+}
+
+.btn-link:hover {
+    color: var(--primary-blue-hover);
+}
+
+.recent-disputes {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.dispute-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background-color: var(--background-dark);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    transition: all 0.2s ease-in-out;
+}
+
+.dispute-item:hover {
+    border-color: var(--primary-blue);
+}
+
+.dispute-info h4 {
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+    font-size: 1rem;
+}
+
+.dispute-info p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin: 0.25rem 0;
+}
+
+.dispute-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Dispute Detail Modal Styles */
+.dispute-detail-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.detail-section {
+    background-color: var(--background-dark);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+}
+
+.detail-section h4 {
+    color: var(--text-primary);
+    margin: 0 0 1rem 0;
+    font-size: 1.1rem;
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.detail-item label {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.detail-item span {
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-badge.draft {
+    background-color: var(--warning-yellow);
+    color: #000;
+}
+
+.status-badge.submitted {
+    background-color: var(--primary-blue);
+    color: white;
+}
+
+.status-badge.in_progress {
+    background-color: var(--warning-yellow);
+    color: #000;
+}
+
+.status-badge.resolved {
+    background-color: var(--success-green);
+    color: white;
+}
+
+.dispute-letter-content {
+    background-color: white;
+    color: #333;
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    font-family: 'Georgia', serif;
+    line-height: 1.6;
+    white-space: pre-line;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.detail-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+/* Dispute Editor Styles */
+.dispute-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.editor-section {
+    background-color: var(--background-dark);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+}
+
+.editor-section h4 {
+    color: var(--text-primary);
+    margin: 0 0 1rem 0;
+    font-size: 1.1rem;
+}
+
+.editor-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.editor-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.editor-item label {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.editor-item span {
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+.letter-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+#dispute-letter-editor {
+    width: 100%;
+    min-height: 300px;
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background-color: white;
+    color: #333;
+    font-family: 'Georgia', serif;
+    font-size: 1rem;
+    line-height: 1.6;
+    resize: vertical;
+}
+
+#dispute-letter-editor:focus {
+    outline: none;
+    border-color: var(--primary-blue);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.editor-tips {
+    background-color: var(--background-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.editor-tips p {
+    color: var(--text-primary);
+    margin: 0 0 0.75rem 0;
+    font-weight: 500;
+}
+
+.editor-tips ul {
+    margin: 0;
+    padding-left: 1.5rem;
+}
+
+.editor-tips li {
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.editor-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+/* Dispute Creation Flow */
+.dispute-creation-flow {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+.dispute-step {
+    background-color: var(--background-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.dispute-step h3 {
+    margin-bottom: 1.5rem;
+    color: var(--text-primary);
+}
+
+.document-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+}
+
+.document-card {
+    background-color: var(--background-dark);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.document-card:hover {
+    border-color: var(--primary-blue);
+    transform: translateY(-2px);
+}
+
+.doc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.doc-type {
+    font-size: 1.2rem;
+    color: var(--text-primary);
+}
+
+.doc-status {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.doc-status.completed {
+    background-color: var(--success-green);
+    color: white;
+}
+
+.doc-status.processing {
+    background-color: var(--warning-yellow);
+    color: white;
+}
+
+.doc-status.failed {
+    background-color: #ef4444;
+    color: white;
+}
+
+.document-card h4 {
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.document-card p {
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+}
+
+/* Error Analysis */
+.error-analysis-results {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.error-card {
+    background-color: var(--background-dark);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+    transition: all 0.2s ease-in-out;
+}
+
+.error-card.high {
+    border-left: 4px solid #ef4444;
+}
+
+.error-card.medium {
+    border-left: 4px solid var(--warning-yellow);
+}
+
+.error-card.low {
+    border-left: 4px solid var(--text-secondary);
+}
+
+.error-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.error-header h4 {
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.confidence-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.confidence-badge.high {
+    background-color: #ef4444;
+    color: white;
+}
+
+.confidence-badge.medium {
+    background-color: var(--warning-yellow);
+    color: white;
+}
+
+.confidence-badge.low {
+    background-color: var(--text-secondary);
+    color: white;
+}
+
+.error-card p {
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+}
+
+.error-evidence {
+    background-color: var(--background-card);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.error-evidence strong {
+    color: var(--text-primary);
+}
+
+/* Dispute Management */
+.dispute-management {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+.management-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.header-left h2 {
+    margin: 0;
+}
+
+.management-header h2 {
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.management-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.management-actions input,
+.management-actions select {
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background-color: var(--background-card);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+
+.management-actions input::placeholder {
+    color: var(--text-secondary);
+}
+
+.disputes-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* Dispute Letter Preview */
+.dispute-letter-preview {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+.letter-preview {
+    background-color: var(--background-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-top: 1.5rem;
+}
+
+.letter-content {
+    background-color: white;
+    color: #333;
+    padding: 2rem;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    font-family: 'Georgia', serif;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+    white-space: pre-line;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.letter-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+/* Welcome Guide Styles */
+.welcome-guide {
+    background-color: var(--background-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.guide-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.guide-header h3 {
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.guide-toggle {
+    background-color: var(--primary-blue);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.guide-toggle:hover {
+    background-color: var(--primary-blue-hover);
+}
+
+.guide-content {
+    border-top: 1px solid var(--border-color);
+    padding-top: 1rem;
+}
+
+.guide-steps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.guide-step {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+}
+
+.step-number {
+    background-color: var(--primary-blue);
+    color: white;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.step-content h4 {
+    color: var(--text-primary);
+    margin: 0 0 0.5rem 0;
+    font-size: 1rem;
+}
+
+.step-content p {
+    color: var(--text-secondary);
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.guide-tips {
+    background-color: var(--background-dark);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.guide-tips h4 {
+    color: var(--text-primary);
+    margin: 0 0 0.75rem 0;
+}
+
+.guide-tips ul {
+    margin: 0;
+    padding-left: 1.5rem;
+}
+
+.guide-tips li {
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+/* Step Header and Progress */
+.step-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.step-header h3 {
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.step-progress {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.progress-step {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    font-weight: 600;
+    background-color: var(--background-dark);
+    border: 2px solid var(--border-color);
+    color: var(--text-secondary);
+}
+
+.progress-step.active {
+    background-color: var(--primary-blue);
+    border-color: var(--primary-blue);
+    color: white;
+}
+
+.progress-step.completed {
+    background-color: var(--success-green);
+    border-color: var(--success-green);
+    color: white;
+}
+
+.progress-line {
+    width: 2rem;
+    height: 2px;
+    background-color: var(--border-color);
+}
+
+/* Step Instructions */
+.step-instructions {
+    background-color: var(--background-dark);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.step-instructions p {
+    color: var(--text-primary);
+    margin: 0 0 1rem 0;
+    font-size: 1rem;
+}
+
+.instruction-tips,
+.letter-tips {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.tip {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.tip-icon {
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+/* Confidence Explanation */
+.confidence-explanation {
+    margin-top: 1rem;
+}
+
+.confidence-explanation h4 {
+    color: var(--text-primary);
+    margin: 0 0 0.75rem 0;
+    font-size: 1rem;
+}
+
+.confidence-levels {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.confidence-level {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.confidence-dot {
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.confidence-dot.high {
+    background-color: #ef4444;
+}
+
+.confidence-dot.medium {
+    background-color: var(--warning-yellow);
+}
+
+.confidence-dot.low {
+    background-color: var(--text-secondary);
+}
+
+/* Step Actions */
+.step-actions {
+    display: flex;
+    justify-content: flex-start;
+    margin-top: 1.5rem;
+}
+
+/* Mobile Responsiveness for Dispute Dashboard */
+@media (max-width: 768px) {
+    .dispute-dashboard,
+    .dispute-creation-flow,
+    .dispute-management,
+    .dispute-letter-preview {
+        padding: 1rem;
+    }
+    
+    .quick-actions {
+        flex-direction: column;
+    }
+    
+    .quick-actions button {
+        width: 100%;
+    }
+    
+    .dispute-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .management-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .management-actions {
+        flex-direction: column;
+    }
+    
+    .letter-actions {
+        flex-direction: column;
+    }
+    
+    .document-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .guide-steps {
+        grid-template-columns: 1fr;
+    }
+    
+    .step-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .step-progress {
+        justify-content: center;
+    }
+    
+    .confidence-levels {
+        gap: 0.75rem;
+    }
+}

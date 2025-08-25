@@ -141,6 +141,36 @@ document.addEventListener('DOMContentLoaded', () => {
     const qaQuestion = document.getElementById('qa-question');
     const qaSubmit = document.getElementById('qa-submit');
     const closeQAModalBtn = document.getElementById('close-qa-modal');
+    
+    // Agent 3 Dispute Dashboard elements
+    const agent3Page = document.getElementById('agent3-page');
+    const disputeDashboard = document.getElementById('dispute-dashboard');
+    const disputeCreationFlow = document.getElementById('dispute-creation-flow');
+    const disputeManagement = document.getElementById('dispute-management');
+    const disputeLetterPreview = document.getElementById('dispute-letter-preview');
+    
+    // Dispute Detail Modal elements
+    const disputeDetailModal = document.getElementById('dispute-detail-modal');
+    const disputeDetailTitle = document.getElementById('dispute-detail-title');
+    const disputeDetailContent = document.getElementById('dispute-detail-content');
+    const closeDisputeModal = document.getElementById('close-dispute-modal');
+    
+    // Dispute Dashboard elements
+    const disputeOverview = document.getElementById('dispute-overview');
+    const quickActions = document.getElementById('quick-actions');
+    const recentDisputes = document.getElementById('recent-disputes');
+    const disputeStats = document.getElementById('dispute-stats');
+    
+    // Dispute Creation elements
+    const documentSelection = document.getElementById('document-selection');
+    const errorAnalysis = document.getElementById('error-analysis');
+    const disputeLetterGeneration = document.getElementById('dispute-letter-generation');
+    const disputeSubmission = document.getElementById('dispute-submission');
+    
+    // Dispute Management elements
+    const disputesList = document.getElementById('disputes-list');
+    const disputeFilters = document.getElementById('dispute-filters');
+    const disputeSearch = document.getElementById('dispute-search');
 
     // New Agent 2 elements
     const categoryUploads = document.querySelectorAll('.category-upload');
@@ -286,6 +316,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const pageToShow = document.getElementById(pageId);
         if (pageToShow) {
             pageToShow.classList.remove('hidden');
+            
+            // Initialize specific pages
+            if (pageId === 'agent-3-page') {
+                console.log('📄 Agent 3 page shown, initializing...');
+                initializeAgent3();
+            } else if (pageId === 'agent-2-page') {
+                if (auth.currentUser) {
+                    listenForAnalysisResults(auth.currentUser.uid);
+                }
+            }
         }
     };
 
@@ -626,6 +666,968 @@ document.addEventListener('DOMContentLoaded', () => {
     downloadAppealTemplate.addEventListener('click', () => alert("Template download functionality is coming soon!"));
     downloadChecklistTemplate.addEventListener('click', () => alert("Checklist download functionality is coming soon!"));
 
+
+    // --- AGENT 3 DISPUTE SYSTEM FUNCTIONS ---
+    
+    // Global variables for dispute system
+    let userDisputes = [];
+    let currentDisputeDocument = null;
+    let currentDisputeAnalysis = null;
+    
+    // Initialize Agent 3 dispute system
+    function initializeAgent3() {
+        console.log('🚀 Initializing Agent 3 dispute system...');
+        if (agent3Page) {
+            // Load disputes data first, then setup UI
+            loadDisputeDashboard().then(() => {
+                setupDisputeEventListeners();
+                console.log('✅ Agent 3 initialization complete');
+            }).catch(error => {
+                console.error('❌ Error initializing Agent 3:', error);
+                setupDisputeEventListeners();
+            });
+        }
+    }
+    
+    // Show main page (Agent selection)
+    window.showMainPage = function() {
+        console.log('🏠 Navigating to main page...');
+        showAppPage('agent-selection-page');
+        
+        // Ensure the main page content is properly loaded
+        setTimeout(() => {
+            console.log('🔄 Refreshing main page content...');
+            updateUIAfterLogin();
+        }, 100);
+    };
+    
+    // Load dispute dashboard data
+    async function loadDisputeDashboard() {
+        console.log('📊 Loading dispute dashboard...');
+        try {
+            const user = auth.currentUser;
+            if (!user) {
+                console.error('❌ No authenticated user found');
+                return;
+            }
+            
+            console.log('👤 User authenticated, getting ID token...');
+            const idToken = await user.getIdToken();
+            
+            console.log('📡 Fetching user disputes from backend...');
+            console.log('🌐 Backend URL:', BACKEND_URL);
+            const response = await fetch(`${BACKEND_URL}/api/dispute/user-disputes`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${idToken}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            console.log('📥 Response status:', response.status);
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('✅ Disputes data received:', data);
+                userDisputes = data.disputes || [];
+                console.log('📋 User disputes loaded:', userDisputes);
+                updateDisputeDashboard();
+            } else {
+                const errorText = await response.text();
+                console.error('❌ Error loading disputes:', response.status, errorText);
+            }
+        } catch (error) {
+            console.error('❌ Error loading dispute dashboard:', error);
+        }
+    }
+    
+    // Update dispute dashboard UI
+    function updateDisputeDashboard() {
+        console.log('📊 Updating dispute dashboard, userDisputes:', userDisputes);
+        
+        if (!disputeStats || !recentDisputes) {
+            console.error('❌ Dispute dashboard containers not found');
+            return;
+        }
+        
+        // Update statistics
+        const totalDisputes = userDisputes.length;
+        const activeDisputes = userDisputes.filter(d => d.status === 'draft' || d.status === 'submitted' || d.status === 'in_progress').length;
+        const resolvedDisputes = userDisputes.filter(d => d.status === 'resolved').length;
+        const totalAmountDisputed = userDisputes.reduce((sum, d) => sum + (d.amount_disputed || 0), 0);
+        
+        console.log('📈 Statistics:', { totalDisputes, activeDisputes, resolvedDisputes, totalAmountDisputed });
+        
+        disputeStats.innerHTML = `
+            <div class="stat-card">
+                <h4>Total Disputes</h4>
+                <div class="stat-value">${totalDisputes}</div>
+            </div>
+            <div class="stat-card">
+                <h4>Active Disputes</h4>
+                <div class="stat-value">${activeDisputes}</div>
+            </div>
+            <div class="stat-card">
+                <h4>Resolved</h4>
+                <div class="stat-value">${resolvedDisputes}</div>
+            </div>
+            <div class="stat-card">
+                <h4>Amount Disputed</h4>
+                <div class="stat-value">$${totalAmountDisputed.toFixed(2)}</div>
+            </div>
+        `;
+        
+        // Update recent disputes
+        const recentDisputesList = userDisputes.slice(0, 5);
+        console.log('📋 Recent disputes list:', recentDisputesList);
+        
+        if (recentDisputesList.length > 0) {
+            recentDisputes.innerHTML = recentDisputesList.map(dispute => {
+                // Handle date formatting for recent disputes
+                let createdDate = 'Unknown';
+                if (dispute.created_at) {
+                    try {
+                        if (dispute.created_at.toDate && typeof dispute.created_at.toDate === 'function') {
+                            createdDate = dispute.created_at.toDate().toLocaleDateString();
+                        } else if (dispute.created_at.seconds) {
+                            createdDate = new Date(dispute.created_at.seconds * 1000).toLocaleDateString();
+                        } else if (typeof dispute.created_at === 'string') {
+                            createdDate = new Date(dispute.created_at).toLocaleDateString();
+                        } else if (typeof dispute.created_at === 'number') {
+                            createdDate = new Date(dispute.created_at).toLocaleDateString();
+                        } else {
+                            createdDate = new Date().toLocaleDateString();
+                        }
+                    } catch (error) {
+                        console.error('❌ Error parsing date for recent dispute:', dispute.id, error);
+                        createdDate = 'Unknown';
+                    }
+                }
+                
+                return `
+                    <div class="dispute-item">
+                        <div class="dispute-info">
+                            <h4>${dispute.error_type?.replace('_', ' ').toUpperCase() || 'UNKNOWN ERROR'}</h4>
+                            <p>Status: ${dispute.status || 'Unknown'}</p>
+                            <p>Created: ${createdDate}</p>
+                            <p>Amount: $${dispute.amount_disputed?.toFixed(2) || '0.00'}</p>
+                        </div>
+                        <div class="dispute-actions">
+                            <button class="btn-small" onclick="viewDispute('${dispute.id}')">View</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        } else {
+            recentDisputes.innerHTML = '<p class="placeholder">No disputes yet. Start by analyzing a document!</p>';
+        }
+        
+        console.log('✅ Dispute dashboard updated successfully');
+    }
+    
+    // Setup dispute event listeners
+    function setupDisputeEventListeners() {
+        // Quick action buttons
+        if (quickActions) {
+            quickActions.innerHTML = `
+                <button class="btn-primary" onclick="startNewDispute()">Start New Dispute</button>
+                <button class="btn-secondary" onclick="viewAllDisputes()">View All Disputes</button>
+                <button class="btn-secondary" onclick="uploadDocumentForDispute()">Upload Document</button>
+            `;
+        }
+    }
+    
+    // Start new dispute flow
+    window.startNewDispute = function() {
+        if (disputeCreationFlow) {
+            disputeCreationFlow.classList.remove('hidden');
+            disputeDashboard.classList.add('hidden');
+            showDocumentSelection();
+        }
+    };
+    
+    // Show document selection for dispute
+    function showDocumentSelection() {
+        if (!documentSelection) return;
+        
+        // Get user's analyzed documents
+        const analysesCollectionRef = collection(db, 'users', auth.currentUser.uid, 'analyses');
+        const q = query(analysesCollectionRef, orderBy('created_at', 'desc'));
+        
+        getDocs(q).then(snapshot => {
+            const documents = [];
+            snapshot.forEach(doc => {
+                const analysis = doc.data();
+                analysis.id = doc.id;
+                documents.push(analysis);
+            });
+            
+            documentSelection.innerHTML = `
+                <h3>Select Document to Dispute</h3>
+                <div class="document-grid">
+                    ${documents.map(doc => `
+                        <div class="document-card">
+                            <div class="doc-header">
+                                <span class="doc-type">${doc.financial_data?.document_type === 'eob' ? '📋 EOB' : '📄 Bill'}</span>
+                                <span class="doc-status ${doc.status}">${doc.status}</span>
+                            </div>
+                            <h4>${doc.original_filename || 'Unknown Document'}</h4>
+                            <p>Amount: $${doc.financial_data?.total_charged?.toFixed(2) || '0.00'}</p>
+                            <button class="btn-primary" onclick="selectDocumentForDispute('${doc.id}')">Analyze for Disputes</button>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        });
+    }
+    
+    // Select document for dispute
+    window.selectDocumentForDispute = async function(documentId) {
+        console.log('🔍 Starting dispute analysis for document:', documentId);
+        try {
+            const user = auth.currentUser;
+            if (!user) {
+                console.error('❌ No authenticated user found');
+                return;
+            }
+            
+            console.log('👤 User authenticated, getting ID token...');
+            const idToken = await user.getIdToken();
+            
+            console.log('📡 Sending request to backend...');
+            const response = await fetch(`${BACKEND_URL}/api/dispute/analyze-document`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${idToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ documentId })
+            });
+            
+            console.log('📥 Response status:', response.status);
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('✅ Analysis successful:', data);
+                currentDisputeDocument = documentId;
+                currentDisputeAnalysis = data;
+                showErrorAnalysis(data);
+            } else {
+                const errorText = await response.text();
+                console.error('❌ Error analyzing document for disputes:', response.status, errorText);
+                alert('Error analyzing document. Please try again.');
+            }
+        } catch (error) {
+            console.error('❌ Error selecting document for dispute:', error);
+            alert('Network error. Please check your connection and try again.');
+        }
+    };
+    
+    // Show error analysis results
+    function showErrorAnalysis(analysisData) {
+        console.log('📊 Showing error analysis results:', analysisData);
+        
+        if (!errorAnalysis) {
+            console.error('❌ Error analysis container not found');
+            return;
+        }
+        
+        // Hide document selection and show error analysis
+        if (documentSelection) {
+            documentSelection.classList.add('hidden');
+        }
+        errorAnalysis.classList.remove('hidden');
+        
+        const { detected_errors, dispute_recommendations } = analysisData;
+        
+        errorAnalysis.innerHTML = `
+            <div class="step-header">
+                <h3>🔍 Step 2: Review Detected Billing Errors</h3>
+                <div class="step-progress">
+                    <span class="progress-step completed">1</span>
+                    <span class="progress-line"></span>
+                    <span class="progress-step active">2</span>
+                    <span class="progress-line"></span>
+                    <span class="progress-step">3</span>
+                    <span class="progress-line"></span>
+                    <span class="progress-step">4</span>
+                </div>
+            </div>
+            <div class="step-instructions">
+                <p>Our AI has analyzed your document and found potential billing errors. Review each error and its confidence level.</p>
+                <div class="confidence-explanation">
+                    <h4>Confidence Levels:</h4>
+                    <div class="confidence-levels">
+                        <div class="confidence-level high">
+                            <span class="confidence-dot high"></span>
+                            <span><strong>High:</strong> Very likely to be a billing error</span>
+                        </div>
+                        <div class="confidence-level medium">
+                            <span class="confidence-dot medium"></span>
+                            <span><strong>Medium:</strong> Possibly a billing error, worth investigating</span>
+                        </div>
+                        <div class="confidence-level low">
+                            <span class="confidence-dot low"></span>
+                            <span><strong>Low:</strong> May be an error, but less certain</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="error-analysis-results">
+                ${detected_errors && detected_errors.length > 0 ? detected_errors.map(error => `
+                    <div class="error-card ${error.confidence}">
+                        <div class="error-header">
+                            <h4>${error.type.replace('_', ' ').toUpperCase()}</h4>
+                            <span class="confidence-badge ${error.confidence}">${error.confidence}</span>
+                        </div>
+                        <p>${error.description}</p>
+                        <div class="error-evidence">
+                            <strong>Evidence:</strong> ${error.evidence}
+                        </div>
+                        <button class="btn-primary" onclick="generateDisputeLetter('${error.type}')">Generate Dispute Letter</button>
+                    </div>
+                `).join('') : '<p class="placeholder">No billing errors detected in this document.</p>'}
+            </div>
+            <div class="step-actions">
+                <button class="btn-secondary" onclick="showDocumentSelection()">← Back to Document Selection</button>
+            </div>
+        `;
+        
+        console.log('✅ Error analysis step displayed successfully');
+    }
+    
+    // Generate dispute letter
+    window.generateDisputeLetter = async function(errorType) {
+        console.log('📝 Generating dispute letter for error type:', errorType);
+        try {
+            const user = auth.currentUser;
+            if (!user) {
+                console.error('❌ No authenticated user found');
+                return;
+            }
+            
+            console.log('👤 User authenticated, getting ID token...');
+            const idToken = await user.getIdToken();
+            
+            console.log('📡 Sending request to generate letter...');
+            const response = await fetch(`${BACKEND_URL}/api/dispute/generate-letter`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${idToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ 
+                    documentId: currentDisputeDocument,
+                    errorType: errorType
+                })
+            });
+            
+            console.log('📥 Response status:', response.status);
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('✅ Letter generated successfully:', data);
+                showDisputeLetterPreview(data.dispute_letter, errorType);
+            } else {
+                const errorText = await response.text();
+                console.error('❌ Error generating dispute letter:', response.status, errorText);
+                alert('Error generating dispute letter. Please try again.');
+            }
+        } catch (error) {
+            console.error('❌ Error generating dispute letter:', error);
+            alert('Network error. Please check your connection and try again.');
+        }
+    };
+    
+    // Show dispute letter preview
+    function showDisputeLetterPreview(letter, errorType) {
+        console.log('📄 Showing dispute letter preview for error type:', errorType);
+        
+        if (!disputeLetterPreview) {
+            console.error('❌ Dispute letter preview container not found');
+            return;
+        }
+        
+        // Hide error analysis and show letter preview
+        if (errorAnalysis) {
+            errorAnalysis.classList.add('hidden');
+        }
+        disputeLetterPreview.classList.remove('hidden');
+        
+        disputeLetterPreview.innerHTML = `
+            <div class="step-header">
+                <h3>📝 Step 3: Review Your Dispute Letter</h3>
+                <div class="step-progress">
+                    <span class="progress-step completed">1</span>
+                    <span class="progress-line"></span>
+                    <span class="progress-step completed">2</span>
+                    <span class="progress-line"></span>
+                    <span class="progress-step active">3</span>
+                    <span class="progress-line"></span>
+                    <span class="progress-step">4</span>
+                </div>
+            </div>
+            <div class="step-instructions">
+                <p>Review the generated dispute letter. You can edit it if needed before submitting.</p>
+                <div class="letter-tips">
+                    <div class="tip">
+                        <span class="tip-icon">✏️</span>
+                        <span>Feel free to personalize the letter with your specific details</span>
+                    </div>
+                    <div class="tip">
+                        <span class="tip-icon">📧</span>
+                        <span>You can send this letter via email, mail, or fax to the provider</span>
+                    </div>
+                    <div class="tip">
+                        <span class="tip-icon">📅</span>
+                        <span>Keep track of when you send it - most providers respond within 30 days</span>
+                    </div>
+                </div>
+            </div>
+            <div class="letter-preview">
+                <div class="letter-content">
+                    ${letter.replace(/\n/g, '<br>')}
+                </div>
+                <div class="letter-actions">
+                    <button class="btn-secondary" onclick="editDisputeLetter()">✏️ Edit Letter</button>
+                    <button class="btn-secondary" onclick="downloadLetter()">📥 Download PDF</button>
+                    <button class="btn-primary" onclick="submitDispute('${errorType}')">📤 Submit Dispute</button>
+                </div>
+            </div>
+            <div class="step-actions">
+                <button class="btn-secondary" onclick="showErrorAnalysis()">← Back to Error Analysis</button>
+            </div>
+        `;
+        
+        console.log('✅ Dispute letter preview displayed successfully');
+    }
+    
+    // Submit dispute
+    window.submitDispute = async function(errorType) {
+        console.log('📤 Submitting dispute for error type:', errorType);
+        try {
+            const user = auth.currentUser;
+            if (!user) {
+                console.error('❌ No authenticated user found');
+                return;
+            }
+            
+            console.log('👤 User authenticated, getting ID token...');
+            const idToken = await user.getIdToken();
+            
+            const disputeData = {
+                documentId: currentDisputeDocument,
+                errorType: errorType,
+                disputeLetter: currentDisputeAnalysis.dispute_recommendations.find(r => r.error_type === errorType)?.dispute_letter || '',
+                amountDisputed: currentDisputeAnalysis.detected_errors.find(e => e.type === errorType)?.amount || 0
+            };
+            
+            console.log('📋 Submitting dispute data:', disputeData);
+            
+            const response = await fetch(`${BACKEND_URL}/api/dispute/submit-dispute`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${idToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(disputeData)
+            });
+            
+            console.log('📥 Response status:', response.status);
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('✅ Dispute submitted successfully:', data);
+                alert('Dispute submitted successfully!');
+                
+                // Refresh the disputes data
+                await loadDisputeDashboard();
+                showDisputeDashboard();
+            } else {
+                const errorText = await response.text();
+                console.error('❌ Error submitting dispute:', response.status, errorText);
+                alert('Error submitting dispute. Please try again.');
+            }
+        } catch (error) {
+            console.error('❌ Error submitting dispute:', error);
+            alert('Network error. Please check your connection and try again.');
+        }
+    };
+    
+    // Show dispute dashboard
+    window.showDisputeDashboard = function() {
+        console.log('🏠 Showing dispute dashboard...');
+        if (disputeDashboard) {
+            disputeDashboard.classList.remove('hidden');
+            disputeCreationFlow.classList.add('hidden');
+            disputeLetterPreview.classList.add('hidden');
+            // Refresh data when showing dashboard
+            loadDisputeDashboard();
+        }
+    };
+    
+    // Refresh disputes data
+    window.refreshDisputes = function() {
+        console.log('🔄 Refreshing disputes data...');
+        loadDisputeDashboard();
+    };
+    
+    // View all disputes
+    window.viewAllDisputes = function() {
+        console.log('📋 Viewing all disputes...');
+        if (disputeManagement) {
+            disputeManagement.classList.remove('hidden');
+            disputeDashboard.classList.add('hidden');
+            // Refresh disputes data before showing the list
+            loadDisputeDashboard().then(() => {
+                loadDisputesList();
+            });
+        }
+    };
+    
+    // Load disputes list
+    function loadDisputesList() {
+        console.log('📋 Loading disputes list, userDisputes:', userDisputes);
+        if (!disputesList) {
+            console.error('❌ Disputes list container not found');
+            return;
+        }
+        
+        if (!userDisputes || userDisputes.length === 0) {
+            disputesList.innerHTML = '<p class="placeholder">No disputes found. Start by creating a new dispute!</p>';
+            return;
+        }
+        
+        disputesList.innerHTML = userDisputes.map(dispute => {
+            console.log('📄 Processing dispute:', dispute);
+            
+            // Handle different date formats from Firestore
+            let createdDate = 'Unknown';
+            if (dispute.created_at) {
+                try {
+                    if (dispute.created_at.toDate && typeof dispute.created_at.toDate === 'function') {
+                        // Firestore Timestamp
+                        createdDate = dispute.created_at.toDate().toLocaleDateString();
+                    } else if (dispute.created_at.seconds) {
+                        // Firestore Timestamp object without toDate method
+                        createdDate = new Date(dispute.created_at.seconds * 1000).toLocaleDateString();
+                    } else if (typeof dispute.created_at === 'string') {
+                        // ISO string
+                        createdDate = new Date(dispute.created_at).toLocaleDateString();
+                    } else if (typeof dispute.created_at === 'number') {
+                        // Unix timestamp
+                        createdDate = new Date(dispute.created_at).toLocaleDateString();
+                    } else {
+                        // Fallback
+                        createdDate = new Date().toLocaleDateString();
+                    }
+                } catch (error) {
+                    console.error('❌ Error parsing date for dispute:', dispute.id, error);
+                    createdDate = 'Unknown';
+                }
+            }
+            
+            return `
+                <div class="dispute-item">
+                    <div class="dispute-info">
+                        <h4>${dispute.error_type?.replace('_', ' ').toUpperCase() || 'UNKNOWN ERROR'}</h4>
+                        <p>Status: ${dispute.status || 'Unknown'}</p>
+                        <p>Created: ${createdDate}</p>
+                        <p>Amount: $${dispute.amount_disputed?.toFixed(2) || '0.00'}</p>
+                    </div>
+                    <div class="dispute-actions">
+                        <button class="btn-small" onclick="viewDispute('${dispute.id}')">View</button>
+                        <button class="btn-small" onclick="editDispute('${dispute.id}')">Edit</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        console.log('✅ Disputes list loaded successfully');
+    }
+    
+    // View specific dispute
+    window.viewDispute = function(disputeId) {
+        console.log('👁️ Viewing dispute:', disputeId);
+        const dispute = userDisputes.find(d => d.id === disputeId);
+        if (dispute) {
+            showDisputeDetail(dispute);
+        } else {
+            console.error('❌ Dispute not found:', disputeId);
+            alert('Dispute not found. Please refresh and try again.');
+        }
+    };
+    
+    // Show dispute detail modal
+    function showDisputeDetail(dispute) {
+        console.log('📄 Showing dispute detail:', dispute);
+        
+        if (!disputeDetailModal || !disputeDetailTitle || !disputeDetailContent) {
+            console.error('❌ Dispute detail modal elements not found');
+            return;
+        }
+        
+        // Handle date formatting
+        let createdDate = 'Unknown';
+        if (dispute.created_at) {
+            try {
+                if (dispute.created_at.toDate && typeof dispute.created_at.toDate === 'function') {
+                    createdDate = dispute.created_at.toDate().toLocaleDateString();
+                } else if (dispute.created_at.seconds) {
+                    createdDate = new Date(dispute.created_at.seconds * 1000).toLocaleDateString();
+                } else if (typeof dispute.created_at === 'string') {
+                    createdDate = new Date(dispute.created_at).toLocaleDateString();
+                } else if (typeof dispute.created_at === 'number') {
+                    createdDate = new Date(dispute.created_at).toLocaleDateString();
+                } else {
+                    createdDate = new Date().toLocaleDateString();
+                }
+            } catch (error) {
+                console.error('❌ Error parsing date for dispute:', dispute.id, error);
+                createdDate = 'Unknown';
+            }
+        }
+        
+        // Update modal title
+        disputeDetailTitle.textContent = `${dispute.error_type?.replace('_', ' ').toUpperCase() || 'UNKNOWN ERROR'} Dispute`;
+        
+        // Update modal content
+        disputeDetailContent.innerHTML = `
+            <div class="dispute-detail-info">
+                <div class="detail-section">
+                    <h4>Dispute Information</h4>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <label>Error Type:</label>
+                            <span>${dispute.error_type?.replace('_', ' ').toUpperCase() || 'Unknown'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <label>Status:</label>
+                            <span class="status-badge ${dispute.status}">${dispute.status || 'Unknown'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <label>Created:</label>
+                            <span>${createdDate}</span>
+                        </div>
+                        <div class="detail-item">
+                            <label>Amount Disputed:</label>
+                            <span>$${dispute.amount_disputed?.toFixed(2) || '0.00'}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="detail-section">
+                    <h4>Dispute Letter</h4>
+                    <div class="dispute-letter-content">
+                        ${dispute.dispute_letter ? dispute.dispute_letter.replace(/\n/g, '<br>') : '<p class="placeholder">No dispute letter available.</p>'}
+                    </div>
+                </div>
+                
+                <div class="detail-section">
+                    <h4>Actions</h4>
+                    <div class="detail-actions">
+                        <button class="btn-secondary" onclick="editDispute('${dispute.id}')">✏️ Edit Dispute</button>
+                        <button class="btn-secondary" onclick="downloadDisputeLetter('${dispute.id}')">📥 Download Letter</button>
+                        <button class="btn-primary" onclick="submitDisputeUpdate('${dispute.id}')">📤 Submit Update</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Show modal
+        disputeDetailModal.classList.remove('hidden');
+        console.log('✅ Dispute detail modal displayed');
+    }
+    
+    // Edit dispute
+    window.editDispute = function(disputeId) {
+        console.log('✏️ Editing dispute:', disputeId);
+        const dispute = userDisputes.find(d => d.id === disputeId);
+        if (dispute) {
+            showDisputeEditor(dispute);
+        } else {
+            console.error('❌ Dispute not found for editing:', disputeId);
+            alert('Dispute not found. Please refresh and try again.');
+        }
+    };
+    
+    // Show dispute editor
+    function showDisputeEditor(dispute) {
+        console.log('📝 Showing dispute editor for:', dispute);
+        
+        if (!disputeDetailModal || !disputeDetailTitle || !disputeDetailContent) {
+            console.error('❌ Dispute detail modal elements not found');
+            return;
+        }
+        
+        // Update modal title
+        disputeDetailTitle.textContent = `Edit ${dispute.error_type?.replace('_', ' ').toUpperCase() || 'UNKNOWN ERROR'} Dispute`;
+        
+        // Update modal content with editable form
+        disputeDetailContent.innerHTML = `
+            <div class="dispute-editor">
+                <div class="editor-section">
+                    <h4>Dispute Information</h4>
+                    <div class="editor-grid">
+                        <div class="editor-item">
+                            <label>Error Type:</label>
+                            <span>${dispute.error_type?.replace('_', ' ').toUpperCase() || 'Unknown'}</span>
+                        </div>
+                        <div class="editor-item">
+                            <label>Status:</label>
+                            <span class="status-badge ${dispute.status}">${dispute.status || 'Unknown'}</span>
+                        </div>
+                        <div class="editor-item">
+                            <label>Amount Disputed:</label>
+                            <span>$${dispute.amount_disputed?.toFixed(2) || '0.00'}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="editor-section">
+                    <h4>Edit Dispute Letter</h4>
+                    <div class="letter-editor">
+                        <textarea id="dispute-letter-editor" rows="15" placeholder="Edit your dispute letter here...">${dispute.dispute_letter || ''}</textarea>
+                        <div class="editor-tips">
+                            <p><strong>💡 Tips for effective dispute letters:</strong></p>
+                            <ul>
+                                <li>Be specific about the billing error</li>
+                                <li>Include relevant dates and amounts</li>
+                                <li>Request a specific resolution</li>
+                                <li>Set a reasonable deadline for response</li>
+                                <li>Keep a professional tone</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="editor-section">
+                    <h4>Actions</h4>
+                    <div class="editor-actions">
+                        <button class="btn-secondary" onclick="cancelEdit()">❌ Cancel</button>
+                        <button class="btn-secondary" onclick="resetLetter('${dispute.id}')">🔄 Reset to Original</button>
+                        <button class="btn-primary" onclick="saveDisputeEdit('${dispute.id}')">💾 Save Changes</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Show modal
+        disputeDetailModal.classList.remove('hidden');
+        console.log('✅ Dispute editor displayed');
+    }
+    
+    // Guide toggle function
+    window.toggleGuide = function() {
+        const guide = document.getElementById('dispute-guide');
+        if (guide) {
+            guide.classList.toggle('hidden');
+        }
+    };
+    
+    // Navigation functions for dispute flow
+    window.showDocumentSelection = function() {
+        if (documentSelection) {
+            documentSelection.classList.remove('hidden');
+            errorAnalysis.classList.add('hidden');
+            disputeLetterPreview.classList.add('hidden');
+        }
+    };
+    
+    window.showErrorAnalysis = function() {
+        if (errorAnalysis && currentDisputeAnalysis) {
+            errorAnalysis.classList.remove('hidden');
+            documentSelection.classList.add('hidden');
+            disputeLetterPreview.classList.add('hidden');
+            showErrorAnalysis(currentDisputeAnalysis);
+        }
+    };
+    
+    // Download letter function
+    window.downloadLetter = function() {
+        // TODO: Implement PDF download functionality
+        alert('PDF download functionality coming soon!');
+    };
+    
+    // Edit letter function
+    window.editDisputeLetter = function() {
+        // TODO: Implement letter editing functionality
+        alert('Letter editing functionality coming soon!');
+    };
+    
+    // Close dispute detail modal
+    window.closeDisputeModal = function() {
+        if (disputeDetailModal) {
+            disputeDetailModal.classList.add('hidden');
+        }
+    };
+    
+    // Download dispute letter
+    window.downloadDisputeLetter = function(disputeId) {
+        console.log('📥 Downloading dispute letter for:', disputeId);
+        const dispute = userDisputes.find(d => d.id === disputeId);
+        if (dispute) {
+            downloadLetterAsPDF(dispute);
+        } else {
+            console.error('❌ Dispute not found for download:', disputeId);
+            alert('Dispute not found. Please refresh and try again.');
+        }
+    };
+    
+    // Download letter as PDF
+    function downloadLetterAsPDF(dispute) {
+        console.log('📄 Generating PDF for dispute:', dispute);
+        
+        // Create a formatted letter for PDF
+        const letterContent = formatLetterForPDF(dispute);
+        
+        // Create a blob with the letter content
+        const blob = new Blob([letterContent], { type: 'text/plain' });
+        
+        // Create download link
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = `dispute_letter_${dispute.error_type}_${new Date().toISOString().split('T')[0]}.txt`;
+        
+        // Trigger download
+        document.body.appendChild(a);
+        a.click();
+        
+        // Cleanup
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        console.log('✅ Letter downloaded successfully');
+    }
+    
+    // Format letter for PDF/download
+    function formatLetterForPDF(dispute) {
+        const date = new Date().toLocaleDateString();
+        
+        let letterContent = `DISPUTE LETTER\n`;
+        letterContent += `Generated: ${date}\n`;
+        letterContent += `Error Type: ${dispute.error_type?.replace('_', ' ').toUpperCase() || 'UNKNOWN ERROR'}\n`;
+        letterContent += `Amount Disputed: $${dispute.amount_disputed?.toFixed(2) || '0.00'}\n`;
+        letterContent += `Status: ${dispute.status || 'Unknown'}\n`;
+        letterContent += `\n${'='.repeat(50)}\n\n`;
+        
+        if (dispute.dispute_letter) {
+            letterContent += dispute.dispute_letter;
+        } else {
+            letterContent += 'No dispute letter available.';
+        }
+        
+        letterContent += `\n\n${'='.repeat(50)}\n`;
+        letterContent += `Generated by MyCareClaim Dispute System\n`;
+        letterContent += `Date: ${date}\n`;
+        
+        return letterContent;
+    }
+    
+    // Submit dispute update
+    window.submitDisputeUpdate = function(disputeId) {
+        // TODO: Implement dispute update functionality
+        alert('Dispute update functionality coming soon!');
+    };
+    
+    // Cancel edit and return to view mode
+    window.cancelEdit = function() {
+        console.log('❌ Canceling edit...');
+        const disputeId = getCurrentEditingDisputeId();
+        if (disputeId) {
+            const dispute = userDisputes.find(d => d.id === disputeId);
+            if (dispute) {
+                showDisputeDetail(dispute);
+            }
+        }
+    };
+    
+    // Reset letter to original
+    window.resetLetter = function(disputeId) {
+        console.log('🔄 Resetting letter for dispute:', disputeId);
+        const dispute = userDisputes.find(d => d.id === disputeId);
+        if (dispute) {
+            // TODO: Fetch original letter from backend
+            alert('Reset functionality will be implemented to restore the original generated letter.');
+        }
+    };
+    
+    // Save dispute edit
+    window.saveDisputeEdit = async function(disputeId) {
+        console.log('💾 Saving dispute edit for:', disputeId);
+        const letterEditor = document.getElementById('dispute-letter-editor');
+        if (!letterEditor) {
+            console.error('❌ Letter editor not found');
+            return;
+        }
+        
+        const updatedLetter = letterEditor.value.trim();
+        if (!updatedLetter) {
+            alert('Please enter a dispute letter before saving.');
+            return;
+        }
+        
+        try {
+            const user = auth.currentUser;
+            if (!user) {
+                console.error('❌ No authenticated user found');
+                return;
+            }
+            
+            const idToken = await user.getIdToken();
+            const response = await fetch(`${BACKEND_URL}/api/dispute/update-dispute`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${idToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    disputeId: disputeId,
+                    disputeLetter: updatedLetter
+                })
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('✅ Dispute updated successfully:', data);
+                
+                // Update local dispute data
+                const disputeIndex = userDisputes.findIndex(d => d.id === disputeId);
+                if (disputeIndex !== -1) {
+                    userDisputes[disputeIndex].dispute_letter = updatedLetter;
+                }
+                
+                alert('Dispute letter updated successfully!');
+                
+                // Return to view mode
+                const dispute = userDisputes.find(d => d.id === disputeId);
+                if (dispute) {
+                    showDisputeDetail(dispute);
+                }
+            } else {
+                const errorText = await response.text();
+                console.error('❌ Error updating dispute:', response.status, errorText);
+                alert('Error updating dispute. Please try again.');
+            }
+        } catch (error) {
+            console.error('❌ Error saving dispute edit:', error);
+            alert('Network error. Please check your connection and try again.');
+        }
+    };
+    
+    // Helper function to get current editing dispute ID
+    function getCurrentEditingDisputeId() {
+        // This is a simple implementation - in a real app, you might store this in a variable
+        const disputeIdMatch = disputeDetailTitle.textContent.match(/Edit (.+) Dispute/);
+        if (disputeIdMatch) {
+            const errorType = disputeIdMatch[1].toLowerCase().replace(' ', '_');
+            const dispute = userDisputes.find(d => d.error_type === errorType);
+            return dispute ? dispute.id : null;
+        }
+        return null;
+    }
 
     // --- AUTH STATE LISTENER ---
     onAuthStateChanged(auth, (user) => {
@@ -1233,6 +2235,21 @@ document.addEventListener('DOMContentLoaded', () => {
     // Modal event listeners
     if (closeModal) {
         closeModal.addEventListener('click', closeDocumentModal);
+    }
+    
+    // Dispute detail modal event listeners
+    if (closeDisputeModal) {
+        closeDisputeModal.addEventListener('click', () => {
+            disputeDetailModal.classList.add('hidden');
+        });
+    }
+    
+    if (disputeDetailModal) {
+        disputeDetailModal.addEventListener('click', (e) => {
+            if (e.target === disputeDetailModal) {
+                disputeDetailModal.classList.add('hidden');
+            }
+        });
     }
     
     if (documentDetailsModal) {

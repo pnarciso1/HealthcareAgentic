@@ -787,37 +787,288 @@
         </div>
 
         <!-- PAGE: AGENT 3 - DISPUTE INCORRECT BILLS -->
-        <main id="agent-3-page" class="page hidden" style="position: relative;">
-            <div class="coming-soon-overlay">
-                <h2>Coming Soon</h2>
-                <p>This agent is currently under development. Check back later for updates!</p>
-            </div>
+        <main id="agent-3-page" class="page hidden">
             <div class="page-header">
                 <h1>🛡️ Dispute Incorrect Bills</h1>
                 <p>Don't pay for mistakes you don't owe. Fight billing errors with professional dispute letters and automated tracking.</p>
             </div>
-            <div class="agent3-form-container">
-                <form id="agent3-challenge-form">
-                    <h3>Step 1: Gather Information</h3>
-                    <div class="form-group"><label for="patient-name">Patient Name</label><input type="text" id="patient-name" placeholder="Enter patient's full name" disabled></div>
-                    <div class="form-group"><label for="date-of-service">Date of Service</label><input type="text" id="date-of-service" placeholder="MM/DD/YYYY" disabled></div>
-                    <div class="form-group"><label for="provider-name">Provider Name</label><input type="text" id="provider-name" placeholder="Enter the name of the healthcare provider" disabled></div>
-                    <div class="form-group"><label for="bill-amount">Bill Amount</label><input type="text" id="bill-amount" placeholder="Enter the total amount of the bill" disabled></div>
-                    
-                    <h3>Step 2: Describe the Issue</h3>
-                    <div class="form-group"><label for="issue-description">Issue Description</label><textarea id="issue-description" rows="4" placeholder="Describe the issue with the bill, e.g., incorrect charges, duplicate billing, etc." disabled></textarea></div>
 
-                    <h3>Step 3: Generate Challenge Letter</h3>
-                    <button type="submit" class="btn-primary" disabled>Generate Letter</button>
-                    
-                    <div class="form-group" style="margin-top: 2rem;"><label for="challenge-letter">Challenge Letter</label><textarea id="challenge-letter" rows="8" placeholder="Your generated letter will appear here..." readonly disabled></textarea></div>
-                    <button type="button" class="btn-secondary" disabled>Download Letter</button>
-                </form>
+            <!-- DISPUTE DASHBOARD -->
+            <div id="dispute-dashboard" class="dispute-dashboard">
+                <div class="dashboard-header">
+                    <div class="header-left">
+                        <button class="btn-secondary" onclick="showMainPage()">← Back to My AI Team</button>
+                        <div>
+                            <h2>📊 Dispute Overview</h2>
+                            <p>Track your disputes and manage billing errors</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Welcome Guide -->
+                <div class="welcome-guide">
+                    <div class="guide-header">
+                        <h3>🚀 How to Start a Dispute</h3>
+                        <button class="guide-toggle" onclick="toggleGuide()">Show/Hide Guide</button>
+                    </div>
+                    <div class="guide-content" id="dispute-guide">
+                        <div class="guide-steps">
+                            <div class="guide-step">
+                                <div class="step-number">1</div>
+                                <div class="step-content">
+                                    <h4>Upload or Select a Document</h4>
+                                    <p>Choose a medical bill or EOB that you want to dispute. You can upload a new document or select from previously analyzed documents.</p>
+                                </div>
+                            </div>
+                            <div class="guide-step">
+                                <div class="step-number">2</div>
+                                <div class="step-content">
+                                    <h4>Review Detected Errors</h4>
+                                    <p>Our AI will automatically scan your document for common billing errors like overcharging, duplicate charges, coding errors, and more.</p>
+                                </div>
+                            </div>
+                            <div class="guide-step">
+                                <div class="step-number">3</div>
+                                <div class="step-content">
+                                    <h4>Generate Dispute Letter</h4>
+                                    <p>For each detected error, we'll generate a professional dispute letter tailored to your specific situation and document.</p>
+                                </div>
+                            </div>
+                            <div class="guide-step">
+                                <div class="step-number">4</div>
+                                <div class="step-content">
+                                    <h4>Review and Submit</h4>
+                                    <p>Review the generated letter, make any edits if needed, and submit your dispute. We'll track the progress for you.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="guide-tips">
+                            <h4>💡 Pro Tips:</h4>
+                            <ul>
+                                <li><strong>Start with high-confidence errors:</strong> These are most likely to result in successful disputes</li>
+                                <li><strong>Keep evidence organized:</strong> Save copies of all correspondence and responses</li>
+                                <li><strong>Follow up regularly:</strong> Most providers respond within 30 days</li>
+                                <li><strong>Be persistent:</strong> Don't give up if your first dispute is denied</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div id="quick-actions" class="quick-actions">
+                    <button class="btn-primary" onclick="startNewDispute()">Start New Dispute</button>
+                    <button class="btn-secondary" onclick="viewAllDisputes()">View All Disputes</button>
+                    <button class="btn-secondary" onclick="uploadDocumentForDispute()">Upload Document</button>
+                    <button class="btn-secondary" onclick="refreshDisputes()">🔄 Refresh</button>
+                </div>
+
+                <!-- Dispute Statistics -->
+                <div id="dispute-stats" class="dispute-stats">
+                    <div class="stat-card">
+                        <h4>Total Disputes</h4>
+                        <div class="stat-value">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Active Disputes</h4>
+                        <div class="stat-value">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Resolved</h4>
+                        <div class="stat-value">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Amount Disputed</h4>
+                        <div class="stat-value">$0.00</div>
+                    </div>
+                </div>
+
+                <!-- Recent Disputes -->
+                <div class="recent-disputes-section">
+                    <div class="section-header">
+                        <h3>Recent Disputes</h3>
+                        <button class="btn-link" onclick="viewAllDisputes()">View All</button>
+                    </div>
+                    <div id="recent-disputes" class="recent-disputes">
+                        <p class="placeholder">No disputes yet. Start by analyzing a document!</p>
+                    </div>
+                </div>
             </div>
-            
-            <!-- Contact Human Section -->
-            <div class="contact-human-section">
-                <button id="contact-human-agent3" class="btn-secondary contact-human-btn">Contact Human</button>
+
+            <!-- DISPUTE CREATION FLOW -->
+            <div id="dispute-creation-flow" class="dispute-creation-flow hidden">
+                <!-- Document Selection -->
+                <div id="document-selection" class="dispute-step">
+                    <div class="step-header">
+                        <h3>📄 Step 1: Select Document to Dispute</h3>
+                        <div class="step-progress">
+                            <span class="progress-step active">1</span>
+                            <span class="progress-line"></span>
+                            <span class="progress-step">2</span>
+                            <span class="progress-line"></span>
+                            <span class="progress-step">3</span>
+                            <span class="progress-line"></span>
+                            <span class="progress-step">4</span>
+                        </div>
+                    </div>
+                    <div class="step-instructions">
+                        <p>Choose a medical bill or EOB that you want to dispute. We'll analyze it for potential billing errors.</p>
+                        <div class="instruction-tips">
+                            <div class="tip">
+                                <span class="tip-icon">💡</span>
+                                <span>Documents with red flags are most likely to have disputable errors</span>
+                            </div>
+                            <div class="tip">
+                                <span class="tip-icon">📋</span>
+                                <span>You can also upload a new document directly to Agent 3</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="document-grid">
+                        <!-- Documents will be loaded here -->
+                    </div>
+                    <div class="step-actions">
+                        <button class="btn-secondary" onclick="showDisputeDashboard()">← Back to Dashboard</button>
+                    </div>
+                </div>
+
+                <!-- Error Analysis -->
+                <div id="error-analysis" class="dispute-step hidden">
+                    <div class="step-header">
+                        <h3>🔍 Step 2: Review Detected Billing Errors</h3>
+                        <div class="step-progress">
+                            <span class="progress-step completed">1</span>
+                            <span class="progress-line"></span>
+                            <span class="progress-step active">2</span>
+                            <span class="progress-line"></span>
+                            <span class="progress-step">3</span>
+                            <span class="progress-line"></span>
+                            <span class="progress-step">4</span>
+                        </div>
+                    </div>
+                    <div class="step-instructions">
+                        <p>Our AI has analyzed your document and found potential billing errors. Review each error and its confidence level.</p>
+                        <div class="confidence-explanation">
+                            <h4>Confidence Levels:</h4>
+                            <div class="confidence-levels">
+                                <div class="confidence-level high">
+                                    <span class="confidence-dot high"></span>
+                                    <span><strong>High:</strong> Very likely to be a billing error</span>
+                                </div>
+                                <div class="confidence-level medium">
+                                    <span class="confidence-dot medium"></span>
+                                    <span><strong>Medium:</strong> Possibly a billing error, worth investigating</span>
+                                </div>
+                                <div class="confidence-level low">
+                                    <span class="confidence-dot low"></span>
+                                    <span><strong>Low:</strong> May be an error, but less certain</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="error-analysis-results">
+                        <!-- Error analysis will be shown here -->
+                    </div>
+                    <div class="step-actions">
+                        <button class="btn-secondary" onclick="showDocumentSelection()">← Back to Document Selection</button>
+                    </div>
+                </div>
+
+                <!-- Dispute Letter Generation -->
+                <div id="dispute-letter-generation" class="dispute-step hidden">
+                    <h3>Generate Dispute Letter</h3>
+                    <p>Select an error type above to generate a professional dispute letter.</p>
+                </div>
+
+                <!-- Dispute Submission -->
+                <div id="dispute-submission" class="dispute-step hidden">
+                    <h3>Submit Dispute</h3>
+                    <p>Review and submit your dispute.</p>
+                </div>
+            </div>
+
+            <!-- DISPUTE MANAGEMENT -->
+            <div id="dispute-management" class="dispute-management hidden">
+                <div class="management-header">
+                    <div class="header-left">
+                        <button class="btn-secondary" onclick="showDisputeDashboard()">← Back to Dashboard</button>
+                        <h2>All Disputes</h2>
+                    </div>
+                    <div class="management-actions">
+                        <input type="text" id="dispute-search" placeholder="Search disputes...">
+                        <select id="dispute-filters">
+                            <option value="all">All Status</option>
+                            <option value="draft">Draft</option>
+                            <option value="submitted">Submitted</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="resolved">Resolved</option>
+                        </select>
+                        <button class="btn-secondary" onclick="refreshDisputes()">🔄 Refresh</button>
+                    </div>
+                </div>
+                <div id="disputes-list" class="disputes-list">
+                    <!-- Disputes will be loaded here -->
+                </div>
+            </div>
+
+                <!-- DISPUTE DETAIL MODAL -->
+    <div id="dispute-detail-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="dispute-detail-title">Dispute Details</h3>
+                <button id="close-dispute-modal" class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="dispute-detail-content">
+                    <!-- Dispute details will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DISPUTE LETTER PREVIEW -->
+    <div id="dispute-letter-preview" class="dispute-letter-preview hidden">
+                <div class="step-header">
+                    <h3>📝 Step 3: Review Your Dispute Letter</h3>
+                    <div class="step-progress">
+                        <span class="progress-step completed">1</span>
+                        <span class="progress-line"></span>
+                        <span class="progress-step completed">2</span>
+                        <span class="progress-line"></span>
+                        <span class="progress-step active">3</span>
+                        <span class="progress-line"></span>
+                        <span class="progress-step">4</span>
+                    </div>
+                </div>
+                <div class="step-instructions">
+                    <p>Review the generated dispute letter. You can edit it if needed before submitting.</p>
+                    <div class="letter-tips">
+                        <div class="tip">
+                            <span class="tip-icon">✏️</span>
+                            <span>Feel free to personalize the letter with your specific details</span>
+                        </div>
+                        <div class="tip">
+                            <span class="tip-icon">📧</span>
+                            <span>You can send this letter via email, mail, or fax to the provider</span>
+                        </div>
+                        <div class="tip">
+                            <span class="tip-icon">📅</span>
+                            <span>Keep track of when you send it - most providers respond within 30 days</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="letter-preview">
+                    <div class="letter-content">
+                        <!-- Letter content will be shown here -->
+                    </div>
+                    <div class="letter-actions">
+                        <button class="btn-secondary" onclick="editDisputeLetter()">✏️ Edit Letter</button>
+                        <button class="btn-secondary" onclick="downloadLetter()">📥 Download PDF</button>
+                        <button class="btn-primary" onclick="submitDispute()">📤 Submit Dispute</button>
+                    </div>
+                </div>
+                <div class="step-actions">
+                    <button class="btn-secondary" onclick="showErrorAnalysis()">← Back to Error Analysis</button>
+                </div>
             </div>
         </main>
 
@@ -895,6 +1146,6 @@
 
     </div>
 
-    <script type="module" src="app.js?v=1.4"></script>
+    <script type="module" src="app.js?v=2.6"></script>
 </body>
 </html>
