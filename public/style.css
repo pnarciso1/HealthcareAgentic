@@ -5945,3 +5945,178 @@ button:disabled, input:disabled, textarea:disabled {
         margin-top: 80px;
     }
 }
+
+/* ===== DISPUTE TUTORIAL MODAL ===== */
+
+.tutorial-modal {
+    max-width: 900px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.tutorial-content {
+    margin-bottom: 2rem;
+}
+
+.tutorial-section {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: var(--background-card);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+}
+
+.tutorial-section:last-child {
+    margin-bottom: 0;
+}
+
+.tutorial-section h4 {
+    color: var(--primary-blue);
+    margin-bottom: 1rem;
+    font-size: 1.3rem;
+    font-weight: 600;
+}
+
+.tutorial-section p {
+    margin-bottom: 1rem;
+    line-height: 1.6;
+    color: var(--text-primary);
+}
+
+.tutorial-section ul {
+    margin: 1rem 0;
+    padding-left: 1.5rem;
+}
+
+.tutorial-section li {
+    margin-bottom: 0.75rem;
+    line-height: 1.5;
+    color: var(--text-primary);
+}
+
+.tutorial-section strong {
+    color: var(--primary-blue);
+}
+
+.tutorial-section em {
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.tutorial-step h4 {
+    color: var(--primary-blue);
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+}
+
+.tutorial-step p {
+    margin-bottom: 1rem;
+    line-height: 1.6;
+    color: var(--text-primary);
+}
+
+.tutorial-step ul {
+    margin: 1rem 0;
+    padding-left: 1.5rem;
+}
+
+.tutorial-step li {
+    margin-bottom: 0.5rem;
+    line-height: 1.5;
+    color: var(--text-primary);
+}
+
+.tutorial-step strong {
+    color: var(--primary-blue);
+}
+
+.tutorial-step em {
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.tutorial-actions-simple {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin: 2rem 0;
+    flex-wrap: wrap;
+}
+
+.tutorial-actions-simple button {
+    min-width: 140px;
+    padding: 0.75rem 1.5rem;
+}
+
+.tutorial-preference {
+    text-align: center;
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: var(--background-card);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.tutorial-preference label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    color: var(--text-primary);
+}
+
+.tutorial-preference input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary-blue);
+}
+
+/* Show Tutorial Button in Dashboard */
+.show-tutorial-btn {
+    background: var(--primary-blue);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.3s ease;
+}
+
+.show-tutorial-btn:hover {
+    background: var(--primary-blue-hover);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .tutorial-modal {
+        max-width: 95vw;
+        margin: 1rem;
+    }
+    
+    .tutorial-progress {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+    
+    .progress-dots {
+        justify-content: center;
+    }
+    
+    .tutorial-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .tutorial-actions button {
+        width: 100%;
+        max-width: 200px;
+    }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}

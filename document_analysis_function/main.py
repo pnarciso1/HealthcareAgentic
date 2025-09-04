@@ -384,6 +384,7 @@ def process_medical_bill(event, context):
         new_analysis_doc = {
             'analysis_results': analysis_json,
             'financial_data': financial_data,  # Add structured financial data
+            'extracted_text': extracted_text,  # CRITICAL: Save the extracted text for dispute letters
             'original_filename': original_filename,
             'gcs_uri': gcs_uri,
             'status': 'completed',

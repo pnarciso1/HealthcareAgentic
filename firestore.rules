@@ -1,0 +1,134 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ========================================
+    // USER DATA PROTECTION RULES
+    // ========================================
+    
+    // Users can only access their own data
+    match /users/{userId} {
+      // Allow read/write only if authenticated and accessing own data
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      // Subcollections are also protected by user ID
+      match /{collection}/{document=**} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+    
+    // ========================================
+    // SPECIFIC COLLECTION RULES
+    // ========================================
+    
+    // Document Q&A History - users can only access their own
+    match /document_qa_history/{documentId} {
+      allow read, write: if request.auth != null && 
+        resource.data.user_id == request.auth.uid;
+    }
+    
+    // ========================================
+    // SECURITY VALIDATIONS
+    // ========================================
+    
+    // Validate user data structure
+    match /users/{userId} {
+      allow create: if request.auth != null && 
+        request.auth.uid == userId &&
+        request.resource.data.keys().hasAll(['email', 'createdAt']) &&
+        request.resource.data.email is string &&
+        request.resource.data.createdAt is timestamp;
+      
+      allow update: if request.auth != null && 
+        request.auth.uid == userId &&
+        request.resource.data.keys().hasAll(['email']) &&
+        request.resource.data.email is string;
+    }
+    
+    // Validate analyses data structure
+    match /users/{userId}/analyses/{analysisId} {
+      allow create: if request.auth != null && 
+        request.auth.uid == userId &&
+        request.resource.data.keys().hasAll(['original_filename', 'status']) &&
+        request.resource.data.original_filename is string &&
+        request.resource.data.status in ['pending', 'processing', 'completed', 'failed'];
+      
+      allow update: if request.auth != null && 
+        request.auth.uid == userId &&
+        request.resource.data.status in ['pending', 'processing', 'completed', 'failed'];
+    }
+    
+    // Validate chat history data structure
+    match /users/{userId}/chat_history/{chatId} {
+      allow create: if request.auth != null && 
+        request.auth.uid == userId &&
+        request.resource.data.keys().hasAll(['question', 'answer']) &&
+        request.resource.data.question is string &&
+        request.resource.data.answer is string;
+    }
+    
+    // Validate disputes data structure
+    match /users/{userId}/disputes/{disputeId} {
+      allow create: if request.auth != null && 
+        request.auth.uid == userId &&
+        request.resource.data.keys().hasAll(['document_id', 'error_type', 'status']) &&
+        request.resource.data.error_type is string &&
+        request.resource.data.status in ['draft', 'submitted', 'in_progress', 'resolved'];
+      
+      allow update: if request.auth != null && 
+        request.auth.uid == userId &&
+        request.resource.data.status in ['draft', 'submitted', 'in_progress', 'resolved'];
+    }
+    
+    // ========================================
+    // DATA INTEGRITY RULES
+    // ========================================
+    
+    // Ensure document IDs cannot be manipulated
+    match /users/{userId}/analyses/{analysisId} {
+      allow read, write: if request.auth != null && 
+        request.auth.uid == userId &&
+        analysisId.matches('^[a-zA-Z0-9_-]+$'); // Only allow valid document IDs
+    }
+    
+    // Ensure dispute IDs cannot be manipulated
+    match /users/{userId}/disputes/{disputeId} {
+      allow read, write: if request.auth != null && 
+        request.auth.uid == userId &&
+        disputeId.matches('^[a-zA-Z0-9_-]+$'); // Only allow valid dispute IDs
+    }
+    
+    // ========================================
+    // AUDIT AND COMPLIANCE RULES
+    // ========================================
+    
+    // Ensure timestamps are always present and valid
+    match /users/{userId}/{collection}/{documentId} {
+      allow create: if request.auth != null && 
+        request.auth.uid == userId &&
+        request.resource.data.created_at is timestamp;
+      
+      allow update: if request.auth != null && 
+        request.auth.uid == userId &&
+        request.resource.data.updated_at is timestamp;
+    }
+    
+    // ========================================
+    // EMERGENCY ACCESS CONTROL
+    // ========================================
+    
+    // Emergency lockdown rule (uncomment in case of security breach)
+    // match /{document=**} {
+    //   allow read, write: if false; // Deny all access
+    // }
+    
+    // ========================================
+    // DEFAULT DENY RULE
+    // ========================================
+    
+    // By default, deny all access to any document not explicitly allowed
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -125,7 +125,8 @@ MyCareClaim is an AI-powered healthcare assistance platform designed to help use
   - `GET /api/dispute/user-disputes` - Get user's dispute history
   - `PUT /api/dispute/update-dispute` - Update dispute letter (ready for implementation)
 - **Frontend Features**:
-  - **Step-by-Step Guide**: Welcome guide with dispute process explanation
+  - **Interactive Tutorial**: Single-page comprehensive guide explaining the complete dispute workflow
+  - **Welcome Guide**: Step-by-step dispute process explanation with visual indicators
   - **Progress Tracking**: Visual progress indicators through dispute creation
   - **Confidence Levels**: High/Medium/Low confidence indicators for errors
   - **Professional UI**: Modal-based dispute detail and editing interface
@@ -137,6 +138,14 @@ MyCareClaim is an AI-powered healthcare assistance platform designed to help use
   - **Edit Capabilities**: Full letter editing with guidance
   - **Download Options**: Formatted dispute letter exports
   - **Status Tracking**: Real-time dispute status updates
+  - **Comprehensive Tutorial**: Auto-showing tutorial explains the complete workflow
+- **Tutorial System**:
+  - **Single-Page Design**: All tutorial content visible in one scrollable view
+  - **Auto-Display**: Shows automatically on first visit to Agent 3
+  - **User Preference**: "Don't show again" option with local storage
+  - **Manual Access**: "Show Tutorial" button always available in dashboard
+  - **Content Sections**: Document Analysis, Transfer Process, Capabilities, Limitations
+  - **Professional Design**: Clean card-based layout with proper spacing and typography
 - **Planned Features**:
   - Bill error detection
   - Professional dispute letter generation

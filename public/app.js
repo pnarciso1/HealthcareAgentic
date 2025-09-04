@@ -147,11 +147,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeQAModalBtn = document.getElementById('close-qa-modal');
     
     // Agent 3 Dispute Dashboard elements
-    const agent3Page = document.getElementById('agent3-page');
+    const agent3Page = document.getElementById('agent-3-page');
     const disputeDashboard = document.getElementById('dispute-dashboard');
     const disputeCreationFlow = document.getElementById('dispute-creation-flow');
     const disputeManagement = document.getElementById('dispute-management');
     const disputeLetterPreview = document.getElementById('dispute-letter-preview');
+    
+    // Debug: Check if elements are found
+    console.log('🔍 Agent 3 elements found:', {
+        agent3Page: !!agent3Page,
+        disputeDashboard: !!disputeDashboard,
+        disputeCreationFlow: !!disputeCreationFlow,
+        disputeManagement: !!disputeManagement,
+        disputeLetterPreview: !!disputeLetterPreview
+    });
     
     // Dispute Detail Modal elements
     const disputeDetailModal = document.getElementById('dispute-detail-modal');
@@ -230,13 +239,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // Agent 2 Chat helper functions
-    function addMessageToAgent2Chat(sender, message, isThinking = false) {
+    function addMessageToAgent2Chat(sender, message, documentId = null, isThinking = false) {
         if (!agent2ChatMessages) return;
         
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${sender}-message`;
         if (isThinking) {
             messageDiv.id = 'agent2-thinking-message';
+        }
+        if (documentId) {
+            messageDiv.setAttribute('data-document-id', documentId);
         }
         
         const bubbleDiv = document.createElement('div');
@@ -701,23 +713,89 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentDisputeDocument = null;
     let currentDisputeAnalysis = null;
     
+    // Define showDisputeDashboard function FIRST, before it's called
+    window.showDisputeDashboard = function() {
+        console.log('🏠 Showing dispute dashboard...');
+        if (disputeDashboard) {
+            disputeDashboard.classList.remove('hidden');
+            if (disputeCreationFlow) disputeCreationFlow.classList.add('hidden');
+            if (disputeLetterPreview) disputeLetterPreview.classList.add('hidden');
+            if (disputeManagement) disputeManagement.classList.add('hidden');
+            // Refresh data when showing dashboard
+            loadDisputeDashboard();
+            console.log('✅ Dashboard shown successfully');
+        } else {
+            console.error('❌ Dispute dashboard element not found');
+        }
+    };
+    
+    // Ensure function is globally available
+    if (typeof window.showDisputeDashboard === 'undefined') {
+        console.error('❌ showDisputeDashboard function failed to define');
+    } else {
+        console.log('✅ showDisputeDashboard function successfully defined');
+    }
+    
     // Initialize Agent 3 dispute system
     function initializeAgent3() {
         console.log('🚀 Initializing Agent 3 dispute system...');
-        if (agent3Page) {
-            // Load disputes data first, then setup UI
-            loadDisputeDashboard().then(() => {
-                setupDisputeEventListeners();
-                // Show the dashboard by default
-                showDisputeDashboard();
-                console.log('✅ Agent 3 initialization complete');
-            }).catch(error => {
-                console.error('❌ Error initializing Agent 3:', error);
-                setupDisputeEventListeners();
-                // Show the dashboard even if there's an error
-                showDisputeDashboard();
-            });
+        
+        // Check if elements exist
+        if (!agent3Page) {
+            console.error('❌ Agent 3 page element not found, retrying...');
+            // Retry after a short delay
+            setTimeout(() => {
+                const retryElement = document.getElementById('agent-3-page');
+                if (retryElement) {
+                    console.log('✅ Agent 3 page element found on retry');
+                    initializeAgent3();
+                } else {
+                    console.error('❌ Agent 3 page element still not found after retry');
+                }
+            }, 100);
+            return;
         }
+        
+        if (!disputeDashboard) {
+            console.error('❌ Dispute dashboard element not found');
+            return;
+        }
+        
+        console.log('✅ All required elements found, proceeding with initialization');
+        
+        // Ensure dashboard is visible immediately
+        disputeDashboard.classList.remove('hidden');
+        console.log('✅ Dashboard made visible immediately');
+        
+        // Load disputes data first, then setup UI
+        loadDisputeDashboard().then(() => {
+            setupDisputeEventListeners();
+            // Show the dashboard by default
+            if (typeof window.showDisputeDashboard === 'function') {
+                window.showDisputeDashboard();
+            } else {
+                console.error('❌ showDisputeDashboard function not found, manually showing dashboard');
+                // Fallback: manually show dashboard
+                if (disputeDashboard) {
+                    disputeDashboard.classList.remove('hidden');
+                    console.log('✅ Dashboard shown via fallback method');
+                }
+            }
+            console.log('✅ Agent 3 initialization complete');
+        }).catch(error => {
+            console.error('❌ Error initializing Agent 3:', error);
+            setupDisputeEventListeners();
+            // Show the dashboard even if there's an error
+            if (typeof window.showDisputeDashboard === 'function') {
+                window.showDisputeDashboard();
+            } else {
+                // Fallback: manually show dashboard
+                if (disputeDashboard) {
+                    disputeDashboard.classList.remove('hidden');
+                    console.log('✅ Dashboard shown via fallback method after error');
+                }
+            }
+        });
     }
     
     // Show main page (Agent selection)
@@ -1189,18 +1267,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
-    // Show dispute dashboard
-    window.showDisputeDashboard = function() {
-        console.log('🏠 Showing dispute dashboard...');
-        if (disputeDashboard) {
-            disputeDashboard.classList.remove('hidden');
-            disputeCreationFlow.classList.add('hidden');
-            disputeLetterPreview.classList.add('hidden');
-            disputeManagement.classList.add('hidden');
-            // Refresh data when showing dashboard
-            loadDisputeDashboard();
-        }
-    };
+    // Function already defined above - removing duplicate
     
     // Refresh disputes data
     window.refreshDisputes = function() {
@@ -1926,6 +1993,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 const analysis = doc.data();
                 analysis.id = doc.id; // Add the document ID to the analysis object
                 analyses.push(analysis);
+                
+                // Check if this is a newly completed analysis and provide user feedback
+                if (analysis.status === 'completed' && analysis.analysis_results) {
+                    // Find the corresponding chat message and update it
+                    const chatContainer = document.getElementById('agent2-chat');
+                    if (chatContainer) {
+                        // Add completion message if not already present
+                        const existingMessage = chatContainer.querySelector(`[data-document-id="${analysis.id}"]`);
+                        if (!existingMessage) {
+                            addMessageToAgent2Chat('ai', `✅ Analysis complete for "${analysis.original_filename}"! I found some interesting insights in your document.`, analysis.id);
+                        }
+                    }
+                    
+                    // Update processing stage if this was the most recent upload
+                    const mostRecentAnalysis = analyses[0];
+                    if (mostRecentAnalysis.id === analysis.id) {
+                        updateProcessingStage('complete');
+                        if (analysisStatus) analysisStatus.textContent = 'Analysis Complete';
+                    }
+                }
             });
             
             // Get current filter
@@ -2414,27 +2501,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     return response.json();
                 })
                 .then(data => {
-                    // Update UI for analysis process
-                    updateProcessingStage('analyzing');
-                    if (analysisStatus) analysisStatus.textContent = 'Analyzing Documents';
-                    addMessageToAgent2Chat('ai', `File uploaded successfully! Now analyzing "${file.name}"...`);
+                    // Update UI for upload process
+                    updateProcessingStage('upload');
+                    if (analysisStatus) analysisStatus.textContent = 'Uploading...';
+                    addMessageToAgent2Chat('ai', 'Starting upload process...');
                     
-                    // Simulate analysis process (replace with real AI analysis later)
-                    setTimeout(() => {
-                        updateProcessingStage('calculating');
-                        if (analysisStatus) analysisStatus.textContent = 'Calculating Results';
-                        addMessageToAgent2Chat('ai', 'Extracting financial data and identifying potential issues...');
-                        
-                        setTimeout(() => {
-                            updateProcessingStage('complete');
-                            if (analysisStatus) analysisStatus.textContent = 'Analysis Complete';
-                            addMessageToAgent2Chat('ai', 'Analysis complete! I found some interesting insights in your document.');
-                            
-                            // Update category stats
-                            updateCategoryStats();
-                            
-                        }, 2000);
-                    }, 2000);
+                    // File uploaded successfully, now waiting for Cloud Function processing
+                    updateProcessingStage('analyzing');
+                    if (analysisStatus) analysisStatus.textContent = 'AI Analysis in Progress';
+                    addMessageToAgent2Chat('ai', `File uploaded successfully! AI analysis has started for "${file.name}". This may take a few minutes.`);
+                    
+                    // The Cloud Function will automatically process the file and update Firestore
+                    // The frontend will receive real-time updates through the Firestore listener
                     
                     uploadForm.reset();
                 })
@@ -3210,5 +3288,150 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (typeof window.selectDocumentForDispute === 'undefined' && typeof selectDocumentForDispute !== 'undefined') {
         window.selectDocumentForDispute = selectDocumentForDispute;
+    }
+
+    // --- DISPUTE SYSTEM FUNCTIONS ---
+    
+    // Navigate to Agent 2 for document upload and analysis
+    window.uploadDocumentForDispute = function() {
+        console.log('📤 Navigating to Agent 2 for document upload...');
+        showAppPage('agent-2-page');
+    };
+    
+    // Generate dispute letter
+
+    // --- DISPUTE TUTORIAL SYSTEM ---
+    
+    // Show dispute tutorial modal
+    window.showDisputeTutorial = function() {
+        console.log('📚 Showing dispute tutorial...');
+        const tutorialModal = document.getElementById('dispute-tutorial-modal');
+        if (tutorialModal) {
+            tutorialModal.classList.remove('hidden');
+            console.log('✅ Tutorial modal shown');
+            
+            // Set up event listeners AFTER modal is shown
+            setupTutorialEventListeners();
+        } else {
+            console.error('❌ Tutorial modal not found');
+        }
+    };
+    
+    // Close tutorial modal
+    function closeTutorialModal() {
+        const tutorialModal = document.getElementById('dispute-tutorial-modal');
+        if (tutorialModal) {
+            tutorialModal.classList.add('hidden');
+        }
+    }
+    
+    // Initialize tutorial system
+    function initializeTutorialSystem() {
+        console.log('🎓 Initializing tutorial system...');
+        
+        // Check if user wants to see tutorial
+        const hideTutorial = localStorage.getItem('hideDisputeTutorial');
+        
+        if (!hideTutorial) {
+            // Show tutorial automatically with delay
+            setTimeout(() => {
+                console.log('🕐 Auto-showing tutorial...');
+                showDisputeTutorial();
+            }, 1000);
+        }
+        
+        // Set up tutorial event listeners
+        setupTutorialEventListeners();
+        
+        console.log('✅ Tutorial system initialized successfully');
+    }
+    
+    // Set up tutorial event listeners
+    function setupTutorialEventListeners() {
+        console.log('🔗 Setting up tutorial event listeners...');
+        
+        // Close button
+        const closeBtn = document.getElementById('close-tutorial-modal');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', closeTutorialModal);
+            console.log('✅ Close button listener added');
+        }
+        
+        // Action buttons
+        const finishBtn = document.getElementById('finish-tutorial');
+        const skipBtn = document.getElementById('skip-tutorial');
+        
+        console.log(`Action buttons found: finish=${!!finishBtn}, skip=${!!skipBtn}`);
+        
+        if (finishBtn) {
+            finishBtn.addEventListener('click', () => {
+                console.log('✅ Finish button clicked');
+                const hideCheckbox = document.getElementById('hide-tutorial-future');
+                if (hideCheckbox && hideCheckbox.checked) {
+                    localStorage.setItem('hideDisputeTutorial', 'true');
+                    console.log('💾 Tutorial hidden for future visits');
+                }
+                closeTutorialModal();
+            });
+            console.log('✅ Finish button listener added');
+        }
+        
+        if (skipBtn) {
+            skipBtn.addEventListener('click', () => {
+                console.log('⏭️ Skip button clicked');
+                const hideCheckbox = document.getElementById('hide-tutorial-future');
+                if (hideCheckbox && hideCheckbox.checked) {
+                    localStorage.setItem('hideDisputeTutorial', 'true');
+                    console.log('💾 Tutorial hidden for future visits');
+                }
+                closeTutorialModal();
+            });
+            console.log('✅ Skip button listener added');
+        }
+        
+        console.log('🎯 All tutorial event listeners set up successfully');
+    }
+    
+    // Initialize tutorial when Agent 3 page loads
+    function initializeAgent3() {
+        console.log('🚀 Initializing Agent 3 dispute system...');
+        
+        // Get all the DOM elements
+        const agent3Page = document.getElementById('agent-3-page');
+        const disputeDashboard = document.getElementById('dispute-dashboard');
+        const disputeCreationFlow = document.getElementById('dispute-creation-flow');
+        const disputeLetterPreview = document.getElementById('dispute-letter-preview');
+        const disputeManagement = document.getElementById('dispute-management');
+        
+        if (agent3Page) {
+            // Ensure dashboard is visible immediately
+            if (disputeDashboard) {
+                disputeDashboard.classList.remove('hidden');
+                console.log('✅ Dashboard made visible immediately');
+            }
+            
+            // Initialize the dispute system
+            setupDisputeEventListeners();
+            loadDisputeDashboard();
+            
+            // Show dashboard
+            if (typeof window.showDisputeDashboard === 'function') {
+                window.showDisputeDashboard();
+            } else {
+                console.error('❌ showDisputeDashboard function not found, manually showing dashboard');
+                // Fallback: manually show dashboard
+                if (disputeDashboard) {
+                    disputeDashboard.classList.remove('hidden');
+                    console.log('✅ Dashboard shown via fallback method');
+                }
+            }
+            
+            // Initialize tutorial system
+            initializeTutorialSystem();
+            
+            console.log('✅ Agent 3 dispute system initialized successfully');
+        } else {
+            console.error('❌ Agent 3 page element not found');
+        }
     }
 });

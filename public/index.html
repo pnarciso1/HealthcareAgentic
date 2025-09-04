@@ -1094,7 +1094,7 @@
                                 <div class="step-number">4</div>
                                 <div class="step-content">
                                     <h4>Review and Submit</h4>
-                                    <p>Review the generated letter, make any edits if needed, and submit your dispute. We'll track the progress for you.</p>
+                                    <p>Review the generated letter, make any edits if needed, and submit your dispute. You will need to manually send your dispute to your provider via email. However, we'll track the progress for you.</p>
                                 </div>
                             </div>
                         </div>
@@ -1116,6 +1116,7 @@
                     <button class="btn-secondary" onclick="viewAllDisputes()">View All Disputes</button>
                     <button class="btn-secondary" onclick="uploadDocumentForDispute()">Upload Document</button>
                     <button class="btn-secondary" onclick="refreshDisputes()">🔄 Refresh</button>
+                    <button class="show-tutorial-btn" onclick="showDisputeTutorial()">📚 Show Tutorial</button>
                 </div>
 
                 <!-- Dispute Statistics -->
@@ -1400,6 +1401,89 @@
              </div>
         </main>
 
+    </div>
+
+    <!-- DISPUTE TUTORIAL MODAL -->
+    <div id="dispute-tutorial-modal" class="modal hidden">
+        <div class="modal-content tutorial-modal">
+            <div class="modal-header">
+                <h3>🎓 How to Use the Dispute System</h3>
+                <button id="close-tutorial-modal" class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Complete Tutorial Content -->
+                <div class="tutorial-content">
+                    <!-- Document Analysis Section -->
+                    <div class="tutorial-section">
+                        <h4>📋 Document Analysis with Agent 2</h4>
+                        <p>Before you can dispute a bill, you must first have it analyzed by our Bill & Claim Review Agent (Agent 2):</p>
+                        <ul>
+                            <li><strong>Upload your bill or EOB</strong> to Agent 2 for analysis</li>
+                            <li><strong>Agent 2 scans for red flags</strong> like duplicate charges, overcharging, coding errors, and billing violations</li>
+                            <li><strong>Review the analysis results</strong> to see what issues were detected</li>
+                            <li><strong>Only proceed to disputes</strong> if Agent 2 found billing anomalies</li>
+                        </ul>
+                        <p><em>Note: If no issues are found, there's nothing to dispute!</em></p>
+                    </div>
+                    
+                    <!-- Transfer to Dispute System Section -->
+                    <div class="tutorial-section">
+                        <h4>🔄 Transfer to Dispute System</h4>
+                        <p>When Agent 2 detects billing issues, you can transfer the document to our Dispute Incorrect Bills Agent:</p>
+                        <ul>
+                            <li><strong>Select "Dispute" option</strong> from Agent 2's analysis results</li>
+                            <li><strong>Document automatically transfers</strong> to Agent 3 (Dispute Incorrect Bills Agent)</li>
+                            <li><strong>This is the handoff moment</strong> between analysis and dispute creation</li>
+                            <li><strong>Your document data is preserved</strong> including all analysis results and red flags</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- What Agent 3 Can Do Section -->
+                    <div class="tutorial-section">
+                        <h4>✅ What Agent 3 Can Do</h4>
+                        <p>Our Dispute Incorrect Bills Agent provides comprehensive dispute support:</p>
+                        <ul>
+                            <li><strong>Analyze documents</strong> for 6 types of billing errors with confidence levels</li>
+                            <li><strong>Generate professional dispute letters</strong> with real data from your documents</li>
+                            <li><strong>Calculate expected rates</strong> and suggest reasonable charge reductions</li>
+                            <li><strong>Track dispute status</strong> and progress over time</li>
+                            <li><strong>Provide dispute management tools</strong> to organize and monitor all disputes</li>
+                            <li><strong>Extract real information</strong> like provider names, dates, and service details</li>
+                            <li><strong>Format letters professionally</strong> with proper dispute language and structure</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- What Agent 3 Cannot Do Section -->
+                    <div class="tutorial-section">
+                        <h4>❌ What Agent 3 Cannot Do</h4>
+                        <p>It's important to understand the limitations of our dispute system:</p>
+                        <ul>
+                            <li><strong>Cannot send letters automatically</strong> - you must manually email/mail letters to providers</li>
+                            <li><strong>Cannot negotiate with providers</strong> - you handle all provider communication</li>
+                            <li><strong>Cannot guarantee dispute outcomes</strong> - success depends on provider policies and your case</li>
+                            <li><strong>Cannot provide legal advice</strong> - consult attorneys for complex legal matters</li>
+                            <li><strong>Cannot access provider billing systems</strong> - we only analyze documents you provide</li>
+                            <li><strong>Cannot file insurance appeals</strong> - that's a separate process you must handle</li>
+                            <li><strong>Cannot represent you in legal proceedings</strong> - we're a tool, not legal representation</li>
+                        </ul>
+                        <p><strong>Your Role:</strong> You are responsible for sending dispute letters, following up with providers, and managing the entire dispute process. We provide the tools and analysis to help you succeed.</p>
+                    </div>
+                </div>
+                
+                <!-- Simple Actions -->
+                <div class="tutorial-actions-simple">
+                    <button class="btn-primary" id="finish-tutorial">Got It!</button>
+                    <button class="btn-secondary" id="skip-tutorial">Skip Tutorial</button>
+                </div>
+                
+                <div class="tutorial-preference">
+                    <label>
+                        <input type="checkbox" id="hide-tutorial-future">
+                        Don't show this tutorial again
+                    </label>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script type="module" src="app.js?v=4.1"></script>

@@ -200,17 +200,24 @@ def detect_billing_errors(document_data):
     errors = []
     
     try:
-        # Extract financial data
+        print(f"=== DEBUG: detect_billing_errors called ===")
+        
+        # Extract financial data - this is where red flags are actually stored
         financial_data = document_data.get('financial_data', {})
         analysis_results = document_data.get('analysis_results', {})
         extracted_text = document_data.get('extracted_text', '')
+        
+        print(f"Financial data keys: {list(financial_data.keys()) if isinstance(financial_data, dict) else 'Not a dict'}")
+        print(f"Analysis results type: {type(analysis_results)}")
         
         # Parse analysis results if it's a string
         if isinstance(analysis_results, str):
             try:
                 analysis_results = json.loads(analysis_results)
+                print(f"Parsed analysis_results keys: {list(analysis_results.keys()) if isinstance(analysis_results, dict) else 'Not a dict'}")
             except:
                 analysis_results = {}
+                print("Failed to parse analysis_results JSON")
         
         # 1. Check for overcharging
         if financial_data.get('total_charged'):
@@ -224,32 +231,29 @@ def detect_billing_errors(document_data):
                     'amount': total_charged,
                     'evidence': f'Total charged amount: ${total_charged:.2f}'
                 })
+                print(f"Added overcharging error: ${total_charged:.2f}")
         
-        # 2. Check for duplicate charges
-        if extracted_text:
-            # Look for repeated line items
-            lines = extracted_text.split('\n')
-            line_items = {}
-            for line in lines:
-                if any(keyword in line.lower() for keyword in ['procedure', 'service', 'code', 'cpt', 'hcpcs']):
-                    # Extract potential duplicate items
-                    if line in line_items:
-                        line_items[line] += 1
-                    else:
-                        line_items[line] = 1
+        # 2. Check for duplicate charges - FIXED: Look in financial_data.red_flags
+        if financial_data.get('red_flags'):
+            red_flags = financial_data['red_flags']
+            print(f"Found red_flags in financial_data: {red_flags}")
             
-            duplicates = {item: count for item, count in line_items.items() if count > 1}
-            if duplicates:
+            # Check for duplicate-related red flags
+            duplicate_flags = [flag for flag in red_flags if 'duplicate' in flag.lower()]
+            if duplicate_flags:
                 errors.append({
                     'type': 'duplicate_charges',
                     'confidence': 'high',
-                    'description': f'Found {len(duplicates)} potential duplicate charges',
-                    'evidence': f'Duplicate items: {list(duplicates.keys())}'
+                    'description': f'Duplicate charges detected: {", ".join(duplicate_flags)}',
+                    'evidence': f'Red flags detected: {", ".join(duplicate_flags)}'
                 })
+                print(f"Added duplicate charges error: {duplicate_flags}")
+        else:
+            print("No red_flags found in financial_data")
         
-        # 3. Check for coding errors
-        if analysis_results.get('red_flags'):
-            red_flags = analysis_results['red_flags']
+        # 3. Check for coding errors - FIXED: Look in financial_data.red_flags
+        if financial_data.get('red_flags'):
+            red_flags = financial_data['red_flags']
             coding_errors = [flag for flag in red_flags if 'code' in flag.lower() or 'cpt' in flag.lower()]
             if coding_errors:
                 errors.append({
@@ -258,6 +262,7 @@ def detect_billing_errors(document_data):
                     'description': f'Found {len(coding_errors)} potential coding errors',
                     'evidence': f'Coding issues: {coding_errors}'
                 })
+                print(f"Added coding errors: {coding_errors}")
         
         # 4. Check for insurance calculation errors
         if financial_data.get('patient_owed') and financial_data.get('total_charged'):
@@ -274,10 +279,12 @@ def detect_billing_errors(document_data):
                     'description': f'Insurance calculation appears incorrect. Expected: ${calculated_responsibility:.2f}, Billed: ${patient_owed:.2f}',
                     'evidence': f'Total: ${total_charged:.2f}, Insurance paid: ${insurance_paid:.2f}, Patient owed: ${patient_owed:.2f}'
                 })
+                print(f"Added insurance calculation error")
         
-        # 5. Check for network status issues
-        if analysis_results.get('red_flags'):
-            network_flags = [flag for flag in analysis_results['red_flags'] if 'network' in flag.lower()]
+        # 5. Check for network status issues - FIXED: Look in financial_data.red_flags
+        if financial_data.get('red_flags'):
+            red_flags = financial_data['red_flags']
+            network_flags = [flag for flag in red_flags if 'network' in flag.lower()]
             if network_flags:
                 errors.append({
                     'type': 'network_status',
@@ -285,6 +292,7 @@ def detect_billing_errors(document_data):
                     'description': f'Potential network status issues detected',
                     'evidence': f'Network flags: {network_flags}'
                 })
+                print(f"Added network status error: {network_flags}")
         
         # 6. Check for balance billing violations
         if financial_data.get('patient_owed') and financial_data.get('insurance_paid'):
@@ -300,34 +308,91 @@ def detect_billing_errors(document_data):
                     'description': f'Potential balance billing violation. Patient owes ${patient_owed:.2f}',
                     'evidence': f'Total: ${total_charged:.2f}, Insurance paid: ${insurance_paid:.2f}, Patient owes: ${patient_owed:.2f}'
                 })
+                print(f"Added balance billing error")
+        
+        # 7. Additional checks for other red flags from financial_data
+        if financial_data.get('red_flags'):
+            red_flags = financial_data['red_flags']
+            # Check for any other red flags that weren't caught above
+            processed_flags = set()
+            for error in errors:
+                if 'evidence' in error and 'Red flags detected:' in error['evidence']:
+                    # Extract flags from evidence to track what we've processed
+                    evidence = error['evidence']
+                    if 'Red flags detected:' in evidence:
+                        flags_part = evidence.split('Red flags detected:')[1].strip()
+                        processed_flags.update([f.strip() for f in flags_part.split(',')])
+            
+            # Add any unprocessed red flags as general billing errors
+            unprocessed_flags = [flag for flag in red_flags if flag.lower() not in processed_flags]
+            if unprocessed_flags:
+                errors.append({
+                    'type': 'billing_error',
+                    'confidence': 'medium',
+                    'description': f'Additional billing issues detected: {", ".join(unprocessed_flags)}',
+                    'evidence': f'Red flags: {", ".join(unprocessed_flags)}'
+                })
+                print(f"Added unprocessed red flags error: {unprocessed_flags}")
+        
+        print(f"=== DEBUG: Total errors found: {len(errors)} ===")
         
     except Exception as e:
         print(f"Error in detect_billing_errors: {e}")
+        import traceback
+        print(f"Error traceback: {traceback.format_exc()}")
     
     return errors
 
 def generate_dispute_letter(error_type, document_data, error_details):
     """Generate a dispute letter based on error type and document data"""
+    print(f"=== DEBUG: generate_dispute_letter called ===")
+    print(f"Error type: {error_type}")
+    print(f"Document data keys: {list(document_data.keys()) if isinstance(document_data, dict) else 'Not a dict'}")
+    
     if error_type not in DISPUTE_TEMPLATES:
+        print(f"❌ Error type {error_type} not found in templates")
         return None
     
     template = DISPUTE_TEMPLATES[error_type]['template']
+    print(f"✅ Template found for {error_type}")
     
     # Extract data for template variables
     financial_data = document_data.get('financial_data', {})
     original_filename = document_data.get('original_filename', 'Unknown Document')
     extracted_text = document_data.get('extracted_text', '')
+    analysis_results = document_data.get('analysis_results', '')
+    
+    print(f"Financial data: {financial_data}")
+    print(f"Original filename: {original_filename}")
+    print(f"Extracted text length: {len(extracted_text) if extracted_text else 0}")
     
     # Calculate more accurate values
     total_charged = financial_data.get('total_charged', 0)
     insurance_paid = financial_data.get('insurance_paid', 0)
     patient_owed = financial_data.get('patient_owed', 0)
     
-    # Extract provider name from document
-    provider_name = extract_provider_name(extracted_text, original_filename)
+    print(f"Amounts - Total: {total_charged}, Insurance: {insurance_paid}, Patient: {patient_owed}")
     
-    # Extract bill date from document
-    bill_date = extract_bill_date(extracted_text, original_filename)
+    # Extract provider name from document - try multiple sources
+    provider_name = 'Healthcare Provider'
+    if financial_data.get('provider'):
+        provider_name = financial_data['provider']
+    elif extracted_text:
+        provider_name = extract_provider_name(extracted_text, original_filename)
+    
+    # Extract bill date from document - try multiple sources
+    bill_date = 'Recent Date'
+    if financial_data.get('date_of_service'):
+        bill_date = financial_data['date_of_service']
+    elif extracted_text:
+        bill_date = extract_bill_date(extracted_text, original_filename)
+    
+    # Extract service description
+    service_description = 'medical services'
+    if extracted_text:
+        service_description = get_service_description(original_filename, extracted_text)
+    
+    print(f"Provider: {provider_name}, Date: {bill_date}, Service: {service_description}")
     
     # Calculate expected rates based on error type
     expected_rate = calculate_expected_rate(error_type, total_charged, financial_data)
@@ -342,7 +407,7 @@ def generate_dispute_letter(error_type, document_data, error_details):
     variables = {
         'provider_name': provider_name,
         'bill_date': bill_date,
-        'service_description': get_service_description(original_filename, extracted_text),
+        'service_description': service_description,
         'disputed_amount': format_currency(total_charged),
         'original_amount': format_currency(total_charged),
         'expected_rate': expected_rate,
@@ -361,11 +426,14 @@ def generate_dispute_letter(error_type, document_data, error_details):
         'insurance_allowed': format_currency(insurance_paid)
     }
     
+    print(f"Template variables prepared: {variables}")
+    
     # Replace variables in template
     letter = template
     for key, value in variables.items():
         letter = letter.replace(f'{{{key}}}', str(value))
     
+    print(f"✅ Letter generated successfully, length: {len(letter)}")
     return letter
 
 def extract_provider_name(extracted_text, filename):
@@ -898,8 +966,36 @@ def analyze_document_for_disputes():
             
         document_data = doc_snapshot.to_dict()
         
+        # DEBUG: Log the document structure to understand what we're working with
+        print(f"=== DEBUG: Document data structure ===")
+        print(f"Document ID: {document_id}")
+        print(f"Keys in document_data: {list(document_data.keys())}")
+        
+        if 'financial_data' in document_data:
+            financial_data = document_data['financial_data']
+            print(f"Financial data keys: {list(financial_data.keys())}")
+            if isinstance(financial_data, dict) and 'red_flags' in financial_data:
+                print(f"Red flags found: {financial_data['red_flags']}")
+            else:
+                print("No red_flags in financial_data")
+        else:
+            print("No financial_data in document")
+            
+        if 'analysis_results' in document_data:
+            analysis_results = document_data['analysis_results']
+            print(f"Analysis results type: {type(analysis_results)}")
+            if isinstance(analysis_results, str):
+                print(f"Analysis results (first 200 chars): {analysis_results[:200]}...")
+            elif isinstance(analysis_results, dict):
+                print(f"Analysis results keys: {list(analysis_results.keys())}")
+        
         # Analyze document for billing errors
         detected_errors = detect_billing_errors(document_data)
+        
+        print(f"=== DEBUG: Detected errors ===")
+        print(f"Total errors found: {len(detected_errors)}")
+        for i, error in enumerate(detected_errors):
+            print(f"Error {i+1}: {error}")
         
         # Generate dispute recommendations
         dispute_recommendations = []
@@ -915,6 +1011,9 @@ def analyze_document_for_disputes():
                     'dispute_letter': dispute_letter,
                     'template_title': DISPUTE_TEMPLATES[error['type']]['title']
                 })
+        
+        print(f"=== DEBUG: Dispute recommendations ===")
+        print(f"Total recommendations: {len(dispute_recommendations)}")
         
         return jsonify({
             'document_id': document_id,
@@ -1168,9 +1267,30 @@ def upload_document():
             bucket = storage_client.bucket(UPLOAD_BUCKET_NAME)
             blob = bucket.blob(f"user_uploads/{uid}/{filename}")
 
+            # Upload the file to Google Cloud Storage
             blob.upload_from_file(file.stream, content_type=file.content_type)
             
-            return jsonify({'message': f'File {filename} uploaded successfully. Processing has started.'}), 200
+            # Create a placeholder document in Firestore to track the upload
+            user_ref = db.collection('users').document(uid)
+            analyses_collection = user_ref.collection('analyses')
+            
+            # Add a placeholder document that will be updated by the Cloud Function
+            placeholder_doc = analyses_collection.add({
+                'original_filename': filename,
+                'gcs_uri': f"gs://{UPLOAD_BUCKET_NAME}/user_uploads/{uid}/{filename}",
+                'status': 'processing',
+                'created_at': SERVER_TIMESTAMP,
+                'upload_timestamp': SERVER_TIMESTAMP
+            })
+            
+            print(f"--- File {filename} uploaded successfully for user {uid}. Cloud Function will process it automatically. ---")
+            
+            return jsonify({
+                'message': f'File {filename} uploaded successfully. AI analysis has started automatically.',
+                'document_id': placeholder_doc[1].id,
+                'status': 'processing'
+            }), 200
+            
         except Exception as e:
             print(f"--- ERROR during file upload: {e}")
             return jsonify({'error': 'An error occurred during the upload process.'}), 500
