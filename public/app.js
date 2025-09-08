@@ -48,7 +48,7 @@ const db = getFirestore(app);
         // Backend URL configuration
         const BACKEND_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
             ? 'http://127.0.0.1:5000' 
-            : 'https://healthcareagentic-backend-974408923536.us-central1.run.app'; 
+            : 'https://coupon-backend-974408923536.us-central1.run.app'; 
 
 // --- MAIN SCRIPT LOGIC ---
 
@@ -406,6 +406,17 @@ document.addEventListener('DOMContentLoaded', () => {
                         <li>✅ <strong>Priority Support:</strong> Get help when you need it most</li>
                     </ul>
                 </div>
+                
+                <!-- Coupon Code Section -->
+                <div class="coupon-section">
+                    <h4>🎫 Have a Coupon Code?</h4>
+                    <div class="coupon-input-group">
+                        <input type="text" id="coupon-code-input" placeholder="Enter coupon code" maxlength="20">
+                        <button id="apply-coupon-btn" class="btn-secondary">Apply</button>
+                    </div>
+                    <div id="coupon-message" class="coupon-message"></div>
+                </div>
+                
                 <div class="upgrade-prompt-actions">
                     <button class="btn-primary upgrade-now-btn">Start Saving Today - $7.99/month</button>
                     <button class="btn-secondary upgrade-yearly-btn">Best Value - $79/year (Save $17)</button>
@@ -423,6 +434,87 @@ document.addEventListener('DOMContentLoaded', () => {
         const closeButtons = upgradePrompt.querySelectorAll('.close-upgrade-prompt, .close-upgrade-prompt-btn');
         const upgradeNowBtn = upgradePrompt.querySelector('.upgrade-now-btn');
         const upgradeYearlyBtn = upgradePrompt.querySelector('.upgrade-yearly-btn');
+        const applyCouponBtn = upgradePrompt.querySelector('#apply-coupon-btn');
+        const couponInput = upgradePrompt.querySelector('#coupon-code-input');
+        const couponMessage = upgradePrompt.querySelector('#coupon-message');
+        
+        // Coupon validation functionality
+        let currentCouponCode = null;
+        
+        applyCouponBtn.addEventListener('click', async () => {
+            const couponCode = couponInput.value.trim().toUpperCase();
+            if (!couponCode) {
+                showCouponMessage('Please enter a coupon code', 'error');
+                return;
+            }
+            
+            try {
+                applyCouponBtn.textContent = 'Validating...';
+                applyCouponBtn.disabled = true;
+                
+                const user = auth.currentUser;
+                if (!user) {
+                    showCouponMessage('Please log in to use coupon codes', 'error');
+                    return;
+                }
+                
+                const idToken = await user.getIdToken();
+                const response = await fetch(`${BACKEND_URL}/validate-coupon`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${idToken}`
+                    },
+                    body: JSON.stringify({ 
+                        couponCode: couponCode,
+                        plan: 'yearly' // We'll validate for yearly plan
+                    })
+                });
+                
+                if (response.ok) {
+                    const couponData = await response.json();
+                    currentCouponCode = couponCode;
+                    showCouponMessage(`✅ ${couponData.description}`, 'success');
+                    
+                    // Update yearly button to show discount
+                    if (couponData.discountAmount === 100) {
+                        upgradeYearlyBtn.textContent = '🎫 FREE with Coupon!';
+                        upgradeYearlyBtn.classList.add('coupon-applied');
+                    }
+                } else {
+                    const errorData = await response.json();
+                    showCouponMessage(errorData.error || 'Invalid coupon code', 'error');
+                    currentCouponCode = null;
+                }
+            } catch (error) {
+                console.error('Coupon validation error:', error);
+                showCouponMessage('Error validating coupon. Please try again.', 'error');
+                currentCouponCode = null;
+            } finally {
+                applyCouponBtn.textContent = 'Apply';
+                applyCouponBtn.disabled = false;
+            }
+        });
+        
+        function showCouponMessage(message, type) {
+            couponMessage.textContent = message;
+            couponMessage.className = `coupon-message ${type}`;
+            couponMessage.style.display = 'block';
+            
+            // Auto-hide success messages after 5 seconds
+            if (type === 'success') {
+                setTimeout(() => {
+                    couponMessage.style.display = 'none';
+                }, 5000);
+            }
+        }
+        
+        // Handle coupon input enter key
+        couponInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                applyCouponBtn.click();
+            }
+        });
         
         closeButtons.forEach(btn => {
             btn.addEventListener('click', () => {
@@ -437,7 +529,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         upgradeYearlyBtn.addEventListener('click', () => {
             document.body.removeChild(upgradePrompt);
-            initiateStripeCheckout('yearly');
+            initiateStripeCheckout('yearly', currentCouponCode);
         });
         
         // Close on outside click
@@ -448,15 +540,175 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    const initiateStripeCheckout = (plan) => {
+    const showFreeSubscriptionModal = (onContinue) => {
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        `;
+
+        modal.innerHTML = `
+            <div style="
+                background: white;
+                border-radius: 12px;
+                padding: 32px;
+                max-width: 500px;
+                width: 90%;
+                text-align: center;
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            ">
+                <div style="
+                    width: 64px;
+                    height: 64px;
+                    background: #10B981;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin: 0 auto 24px;
+                    font-size: 32px;
+                ">🎉</div>
+                
+                <h2 style="
+                    color: #1F2937;
+                    font-size: 24px;
+                    font-weight: 600;
+                    margin: 0 0 16px;
+                ">Congratulations!</h2>
+                
+                <p style="
+                    color: #6B7280;
+                    font-size: 16px;
+                    line-height: 1.5;
+                    margin: 0 0 24px;
+                ">You're getting a <strong>FREE yearly membership</strong> with your FRIENDSFOREVER coupon!</p>
+                
+                <div style="
+                    background: #F3F4F6;
+                    border-radius: 8px;
+                    padding: 16px;
+                    margin: 0 0 24px;
+                    text-align: left;
+                ">
+                    <h3 style="
+                        color: #374151;
+                        font-size: 14px;
+                        font-weight: 600;
+                        margin: 0 0 8px;
+                    ">What to expect:</h3>
+                    <ul style="
+                        color: #6B7280;
+                        font-size: 14px;
+                        margin: 0;
+                        padding-left: 20px;
+                    ">
+                        <li>You won't be charged anything today</li>
+                        <li>Stripe may ask for a payment method for future billing</li>
+                        <li>Your membership is completely free</li>
+                        <li>You can cancel anytime</li>
+                    </ul>
+                </div>
+                
+                <div style="display: flex; gap: 12px; justify-content: center;">
+                    <button id="cancel-free-subscription" style="
+                        background: #F3F4F6;
+                        color: #374151;
+                        border: none;
+                        border-radius: 8px;
+                        padding: 12px 24px;
+                        font-size: 14px;
+                        font-weight: 500;
+                        cursor: pointer;
+                        transition: background-color 0.2s;
+                    ">Cancel</button>
+                    <button id="continue-free-subscription" style="
+                        background: #8B5CF6;
+                        color: white;
+                        border: none;
+                        border-radius: 8px;
+                        padding: 12px 24px;
+                        font-size: 14px;
+                        font-weight: 500;
+                        cursor: pointer;
+                        transition: background-color 0.2s;
+                    ">Continue to Checkout</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Add hover effects
+        const cancelBtn = modal.querySelector('#cancel-free-subscription');
+        const continueBtn = modal.querySelector('#continue-free-subscription');
+        
+        cancelBtn.addEventListener('mouseenter', () => {
+            cancelBtn.style.background = '#E5E7EB';
+        });
+        cancelBtn.addEventListener('mouseleave', () => {
+            cancelBtn.style.background = '#F3F4F6';
+        });
+        
+        continueBtn.addEventListener('mouseenter', () => {
+            continueBtn.style.background = '#7C3AED';
+        });
+        continueBtn.addEventListener('mouseleave', () => {
+            continueBtn.style.background = '#8B5CF6';
+        });
+
+        // Event listeners
+        cancelBtn.addEventListener('click', () => {
+            document.body.removeChild(modal);
+        });
+
+        continueBtn.addEventListener('click', () => {
+            document.body.removeChild(modal);
+            onContinue();
+        });
+
+        // Close on outside click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                document.body.removeChild(modal);
+            }
+        });
+    };
+
+    const initiateStripeCheckout = (plan, couponCode = null) => {
+        // Show free subscription modal if FRIENDSFOREVER coupon is used
+        if (couponCode === 'FRIENDSFOREVER') {
+            showFreeSubscriptionModal(() => {
+                proceedToCheckout(plan, couponCode);
+            });
+            return;
+        }
+        
+        proceedToCheckout(plan, couponCode);
+    };
+
+    const proceedToCheckout = (plan, couponCode = null) => {
         auth.currentUser.getIdToken().then(idToken => {
-                            fetch(`${BACKEND_URL}/create-checkout-session`, {
+            const requestBody = { plan: plan };
+            if (couponCode) {
+                requestBody.couponCode = couponCode;
+            }
+            
+            fetch(`${BACKEND_URL}/create-checkout-session`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${idToken}`
                 },
-                body: JSON.stringify({ plan: plan })
+                body: JSON.stringify(requestBody)
             })
             .then(response => {
                 if (!response.ok) {
@@ -2971,15 +3223,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            // Check if we have a valid coupon for yearly plan
+            let couponCode = null;
+            if (plan === 'yearly' && window.currentPricingCouponCode) {
+                couponCode = window.currentPricingCouponCode;
+            }
+
             // User is authenticated - proceed to Stripe checkout
             auth.currentUser.getIdToken().then(idToken => {
+                const requestBody = { plan: plan };
+                if (couponCode) {
+                    requestBody.couponCode = couponCode;
+                }
+                
                 fetch(`${BACKEND_URL}/create-checkout-session`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${idToken}`
                     },
-                    body: JSON.stringify({ plan: plan })
+                    body: JSON.stringify(requestBody)
                 })
                 .then(response => {
                     if (!response.ok) {
@@ -2997,6 +3260,92 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
     });
+
+    // Pricing page coupon functionality
+    const pricingCouponInput = document.getElementById('pricing-coupon-input');
+    const pricingApplyCouponBtn = document.getElementById('pricing-apply-coupon-btn');
+    const pricingCouponMessage = document.getElementById('pricing-coupon-message');
+    const yearlyPlanButton = document.querySelector('[data-plan="yearly"]');
+    
+    if (pricingApplyCouponBtn && pricingCouponInput) {
+        // Store current coupon code globally for checkout
+        window.currentPricingCouponCode = null;
+        
+        pricingApplyCouponBtn.addEventListener('click', async () => {
+            const couponCode = pricingCouponInput.value.trim().toUpperCase();
+            if (!couponCode) {
+                showPricingCouponMessage('Please enter a coupon code', 'error');
+                return;
+            }
+            
+            try {
+                pricingApplyCouponBtn.textContent = 'Validating...';
+                pricingApplyCouponBtn.disabled = true;
+                
+                const user = auth.currentUser;
+                if (!user) {
+                    showPricingCouponMessage('Please log in to use coupon codes', 'error');
+                    return;
+                }
+                
+                const idToken = await user.getIdToken();
+                const response = await fetch(`${BACKEND_URL}/validate-coupon`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${idToken}`
+                    },
+                    body: JSON.stringify({ 
+                        couponCode: couponCode,
+                        plan: 'yearly' // We'll validate for yearly plan
+                    })
+                });
+                
+                if (response.ok) {
+                    const couponData = await response.json();
+                    window.currentPricingCouponCode = couponCode;
+                    showPricingCouponMessage(`✅ ${couponData.description}`, 'success');
+                    
+                    // Update yearly button to show discount
+                    if (couponData.discountAmount === 100 && yearlyPlanButton) {
+                        yearlyPlanButton.textContent = '🎫 FREE with Coupon!';
+                        yearlyPlanButton.classList.add('coupon-applied');
+                    }
+                } else {
+                    const errorData = await response.json();
+                    showPricingCouponMessage(errorData.error || 'Invalid coupon code', 'error');
+                    window.currentPricingCouponCode = null;
+                }
+            } catch (error) {
+                console.error('Coupon validation error:', error);
+                showPricingCouponMessage('Error validating coupon. Please try again.', 'error');
+                window.currentPricingCouponCode = null;
+            } finally {
+                pricingApplyCouponBtn.textContent = 'Apply Coupon';
+                pricingApplyCouponBtn.disabled = false;
+            }
+        });
+        
+        function showPricingCouponMessage(message, type) {
+            pricingCouponMessage.textContent = message;
+            pricingCouponMessage.className = `coupon-message-pricing ${type}`;
+            pricingCouponMessage.style.display = 'block';
+            
+            // Auto-hide success messages after 5 seconds
+            if (type === 'success') {
+                setTimeout(() => {
+                    pricingCouponMessage.style.display = 'none';
+                }, 5000);
+            }
+        }
+        
+        // Handle coupon input enter key
+        pricingCouponInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                pricingApplyCouponBtn.click();
+            }
+        });
+    }
 
     // Placeholder for Agent 3 form
     const agent3Form = document.getElementById('agent3-challenge-form');

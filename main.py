@@ -40,6 +40,146 @@ PRICE_IDS = {
     'yearly': os.getenv('STRIPE_YEARLY_PRICE_ID')
 }
 
+# --- STRIPE PROMOTION CONFIGURATION ---
+# Define the FRIENDSFOREVER promotion code
+PROMOTION_CONFIG = {
+    'FRIENDSFOREVER': {
+        'name': 'Friends Forever - 100% Off',
+        'stripe_promo_id': 'promo_1S09wVH0nOEj29DyKss41Ysu',  # Full Stripe promo code from dashboard
+        'percent_off': 100,  # 100% off
+        'applicable_plans': ['yearly'],  # Only valid for yearly plan
+        'description': 'Get your yearly membership for free forever!'
+    }
+}
+
+# --- PROMOTION VALIDATION FUNCTIONS ---
+def get_stripe_promotion(coupon_code):
+    """
+    Get the Stripe promotion using the promo code.
+    
+    Args:
+        coupon_code (str): The coupon code to get
+    
+    Returns:
+        stripe.PromotionCode: The Stripe promotion object, or None if failed
+    """
+    if coupon_code not in PROMOTION_CONFIG:
+        return None
+    
+    promo_config = PROMOTION_CONFIG[coupon_code]
+    promo_id = promo_config['stripe_promo_id']
+    
+    try:
+        # Retrieve the promotion code from Stripe
+        promotion = stripe.PromotionCode.retrieve(promo_id)
+        print(f"Retrieved Stripe promotion: {promotion.id}")
+        return promotion
+        
+    except Exception as e:
+        print(f"Error retrieving Stripe promotion for {coupon_code}: {e}")
+        return None
+
+def validate_coupon_code(coupon_code, plan):
+    """
+    Validate a coupon code using Stripe's promotion system.
+    
+    Args:
+        coupon_code (str): The coupon code to validate
+        plan (str): The plan being purchased ('monthly' or 'yearly')
+    
+    Returns:
+        dict: Coupon information if valid, None if invalid
+    """
+    print(f"=== VALIDATE_COUPON_CODE DEBUG ===")
+    print(f"Input: coupon_code='{coupon_code}', plan='{plan}'")
+    
+    if not coupon_code:
+        print("❌ No coupon code provided")
+        return None
+    
+    coupon_code = coupon_code.upper().strip()
+    print(f"Normalized coupon code: '{coupon_code}'")
+    
+    # Check if coupon exists in our configuration
+    if coupon_code not in PROMOTION_CONFIG:
+        print(f"❌ Coupon '{coupon_code}' not found in PROMOTION_CONFIG")
+        print(f"Available coupons: {list(PROMOTION_CONFIG.keys())}")
+        return None
+    
+    promo_config = PROMOTION_CONFIG[coupon_code]
+    print(f"✅ Found coupon config: {promo_config}")
+    
+    # Check if plan is applicable
+    if 'applicable_plans' in promo_config and plan not in promo_config['applicable_plans']:
+        print(f"❌ Plan '{plan}' not applicable for coupon '{coupon_code}'")
+        print(f"Applicable plans: {promo_config['applicable_plans']}")
+        return None
+    
+    print(f"✅ Plan '{plan}' is applicable for coupon '{coupon_code}'")
+    
+    # Get Stripe promotion
+    print(f"🔍 Retrieving Stripe promotion for '{coupon_code}'...")
+    promotion = get_stripe_promotion(coupon_code)
+    if not promotion:
+        print(f"❌ Failed to retrieve Stripe promotion for '{coupon_code}'")
+        return None
+    
+    print(f"✅ Retrieved Stripe promotion: {promotion.id}")
+    print(f"Promotion active: {promotion.active}")
+    print(f"Promotion max redemptions: {promotion.max_redemptions}")
+    print(f"Promotion times redeemed: {promotion.times_redeemed}")
+    
+    # Check if promotion is active
+    if not promotion.active:
+        print(f"❌ Stripe promotion {coupon_code} is not active")
+        return None
+    
+    # Check usage limits
+    if promotion.max_redemptions and promotion.times_redeemed >= promotion.max_redemptions:
+        print(f"❌ Promotion {coupon_code} has reached maximum redemptions")
+        return None
+    
+    print(f"✅ Coupon '{coupon_code}' is valid for plan '{plan}'")
+    print("=== VALIDATE_COUPON_CODE DEBUG END ===")
+    
+    return {
+        'code': coupon_code,
+        'stripe_promo_id': promotion.id,
+        'description': promo_config['description'],
+        'applicable_plans': promo_config['applicable_plans'],
+        'percent_off': promo_config['percent_off'],
+        'stripe_promotion': promotion
+    }
+
+def get_coupon_usage_count(coupon_code):
+    """
+    Get the current usage count for a coupon code from Stripe.
+    
+    Args:
+        coupon_code (str): The coupon code to check
+    
+    Returns:
+        int: Current usage count
+    """
+    try:
+        promotion = get_stripe_promotion(coupon_code)
+        if promotion:
+            return promotion.times_redeemed or 0
+        return 0
+    except Exception as e:
+        print(f"Error getting coupon usage count: {e}")
+        return 0
+
+def increment_coupon_usage(coupon_code):
+    """
+    Note: With Stripe promotions, usage is automatically tracked.
+    This function is kept for compatibility but doesn't need to do anything.
+    
+    Args:
+        coupon_code (str): The coupon code to increment
+    """
+    print(f"Coupon {coupon_code} usage tracked automatically by Stripe")
+
 # --- AUTHENTICATION HELPER ---
 def verify_firebase_token(token):
     try:
@@ -610,7 +750,9 @@ def create_checkout_session():
     
     data = request.get_json()
     plan = data.get('plan') # 'monthly' or 'yearly'
+    coupon_code = data.get('couponCode') # Optional: coupon code
     print(f"Plan requested: {plan}")
+    print(f"Coupon code: {coupon_code}")
     
     price_id = PRICE_IDS.get(plan)
     print(f"Price ID: {price_id}")
@@ -658,15 +800,43 @@ def create_checkout_session():
             user_ref.set({'stripeCustomerId': stripe_customer_id}, merge=True)
             print("Updated Firestore with customer ID")
 
+        # Validate and apply coupon if provided
+        discount_info = None
+        if coupon_code:
+            discount_info = validate_coupon_code(coupon_code, plan)
+            if discount_info:
+                print(f"Applying coupon: {coupon_code} - {discount_info['description']}")
+                # Don't increment usage yet - wait for successful payment
+            else:
+                print(f"Coupon code {coupon_code} is invalid or expired.")
+                return jsonify({'error': f'Invalid or expired coupon code: {coupon_code}'}), 400
+
         print("Creating Stripe checkout session...")
-        checkout_session = stripe.checkout.Session.create(
-            customer=stripe_customer_id,
-            line_items=[{'price': price_id, 'quantity': 1}],
-            mode='subscription',
-            success_url=YOUR_DOMAIN + '?payment=success',
-            cancel_url=YOUR_DOMAIN + '?payment=cancelled',
-            metadata={'firebase_uid': uid}
-        )
+        # Create checkout session parameters
+        session_params = {
+            'customer': stripe_customer_id,
+            'line_items': [{'price': price_id, 'quantity': 1}],
+            'mode': 'subscription',
+            'success_url': YOUR_DOMAIN + '?payment=success',
+            'cancel_url': YOUR_DOMAIN + '?payment=cancelled',
+            'payment_method_collection': 'if_required',  # Only require payment method if needed
+            'metadata': {
+                'firebase_uid': uid,
+                'coupon_code': coupon_code if coupon_code else None
+            }
+        }
+        
+        # Apply coupon discount if valid
+        if discount_info:
+            # Use Stripe's built-in promotion system
+            # Get the underlying coupon ID from the promotion code
+            promotion = discount_info['stripe_promotion']
+            coupon_id = promotion.coupon.id
+            session_params['discounts'] = [{'coupon': coupon_id}]
+            print(f"Stripe promotion {coupon_code} applied to checkout session with coupon ID: {coupon_id}")
+        
+        # Create the checkout session
+        checkout_session = stripe.checkout.Session.create(**session_params)
         print(f"Checkout session created successfully: {checkout_session.id}")
         print("=== STRIPE CHECKOUT DEBUG END ===")
         return jsonify({'id': checkout_session.id})
@@ -677,6 +847,46 @@ def create_checkout_session():
         print(f"Full traceback: {traceback.format_exc()}")
         print("=== STRIPE CHECKOUT DEBUG END ===")
         return jsonify({'error': str(e)}), 500
+
+@app.route('/validate-coupon', methods=['POST'])
+def validate_coupon():
+    """Validate a coupon code for a specific plan"""
+    print("=== COUPON VALIDATION ENDPOINT CALLED ===")
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
+            
+        coupon_code = data.get('couponCode')
+        plan = data.get('plan') # 'monthly' or 'yearly'
+
+        if not coupon_code or not plan:
+            return jsonify({'error': 'Coupon code and plan are required'}), 400
+
+        print(f"Validating coupon: {coupon_code} for plan: {plan}")
+        discount_info = validate_coupon_code(coupon_code, plan)
+
+        if discount_info:
+            print(f"Coupon {coupon_code} is valid for {plan} plan. Discount: {discount_info['description']}")
+            return jsonify({
+                'couponCode': coupon_code,
+                'plan': plan,
+                'discountType': 'percentage',
+                'discountAmount': discount_info['percent_off'],
+                'applicablePlans': discount_info['applicable_plans'],
+                'maxUses': discount_info['stripe_promotion'].max_redemptions if hasattr(discount_info['stripe_promotion'], 'max_redemptions') else float('inf'),
+                'expiresAt': discount_info['stripe_promotion'].expires_at if hasattr(discount_info['stripe_promotion'], 'expires_at') else 'N/A',
+                'description': discount_info['description']
+            })
+        else:
+            print(f"Coupon {coupon_code} is invalid or expired for {plan} plan.")
+            return jsonify({'error': 'Invalid or expired coupon code'}), 400
+            
+    except Exception as e:
+        print(f"ERROR in coupon validation: {str(e)}")
+        import traceback
+        print(f"Full traceback: {traceback.format_exc()}")
+        return jsonify({'error': 'Internal server error during coupon validation'}), 500
 
 @app.route('/stripe-webhook', methods=['POST'])
 def stripe_webhook():
@@ -706,6 +916,7 @@ def stripe_webhook():
     if event['type'] == 'checkout.session.completed':
         session = event['data']['object']
         firebase_uid = session.get('metadata', {}).get('firebase_uid')
+        coupon_code = session.get('metadata', {}).get('coupon_code')
         print(f"Processing checkout.session.completed for user: {firebase_uid}")
         
         if firebase_uid:
@@ -716,6 +927,10 @@ def stripe_webhook():
                     'stripeSubscriptionId': session.get('subscription')
                 })
                 print(f"Successfully updated subscription for user {firebase_uid}")
+
+                if coupon_code:
+                    increment_coupon_usage(coupon_code)
+                    print(f"Coupon {coupon_code} usage incremented for user {firebase_uid}")
             except Exception as e:
                 print(f"ERROR updating user subscription: {e}")
         else:
