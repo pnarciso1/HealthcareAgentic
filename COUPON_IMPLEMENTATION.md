@@ -12,15 +12,21 @@ This document describes the complete implementation of coupon code functionality
 - ✅ Beautiful modal for free subscription explanation
 - ✅ Webhook integration for subscription activation
 - ✅ User experience improvements for $0.00 checkouts
+- ✅ ENTERPRISE75 coupon (75% off for 12 months)
+- ✅ Persistent success messages with dismiss functionality
+- ✅ Support for both monthly and yearly plans
 
 ## Features
 
 - **Coupon Validation**: Real-time validation of coupon codes
 - **Plan-Specific Coupons**: Coupons can be restricted to specific subscription plans
+- **Multi-Plan Support**: Coupons can work with both monthly and yearly plans
 - **Usage Tracking**: Tracks coupon usage to prevent abuse
 - **Stripe Integration**: Uses Stripe's native promotion system
 - **100% Off Support**: Special handling for free memberships
-- **User Experience**: Beautiful modal explaining free subscriptions
+- **Partial Discount Support**: Support for percentage-based discounts (e.g., 75% off)
+- **User Experience**: Beautiful modals explaining subscription terms
+- **Persistent Messages**: Success messages stay visible until user dismisses them
 - **Optional Payment Method**: Reduces confusion for $0.00 checkouts
 - **Webhook Integration**: Automatic subscription activation
 
@@ -28,7 +34,7 @@ This document describes the complete implementation of coupon code functionality
 
 ### Valid Coupons
 
-The system currently supports the following coupon code:
+The system currently supports the following coupon codes:
 
 ```python
 PROMOTION_CONFIG = {
@@ -38,6 +44,14 @@ PROMOTION_CONFIG = {
         'percent_off': 100,  # 100% off
         'applicable_plans': ['yearly'],  # Only valid for yearly plan
         'description': 'Get your yearly membership for free forever!'
+    },
+    'ENTERPRISE75': {
+        'name': 'Enterprise Discount Trial - 75% Off',
+        'stripe_promo_id': 'promo_1S5AX8H0nOEj29DyOgfPFYaV',  # Full Stripe promo code from dashboard
+        'percent_off': 75,  # 75% off
+        'applicable_plans': ['monthly', 'yearly'],  # Valid for both monthly and yearly plans
+        'duration_months': 12,  # 12 months duration
+        'description': '75% off for first 12 months'
     }
 }
 ```
@@ -130,10 +144,22 @@ To add a new coupon, simply add it to the `PROMOTION_CONFIG` dictionary in `main
   - Explanation of optional payment method requirement
   - Professional design with call-to-action buttons
 
-#### 3. User Experience Improvements
+#### 3. Enterprise Discount Modal
+- **Trigger**: When ENTERPRISE75 coupon is applied
+- **Content**: Explains 75% off for 12 months, then full billing
+- **Features**:
+  - Dynamic pricing based on selected plan (monthly/yearly)
+  - Clear explanation of billing terms
+  - Required payment method notification
+  - Professional design with call-to-action buttons
+
+#### 4. User Experience Improvements
 - **Optional Payment Method**: `payment_method_collection: 'if_required'` in Stripe
 - **Clear Messaging**: Explains why Stripe may ask for payment info
 - **Immediate Feedback**: Success/error messages for coupon validation
+- **Persistent Success Messages**: Messages stay visible until user dismisses them
+- **Dismiss Functionality**: Users can manually hide success messages with "×" button
+- **Multi-Plan Support**: Coupons work with both monthly and yearly plans
 
 ### Backend Implementation
 
@@ -282,12 +308,33 @@ python test_coupon_backend.py
 
 ### 2. End-to-End Testing
 
+#### FRIENDSFOREVER Coupon (100% Off)
 1. **Go to live site**: https://mycareclaim.com
 2. **Enter coupon**: `FRIENDSFOREVER`
 3. **Select yearly plan**: Click "Start Saving Today"
 4. **Verify modal**: Free subscription modal should appear
 5. **Complete checkout**: Proceed through Stripe
 6. **Check subscription**: User should have Premium access immediately
+
+#### ENTERPRISE75 Coupon (75% Off)
+1. **Go to live site**: https://mycareclaim.com
+2. **Enter coupon**: `ENTERPRISE75`
+3. **Test monthly plan**: 
+   - Select monthly plan
+   - Verify success message: "✅ 75% off monthly plan - 75% off for first 12 months"
+   - Complete checkout
+   - Verify Stripe shows $2.00/month (75% off $7.99)
+4. **Test yearly plan**:
+   - Select yearly plan  
+   - Verify success message: "✅ 75% off yearly plan - 75% off for first 12 months"
+   - Complete checkout
+   - Verify Stripe shows $19.75/year (75% off $79)
+5. **Check subscription**: User should have Premium access immediately
+
+#### User Experience Testing
+1. **Persistent Messages**: Success messages should stay visible (not disappear after 5 seconds)
+2. **Dismiss Functionality**: Click "×" button to hide success messages
+3. **Modal Clarity**: Enterprise modal should show correct pricing for selected plan
 
 ### 3. Webhook Testing
 
@@ -358,7 +405,23 @@ The system provides comprehensive logging:
 **Root Cause**: Stripe's subscription model requires payment method for future billing
 **Solution**: Added `payment_method_collection: 'if_required'` and clear user messaging
 
-#### 4. Webhook Signature Verification
+#### 4. Coupon Not Applied to Monthly Plans
+**Problem**: ENTERPRISE75 coupon worked for yearly but not monthly plans
+**Root Cause**: Frontend wasn't passing coupon code to checkout for monthly plans
+**Solution**: 
+- Fixed monthly button in upgrade modal to pass `currentCouponCode`
+- Updated pricing page to apply coupons to both monthly and yearly plans
+- Added proper coupon code handling in checkout session creation
+
+#### 5. Success Messages Disappearing
+**Problem**: Coupon success messages disappeared after 5 seconds, confusing users
+**Root Cause**: Auto-hide timeout was removing success feedback
+**Solution**:
+- Removed auto-hide timeout for success messages
+- Added dismiss button ("×") for user control
+- Messages now persist until user takes action
+
+#### 6. Webhook Signature Verification
 **Problem**: `Invalid signature` errors
 **Root Cause**: Webhook secret mismatch
 **Solution**: Ensure webhook secret in `.env` matches Stripe Dashboard

@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coupon Test - MyCareClaim</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .test-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+        }
+        .test-section {
+            margin: 2rem 0;
+            padding: 1.5rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+        }
+        .test-button {
+            background: #3b82f6;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 0.5rem;
+        }
+        .test-button:hover {
+            background: #2563eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🎫 Coupon Functionality Test</h1>
+        <p>This page tests the coupon functionality before deployment.</p>
+        
+        <div class="test-section">
+            <h2>Test 1: Upgrade Prompt Modal</h2>
+            <p>Click the button below to test the upgrade prompt modal with coupon input:</p>
+            <button class="test-button" onclick="testUpgradePrompt()">Show Upgrade Prompt</button>
+        </div>
+        
+        <div class="test-section">
+            <h2>Test 2: Pricing Page Coupon</h2>
+            <p>Navigate to the pricing page to test the coupon input there:</p>
+            <button class="test-button" onclick="window.location.href='index.html#pricing'">Go to Pricing Page</button>
+        </div>
+        
+        <div class="test-section">
+            <h2>Test 3: Backend Validation</h2>
+            <p>Test the backend coupon validation endpoint:</p>
+            <button class="test-button" onclick="testBackendValidation()">Test Backend</button>
+            <div id="backend-test-result" style="margin-top: 1rem; padding: 1rem; border-radius: 8px; display: none;"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Test Instructions</h2>
+            <ol>
+                <li><strong>Test Upgrade Prompt:</strong> Click the first button to see the modal with coupon input</li>
+                <li><strong>Test Coupon:</strong> Enter "FRIENDSFOREVER" and click Apply</li>
+                <li><strong>Verify Validation:</strong> Should show success message and update yearly button</li>
+                <li><strong>Test Pricing Page:</strong> Navigate to pricing page and test coupon there</li>
+                <li><strong>Test Backend:</strong> Verify backend validation works correctly</li>
+            </ol>
+        </div>
+        
+        <div class="test-section">
+            <h2>Expected Behavior</h2>
+            <ul>
+                <li>✅ Coupon input field appears in upgrade modal</li>
+                <li>✅ "FRIENDSFOREVER" coupon validates successfully</li>
+                <li>✅ Yearly button updates to show "🎫 FREE with Coupon!"</li>
+                <li>✅ Coupon code is passed to checkout when yearly plan is selected</li>
+                <li>✅ Error messages show for invalid coupons</li>
+                <li>✅ Responsive design works on mobile devices</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Test the upgrade prompt modal
+        function testUpgradePrompt() {
+            // Create a simple upgrade prompt for testing
+            const testPrompt = document.createElement('div');
+            testPrompt.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1000;
+            `;
+            
+            testPrompt.innerHTML = `
+                <div style="background: white; padding: 2rem; border-radius: 12px; max-width: 500px; width: 90%;">
+                    <h2>🚀 Test Upgrade Prompt</h2>
+                    <p>This is a test of the upgrade prompt modal with coupon functionality.</p>
+                    
+                    <div style="margin: 1.5rem 0;">
+                        <h4>🎫 Have a Coupon Code?</h4>
+                        <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                            <input type="text" id="test-coupon-input" placeholder="Enter FRIENDSFOREVER" style="flex: 1; padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 8px;">
+                            <button onclick="testCouponValidation()" style="padding: 0.75rem 1.5rem; background: #6b7280; color: white; border: none; border-radius: 8px; cursor: pointer;">Apply</button>
+                        </div>
+                        <div id="test-coupon-message" style="display: none; padding: 0.75rem; border-radius: 8px; font-weight: 500;"></div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                        <button onclick="testYearlyCheckout()" id="test-yearly-btn" style="padding: 0.75rem 1.5rem; background: #6b7280; color: white; border: none; border-radius: 8px; cursor: pointer;">Yearly Plan</button>
+                        <button onclick="closeTestPrompt()" style="padding: 0.75rem 1.5rem; background: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer;">Close</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(testPrompt);
+        }
+        
+        function testCouponValidation() {
+            const couponInput = document.getElementById('test-coupon-input');
+            const couponMessage = document.getElementById('test-coupon-message');
+            const yearlyBtn = document.getElementById('test-yearly-btn');
+            
+            const couponCode = couponInput.value.trim().toUpperCase();
+            
+            if (couponCode === 'FRIENDSFOREVER') {
+                couponMessage.textContent = '✅ Coupon applied! Yearly plan is now FREE!';
+                couponMessage.style.background = '#d1fae5';
+                couponMessage.style.color = '#065f46';
+                couponMessage.style.border = '1px solid #10b981';
+                couponMessage.style.display = 'block';
+                
+                yearlyBtn.textContent = '🎫 FREE with Coupon!';
+                yearlyBtn.style.background = '#10b981';
+            } else {
+                couponMessage.textContent = '❌ Invalid coupon code. Try FRIENDSFOREVER';
+                couponMessage.style.background = '#fee2e2';
+                couponMessage.style.color = '#991b1b';
+                couponMessage.style.border = '1px solid #ef4444';
+                couponMessage.style.display = 'block';
+            }
+        }
+        
+        function testYearlyCheckout() {
+            const couponInput = document.getElementById('test-coupon-input');
+            const couponCode = couponInput.value.trim().toUpperCase();
+            
+            if (couponCode === 'FRIENDSFOREVER') {
+                alert('🎉 Test successful! Coupon FRIENDSFOREVER would be applied to yearly checkout.');
+            } else {
+                alert('⚠️ No valid coupon applied. Yearly plan would cost $79.');
+            }
+        }
+        
+        function closeTestPrompt() {
+            const testPrompt = document.querySelector('div[style*="position: fixed"]');
+            if (testPrompt) {
+                testPrompt.remove();
+            }
+        }
+        
+        // Test backend validation
+        async function testBackendValidation() {
+            const resultDiv = document.getElementById('backend-test-result');
+            resultDiv.style.display = 'block';
+            resultDiv.textContent = 'Testing backend...';
+            resultDiv.style.background = '#fef3c7';
+            resultDiv.style.color = '#92400e';
+            
+            try {
+                // Test without authentication (should fail)
+                const response = await fetch('http://127.0.0.1:5000/validate-coupon', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        couponCode: 'FRIENDSFOREVER',
+                        plan: 'yearly'
+                    })
+                });
+                
+                if (response.status === 401) {
+                    resultDiv.textContent = '✅ Backend is working! Authentication required (as expected).';
+                    resultDiv.style.background = '#d1fae5';
+                    resultDiv.style.color = '#065f46';
+                } else {
+                    resultDiv.textContent = `⚠️ Unexpected response: ${response.status}`;
+                    resultDiv.style.background = '#fee2e2';
+                    resultDiv.style.color = '#991b1b';
+                }
+            } catch (error) {
+                resultDiv.textContent = `❌ Backend connection failed: ${error.message}`;
+                resultDiv.style.background = '#fee2e2';
+                resultDiv.style.color = '#991b1b';
+            }
+        }
+    </script>
+</body>
+</html>

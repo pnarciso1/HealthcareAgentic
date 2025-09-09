@@ -1,0 +1,17 @@
+# Ignore unnecessary files for Cloud Run deployment
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.env
+.git/
+.gitignore
+README.md
+*.md
+test_*.py
+deploy-*.sh
+*.sh
+.DS_Store

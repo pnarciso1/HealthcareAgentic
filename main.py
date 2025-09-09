@@ -49,6 +49,14 @@ PROMOTION_CONFIG = {
         'percent_off': 100,  # 100% off
         'applicable_plans': ['yearly'],  # Only valid for yearly plan
         'description': 'Get your yearly membership for free forever!'
+    },
+    'ENTERPRISE75': {
+        'name': 'Enterprise Discount Trial - 75% Off',
+        'stripe_promo_id': 'promo_1S5AX8H0nOEj29DyOgfPFYaV',  # Full Stripe promo code from dashboard
+        'percent_off': 75,  # 75% off
+        'applicable_plans': ['monthly', 'yearly'],  # Valid for both monthly and yearly plans
+        'duration_months': 12,  # 12 months duration
+        'description': '75% off for first 12 months'
     }
 }
 

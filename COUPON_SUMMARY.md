@@ -11,25 +11,38 @@ The coupon functionality is **complete and operational** for the HealthcareAgent
 - ✅ Stripe checkout with coupon support (`/create-checkout-session`)
 - ✅ Webhook integration for subscription activation
 - ✅ FRIENDSFOREVER coupon (100% off yearly membership)
+- ✅ ENTERPRISE75 coupon (75% off for 12 months)
+- ✅ Support for both monthly and yearly plans
 
 ### Frontend
 - ✅ Coupon input fields on pricing page and upgrade modal
 - ✅ Real-time coupon validation with success/error messages
 - ✅ Beautiful free subscription modal for FRIENDSFOREVER coupon
+- ✅ Enterprise discount modal for ENTERPRISE75 coupon
 - ✅ Clear messaging about $0.00 payments and optional payment methods
+- ✅ Persistent success messages with dismiss functionality
 
 ### User Experience
 - ✅ Smooth flow from coupon entry to Premium access
 - ✅ No confusion about free memberships
+- ✅ Clear pricing information for partial discounts
+- ✅ Success messages stay visible until user dismisses them
 - ✅ Immediate subscription activation after checkout
 
-## 🎯 Current Coupon
+## 🎯 Current Coupons
 
 **FRIENDSFOREVER**
 - **Discount**: 100% off (free yearly membership)
 - **Applicable Plans**: Yearly only
 - **Stripe Promotion ID**: `promo_1S09wVH0nOEj29DyKss41Ysu`
 - **Usage Limit**: 50 redemptions
+- **Status**: Active
+
+**ENTERPRISE75**
+- **Discount**: 75% off for first 12 months
+- **Applicable Plans**: Monthly and Yearly
+- **Stripe Promotion ID**: `promo_1S5AX8H0nOEj29DyOgfPFYaV`
+- **Usage Limit**: Unlimited
 - **Status**: Active
 
 ## 🔧 Technical Details
@@ -54,11 +67,20 @@ https://coupon-backend-974408923536.us-central1.run.app
 ## 🧪 Testing
 
 ### Live Testing
+
+#### FRIENDSFOREVER (100% Off)
 1. Go to https://mycareclaim.com
 2. Enter coupon: `FRIENDSFOREVER`
 3. Select yearly plan
 4. Complete checkout
 5. Verify Premium access
+
+#### ENTERPRISE75 (75% Off)
+1. Go to https://mycareclaim.com
+2. Enter coupon: `ENTERPRISE75`
+3. Test monthly plan: Verify $2.00/month in Stripe
+4. Test yearly plan: Verify $19.75/year in Stripe
+5. Verify Premium access after checkout
 
 ### Backend Testing
 ```bash

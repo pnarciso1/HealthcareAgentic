@@ -16,7 +16,8 @@ def test_coupon_validation():
     """Test the coupon validation endpoint"""
     print("=== Testing Coupon Validation ===")
     
-    # Test valid coupon for yearly plan
+    # Test FRIENDSFOREVER coupon for yearly plan
+    print("Testing FRIENDSFOREVER coupon...")
     test_data = {
         "couponCode": "FRIENDSFOREVER",
         "plan": "yearly"
@@ -33,12 +34,66 @@ def test_coupon_validation():
         print(f"Response: {response.json()}")
         
         if response.status_code == 200:
-            print("✅ Coupon validation successful")
+            print("✅ FRIENDSFOREVER coupon validation successful")
         else:
-            print("❌ Coupon validation failed")
+            print("❌ FRIENDSFOREVER coupon validation failed")
             
     except Exception as e:
-        print(f"❌ Error testing coupon validation: {e}")
+        print(f"❌ Error testing FRIENDSFOREVER coupon: {e}")
+    
+    print()
+    
+    # Test ENTERPRISE75 coupon for monthly plan
+    print("Testing ENTERPRISE75 coupon for monthly plan...")
+    test_data = {
+        "couponCode": "ENTERPRISE75",
+        "plan": "monthly"
+    }
+    
+    try:
+        response = requests.post(
+            f"{BACKEND_URL}/validate-coupon",
+            json=test_data,
+            headers={'Content-Type': 'application/json'}
+        )
+        
+        print(f"Status Code: {response.status_code}")
+        print(f"Response: {response.json()}")
+        
+        if response.status_code == 200:
+            print("✅ ENTERPRISE75 coupon validation successful for monthly plan")
+        else:
+            print("❌ ENTERPRISE75 coupon validation failed for monthly plan")
+            
+    except Exception as e:
+        print(f"❌ Error testing ENTERPRISE75 coupon for monthly plan: {e}")
+    
+    print()
+    
+    # Test ENTERPRISE75 coupon for yearly plan
+    print("Testing ENTERPRISE75 coupon for yearly plan...")
+    test_data = {
+        "couponCode": "ENTERPRISE75",
+        "plan": "yearly"
+    }
+    
+    try:
+        response = requests.post(
+            f"{BACKEND_URL}/validate-coupon",
+            json=test_data,
+            headers={'Content-Type': 'application/json'}
+        )
+        
+        print(f"Status Code: {response.status_code}")
+        print(f"Response: {response.json()}")
+        
+        if response.status_code == 200:
+            print("✅ ENTERPRISE75 coupon validation successful for yearly plan")
+        else:
+            print("❌ ENTERPRISE75 coupon validation failed for yearly plan")
+            
+    except Exception as e:
+        print(f"❌ Error testing ENTERPRISE75 coupon for yearly plan: {e}")
     
     print()
 

@@ -467,14 +467,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     },
                     body: JSON.stringify({ 
                         couponCode: couponCode,
-                        plan: 'yearly' // We'll validate for yearly plan
+                        plan: 'yearly' // Default to yearly for validation, but coupon will work for both plans
                     })
                 });
                 
                 if (response.ok) {
                     const couponData = await response.json();
                     currentCouponCode = couponCode;
-                    showCouponMessage(`✅ ${couponData.description}`, 'success');
+                    
+                    // Create plan-specific success message
+                    const planText = couponData.plan === 'yearly' ? 'yearly' : 'monthly';
+                    const discountText = couponData.discountAmount === 100 ? 'FREE' : `${couponData.discountAmount}% off`;
+                    const successMessage = `✅ ${discountText} ${planText} plan - ${couponData.description}`;
+                    showCouponMessage(successMessage, 'success');
                     
                     // Update yearly button to show discount
                     if (couponData.discountAmount === 100) {
@@ -497,16 +502,20 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         
         function showCouponMessage(message, type) {
-            couponMessage.textContent = message;
+            if (type === 'success') {
+                // Add dismiss button for success messages
+                couponMessage.innerHTML = `
+                    <span>${message}</span>
+                    <button class="coupon-dismiss-btn" onclick="this.parentElement.style.display='none'" title="Dismiss">×</button>
+                `;
+            } else {
+                couponMessage.textContent = message;
+            }
             couponMessage.className = `coupon-message ${type}`;
             couponMessage.style.display = 'block';
             
-            // Auto-hide success messages after 5 seconds
-            if (type === 'success') {
-                setTimeout(() => {
-                    couponMessage.style.display = 'none';
-                }, 5000);
-            }
+            // Keep success messages visible until user takes action
+            // Success messages will persist to show coupon is applied
         }
         
         // Handle coupon input enter key
@@ -524,7 +533,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         upgradeNowBtn.addEventListener('click', () => {
             document.body.removeChild(upgradePrompt);
-            initiateStripeCheckout('monthly');
+            initiateStripeCheckout('monthly', currentCouponCode);
         });
         
         upgradeYearlyBtn.addEventListener('click', () => {
@@ -683,10 +692,169 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
+    const showEnterprise75Modal = (plan, onContinue) => {
+        // Calculate pricing based on plan
+        const isYearly = plan === 'yearly';
+        const originalPrice = isYearly ? 79 : 7.99;
+        const discountedPrice = isYearly ? (79 * 0.25) : (7.99 * 0.25);
+        const planText = isYearly ? 'yearly' : 'monthly';
+        const billingText = isYearly ? 'year' : 'month';
+        const afterDiscountText = isYearly ? '$79/year' : '$7.99/month';
+        
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        `;
+
+        modal.innerHTML = `
+            <div style="
+                background: white;
+                border-radius: 12px;
+                padding: 32px;
+                max-width: 500px;
+                width: 90%;
+                text-align: center;
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            ">
+                <div style="
+                    width: 64px;
+                    height: 64px;
+                    background: #3B82F6;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin: 0 auto 24px;
+                    font-size: 32px;
+                ">💼</div>
+                
+                <h2 style="
+                    color: #1F2937;
+                    font-size: 24px;
+                    font-weight: 600;
+                    margin: 0 0 16px;
+                ">Great Deal!</h2>
+                
+                <p style="
+                    color: #6B7280;
+                    font-size: 16px;
+                    line-height: 1.5;
+                    margin: 0 0 24px;
+                ">You're getting <strong>75% off your ${planText} subscription</strong> for the first 12 months!</p>
+                
+                <div style="
+                    background: #F3F4F6;
+                    border-radius: 8px;
+                    padding: 16px;
+                    margin: 0 0 24px;
+                    text-align: left;
+                ">
+                    <h3 style="
+                        color: #374151;
+                        font-size: 14px;
+                        font-weight: 600;
+                        margin: 0 0 8px;
+                    ">What this means for your ${planText} plan:</h3>
+                    <ul style="
+                        color: #6B7280;
+                        font-size: 14px;
+                        margin: 0;
+                        padding-left: 20px;
+                    ">
+                        <li>You'll pay <strong>$${discountedPrice.toFixed(2)}/${billingText}</strong> for the first 12 months (75% off $${originalPrice})</li>
+                        <li>After 12 months, you'll be billed the full <strong>${afterDiscountText}</strong></li>
+                        <li>A payment method is required for this subscription</li>
+                        <li>You can cancel anytime</li>
+                    </ul>
+                </div>
+                
+                <div style="display: flex; gap: 12px; justify-content: center;">
+                    <button id="cancel-enterprise75" style="
+                        background: #F3F4F6;
+                        color: #374151;
+                        border: none;
+                        border-radius: 8px;
+                        padding: 12px 24px;
+                        font-size: 14px;
+                        font-weight: 500;
+                        cursor: pointer;
+                        transition: background-color 0.2s;
+                    ">Cancel</button>
+                    <button id="continue-enterprise75" style="
+                        background: #3B82F6;
+                        color: white;
+                        border: none;
+                        border-radius: 8px;
+                        padding: 12px 24px;
+                        font-size: 14px;
+                        font-weight: 500;
+                        cursor: pointer;
+                        transition: background-color 0.2s;
+                    ">Continue to Checkout</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Add hover effects
+        const cancelBtn = modal.querySelector('#cancel-enterprise75');
+        const continueBtn = modal.querySelector('#continue-enterprise75');
+        
+        cancelBtn.addEventListener('mouseenter', () => {
+            cancelBtn.style.background = '#E5E7EB';
+        });
+        cancelBtn.addEventListener('mouseleave', () => {
+            cancelBtn.style.background = '#F3F4F6';
+        });
+        
+        continueBtn.addEventListener('mouseenter', () => {
+            continueBtn.style.background = '#2563EB';
+        });
+        continueBtn.addEventListener('mouseleave', () => {
+            continueBtn.style.background = '#3B82F6';
+        });
+
+        // Event listeners
+        cancelBtn.addEventListener('click', () => {
+            document.body.removeChild(modal);
+        });
+
+        continueBtn.addEventListener('click', () => {
+            document.body.removeChild(modal);
+            onContinue();
+        });
+
+        // Close on outside click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                document.body.removeChild(modal);
+            }
+        });
+    };
+
     const initiateStripeCheckout = (plan, couponCode = null) => {
         // Show free subscription modal if FRIENDSFOREVER coupon is used
         if (couponCode === 'FRIENDSFOREVER') {
             showFreeSubscriptionModal(() => {
+                proceedToCheckout(plan, couponCode);
+            });
+            return;
+        }
+        
+        // Show enterprise modal if ENTERPRISE75 coupon is used
+        if (couponCode === 'ENTERPRISE75') {
+            showEnterprise75Modal(plan, () => {
                 proceedToCheckout(plan, couponCode);
             });
             return;
@@ -702,7 +870,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 requestBody.couponCode = couponCode;
             }
             
-            fetch(`${BACKEND_URL}/create-checkout-session`, {
+                            fetch(`${BACKEND_URL}/create-checkout-session`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -3223,9 +3391,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // Check if we have a valid coupon for yearly plan
+            // Check if we have a valid coupon for any plan
             let couponCode = null;
-            if (plan === 'yearly' && window.currentPricingCouponCode) {
+            if (window.currentPricingCouponCode) {
                 couponCode = window.currentPricingCouponCode;
             }
 
@@ -3297,14 +3465,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     },
                     body: JSON.stringify({ 
                         couponCode: couponCode,
-                        plan: 'yearly' // We'll validate for yearly plan
+                        plan: 'yearly' // Default to yearly for validation, but coupon will work for both plans
                     })
                 });
                 
                 if (response.ok) {
                     const couponData = await response.json();
                     window.currentPricingCouponCode = couponCode;
-                    showPricingCouponMessage(`✅ ${couponData.description}`, 'success');
+                    
+                    // Create plan-specific success message
+                    const planText = couponData.plan === 'yearly' ? 'yearly' : 'monthly';
+                    const discountText = couponData.discountAmount === 100 ? 'FREE' : `${couponData.discountAmount}% off`;
+                    const successMessage = `✅ ${discountText} ${planText} plan - ${couponData.description}`;
+                    showPricingCouponMessage(successMessage, 'success');
                     
                     // Update yearly button to show discount
                     if (couponData.discountAmount === 100 && yearlyPlanButton) {
@@ -3327,16 +3500,20 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         
         function showPricingCouponMessage(message, type) {
-            pricingCouponMessage.textContent = message;
+            if (type === 'success') {
+                // Add dismiss button for success messages
+                pricingCouponMessage.innerHTML = `
+                    <span>${message}</span>
+                    <button class="coupon-dismiss-btn" onclick="this.parentElement.style.display='none'" title="Dismiss">×</button>
+                `;
+            } else {
+                pricingCouponMessage.textContent = message;
+            }
             pricingCouponMessage.className = `coupon-message-pricing ${type}`;
             pricingCouponMessage.style.display = 'block';
             
-            // Auto-hide success messages after 5 seconds
-            if (type === 'success') {
-                setTimeout(() => {
-                    pricingCouponMessage.style.display = 'none';
-                }, 5000);
-            }
+            // Keep success messages visible until user takes action
+            // Success messages will persist to show coupon is applied
         }
         
         // Handle coupon input enter key
