@@ -34,70 +34,200 @@
         </header>
 
         <main id="landing-page-content" class="page-content">
-            <h1>Your Personal AI Team for Navigating Medical Bills & Insurance</h1>
-            <p class="landing-subheader">Get instant answers, organize bills, dispute errors, and fight denials with our AI-powered agents.</p>
+            <h1>Finally, Peace of Mind for Your Medical Bills</h1>
+            <p class="landing-subheader">No more confusion, surprise charges, or denied claims—our AI makes sure you only pay what's fair.</p>
             <div class="agent-showcase">
                 <!-- Landing Page Agent Cards -->
                 <div class="agent-showcase-card">
                     <div class="card-icon">🔍</div>
                     <div class="agent-badge free">Free</div>
                     <h3>Quick Answers</h3>
-                    <p>Get instant clarity on confusing healthcare questions in plain English.</p>
+                    <h4>Clarity When You Need It Most</h4>
+                    <p>Stop guessing about confusing healthcare terms or charges. Get simple, plain-English answers in seconds—so you can breathe easier.</p>
                 </div>
                 <div class="agent-showcase-card">
                     <div class="card-icon">📊</div>
                     <div class="agent-badge premium">Premium</div>
                     <h3>Bill & Claim Review</h3>
-                    <p>Organize bills and claims into a clear financial dashboard with error detection.</p>
+                    <h4>See the Truth Behind Your Bills</h4>
+                    <p>We organize your bills and claims into one clear dashboard, flagging errors and overcharges before they drain your wallet.</p>
                 </div>
                 <div class="agent-showcase-card">
                     <div class="card-icon">🛡️</div>
                     <div class="agent-badge premium">Premium</div>
                     <h3>Dispute Incorrect Bills</h3>
-                    <p>Fight billing errors with professional dispute letters and automated tracking.</p>
+                    <h4>Stand Up to Wrong Charges</h4>
+                    <p>Don't pay for mistakes. Our AI builds professional dispute letters and tracks your case, so you don't have to fight alone.</p>
                 </div>
                 <div class="agent-showcase-card">
                     <div class="card-icon">📦</div>
                     <div class="agent-badge premium">Premium</div>
                     <h3>Appeal Insurance Denials</h3>
-                    <p>Win back coverage with tailored appeal letters and deadline management.</p>
+                    <h4>Win Back the Coverage You Deserve</h4>
+                    <p>A denial isn't the final word. We create tailored appeal packets with deadlines built in—helping you turn "no" into "approved."</p>
                 </div>
             </div>
             
-            <!-- Testimonials Section -->
-            <div class="testimonials-section">
-                <h2>What Our Users Say</h2>
-                <div class="testimonials-grid">
-                    <div class="testimonial-card">
-                        <div class="testimonial-content">
-                            <p>"MyCareClaim's AI agent helped me understand a confusing $2,400 hospital bill. It identified duplicate charges and coding errors that saved me over $800. The process was so much easier than calling billing departments."</p>
-                        </div>
-                        <div class="testimonial-author">
-                            <span class="author-name">Sarah M.</span>
-                            <span class="author-location">Austin, TX</span>
-                        </div>
+            <!-- Quick Answers Widget Section -->
+            <div class="quick-answers-section">
+                <div class="quick-answers-widget">
+                    <div class="widget-header">
+                        <h2>Try Quick Answers (No signup)</h2>
+                        <p>Ask a healthcare bill question. Get 2 free answers.</p>
                     </div>
                     
-                    <div class="testimonial-card">
-                        <div class="testimonial-content">
-                            <p>"When my insurance denied coverage for a necessary procedure, I was overwhelmed. The AI agent walked me through the appeals process step-by-step and helped me write a compelling appeal letter. My claim was approved!"</p>
+                    <div class="widget-content">
+                        <div class="messages-container" id="quick-answers-messages">
+                            <!-- Messages will be dynamically added here -->
                         </div>
-                        <div class="testimonial-author">
-                            <span class="author-name">Michael R.</span>
-                            <span class="author-location">Denver, CO</span>
+                        
+                        <div class="input-container">
+                            <input type="text" id="quick-answers-input" placeholder="Ask anything..." maxlength="500">
+                            <button id="quick-answers-submit" class="ask-button">Ask</button>
                         </div>
-                    </div>
-                    
-                    <div class="testimonial-card">
-                        <div class="testimonial-content">
-                            <p>"I used to spend hours on hold with insurance companies trying to understand my bills. Now I just ask the AI agent and get clear, accurate answers instantly. It's like having a healthcare expert on call 24/7."</p>
-                        </div>
-                        <div class="testimonial-author">
-                            <span class="author-name">Jennifer L.</span>
-                            <span class="author-location">Seattle, WA</span>
+                        
+                        <div class="widget-footer">
+                            <div id="quick-answers-counter" class="usage-counter">
+                                You have 2 free answers left.
+                            </div>
                         </div>
                     </div>
                 </div>
+            </div>
+            
+            <!-- User Stories Section -->
+            <div class="user-stories-section">
+                <h2>Real Stories, Real Results</h2>
+                <div class="user-stories-grid">
+                    <div class="user-story-card">
+                        <div class="story-content">
+                            <h3>Maria's Surprise ER Bill</h3>
+                            <p>"I'll never forget the shock I felt when the envelope came. My son broke his arm, and of course I rushed him to the ER. Weeks later, I opened a bill for over $4,500. I couldn't believe it—our insurance was supposed to cover emergencies. The hospital told me the doctor was 'out of network,' but I had no choice that night.</p>
+                            <p>I felt powerless, until I tried MyCareClaim. I uploaded the bill, and within minutes, the system flagged errors in the coding and pointed out adjustments that should have been applied. With their step-by-step guidance, I filed a dispute. Two weeks later, the bill was reduced by more than half. I felt like someone finally gave me a fighting chance—and I won."</p>
+                        </div>
+                        <div class="story-author">
+                            <span class="author-name">Maria</span>
+                        </div>
+                        <button class="btn-primary story-get-started">Get Started</button>
+                    </div>
+                    
+                    <div class="user-story-card">
+                        <div class="story-content">
+                            <h3>James' Duplicate Billing Problem</h3>
+                            <p>"As a veteran, I'm used to paperwork, but medical bills still confuse me. After a CT scan, I noticed I was charged twice for the same test—over $1,200 extra. I called the hospital, then my insurance, and neither side took responsibility. I was stuck in the middle.</p>
+                            <p>That's when I used MyCareClaim. I uploaded the bill, and it immediately flagged the duplicate charge. The platform even generated a letter for me to send to the hospital's billing office. With that, they finally admitted the mistake and removed the charge. I saved over a thousand dollars without spending hours arguing on the phone. MyCareClaim gave me peace of mind I hadn't felt in a long time."</p>
+                        </div>
+                        <div class="story-author">
+                            <span class="author-name">James</span>
+                        </div>
+                        <button class="btn-primary story-get-started">Get Started</button>
+                    </div>
+                    
+                    <div class="user-story-card">
+                        <div class="story-content">
+                            <h3>Angela's Denied Claim Reversal</h3>
+                            <p>"My surgery was one of the scariest moments of my life and I thought at least the insurance would cover it, since my doctor got it pre-approved. But then a letter arrived saying my claim was denied. Just like that, I was supposedly responsible for a $15,000 bill.</p>
+                            <p>I didn't know how to appeal, but MyCareClaim walked me through it. It generated a packet with the right medical codes, my doctor's notes, and even the language from my own policy. All I had to do was submit it. Weeks later, I got the call: my appeal was approved. My insurance covered nearly the entire cost. I cried with relief. MyCareClaim wasn't just a tool. It felt like an advocate standing up for me."</p>
+                        </div>
+                        <div class="story-author">
+                            <span class="author-name">Angela</span>
+                        </div>
+                        <button class="btn-primary story-get-started">Get Started</button>
+                    </div>
+                    
+                    <div class="user-story-card">
+                        <div class="story-content">
+                            <h3>David's Unexpected Ambulance Charge</h3>
+                            <p>"I collapsed at work and woke up in an ambulance. It was terrifying. But what came later almost gave me a second scare: a $1,100 bill. My insurance company said it wasn't an 'emergency,' so they wouldn't pay. How could that be? I had fainted!</p>
+                            <p>I turned to MyCareClaim out of desperation. I uploaded the bill, and the system highlighted the section of my policy that clearly stated emergency ambulance transport was covered. Using the template it generated, I sent an appeal. A month later, my insurer reversed their decision and paid in full. Without MyCareClaim, I would've just accepted the charge. Instead, I got justice and kept my savings intact."</p>
+                        </div>
+                        <div class="story-author">
+                            <span class="author-name">David</span>
+                        </div>
+                        <button class="btn-primary story-get-started">Get Started</button>
+                    </div>
+                    
+                    <div class="user-story-card">
+                        <div class="story-content">
+                            <h3>Sophia's Out-of-Pocket Medication Dispute</h3>
+                            <p>"Managing my diabetes is stressful enough without surprise costs. One day, I went to pick up my insulin and the pharmacy charged me $350. I knew my copay was supposed to be $40, but no one at the counter could explain why. They told me to 'check with insurance.'</p>
+                            <p>I felt stuck until I found MyCareClaim. I uploaded my receipt, and the system pulled up my plan's formulary. Sure enough, it showed my insulin should have been on the lowest copay tier. MyCareClaim helped me file a correction request, and two weeks later, I got a refund for the overcharge. That $310 back meant groceries and gas for the month. More importantly, it proved I wasn't powerless."</p>
+                        </div>
+                        <div class="story-author">
+                            <span class="author-name">Sophia</span>
+                        </div>
+                        <button class="btn-primary story-get-started">Get Started</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Trust Badges Section -->
+            <div class="trust-badges-section">
+                <h2>Your Privacy & Security Matter</h2>
+                <div class="trust-badges-grid">
+                    <div class="trust-badge">
+                        <div class="trust-icon">🛡️</div>
+                        <h3>HIPAA Compliant</h3>
+                        <p>Your medical information is protected with enterprise-grade security and HIPAA compliance standards.</p>
+                    </div>
+                    <div class="trust-badge">
+                        <div class="trust-icon">🤖</div>
+                        <h3>AI Transparency</h3>
+                        <p>Our AI decisions are explainable and transparent. You always know how we reached our conclusions.</p>
+                    </div>
+                    <div class="trust-badge">
+                        <div class="trust-icon">🔒</div>
+                        <h3>Secure Data Handling</h3>
+                        <p>Your documents and personal information are encrypted and stored securely with bank-level protection.</p>
+                    </div>
+                </div>
+                <button class="btn-primary trust-cta">Start Saving Now</button>
+            </div>
+            
+            <!-- Reviews/Testimonials Section -->
+            <div class="reviews-section">
+                <h2>What Our Users Are Saying</h2>
+                <div class="reviews-grid">
+                    <div class="review-card">
+                        <div class="review-content">
+                            <p>&ldquo;MyCareClaim saved me over $2,000 on a single hospital bill. The AI caught errors I never would have noticed.&rdquo;</p>
+                        </div>
+                        <div class="review-author">
+                            <div class="author-avatar">👩</div>
+                            <div class="author-info">
+                                <span class="author-name">Sarah M.</span>
+                                <span class="author-location">Austin, TX</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="review-card">
+                        <div class="review-content">
+                            <p>&ldquo;Finally, someone who speaks plain English about medical bills. No more confusion or surprise charges.&rdquo;</p>
+                        </div>
+                        <div class="review-author">
+                            <div class="author-avatar">👨</div>
+                            <div class="author-info">
+                                <span class="author-name">Michael R.</span>
+                                <span class="author-location">Denver, CO</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="review-card">
+                        <div class="review-content">
+                            <p>&ldquo;The dispute letter was so professional, the hospital called me to apologize. I got my money back in two weeks.&rdquo;</p>
+                        </div>
+                        <div class="review-author">
+                            <div class="author-avatar">👩</div>
+                            <div class="author-info">
+                                <span class="author-name">Jennifer L.</span>
+                                <span class="author-location">Seattle, WA</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn-primary reviews-cta">Check Your Bill For Free</button>
             </div>
             
             <div class="cta-buttons">
@@ -210,49 +340,61 @@
             </div>
             <div class="pricing-container">
                 <h2>Choose Your Plan</h2>
-                <p class="pricing-subheader">We keep it simple. Start free. Upgrade when you're ready. Cancel anytime.</p>
+                <p class="pricing-subheader">Start free. Upgrade when you're ready. Cancel anytime.</p>
+                
+                <!-- Billing Toggle -->
+                <div class="billing-toggle">
+                    <span class="toggle-label">Monthly</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="billing-toggle">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span class="toggle-label">Yearly <span class="save-text">(Save 17%)</span></span>
+                </div>
+                
                 <div class="pricing-grid">
                     <!-- Starter Plan -->
-                    <div class="pricing-card">
+                    <div class="pricing-card starter">
                         <h3>Starter</h3>
-                        <div class="price">$0</div>
+                        <div class="price">$0 <span class="price-period">– Always Free</span></div>
                         <button class="btn-secondary" data-plan="free">Get Started Free</button>
                         <ul class="features-list">
-                            <li>✅ Ask our Q&A Agent Anything</li>
-                            <li>❌ Bill & Claim Analysis Agent</li>
-                            <li>❌ Challenge Bills Agent</li>
-                            <li>❌ Fight Denials Agent</li>
-                            <li>❌ Document Uploads</li>
-                            <li>❌ Priority Email Support</li>
+                            <li>Ask our Q&A Agent anything</li>
+                            <li>Explore how MyCareClaim works</li>
+                            <li>Perfect for quick questions</li>
                         </ul>
+                        <p class="feature-footnote">Upgrade for advanced agents and uploads</p>
+                        <p class="cta-reassurance">No credit card required</p>
                     </div>
-                    <!-- Complete Care Plan -->
-                    <div class="pricing-card popular">
+                    
+                    <!-- Complete Care Plan (Monthly) -->
+                    <div class="pricing-card popular monthly-plan">
+                        <div class="popular-badge">Most Popular</div>
                         <h3>Complete Care</h3>
-                        <div class="price">$7.99/month</div>
-                        <button class="btn-primary" data-plan="monthly">Upgrade to Complete Care</button>
+                        <div class="price monthly-price">$7.99<span class="price-period">/month</span></div>
+                        <button class="btn-primary" data-plan="monthly">Get Started</button>
                         <ul class="features-list">
-                            <li>✅ Ask our Q&A Agent Anything</li>
-                            <li>✅ Bill & Claim Analysis Agent</li>
-                            <li>✅ Challenge Bills Agent</li>
-                            <li>✅ Fight Denials Agent</li>
-                            <li>✅ Unlimited Document Uploads</li>
-                            <li>✅ Priority Email Support</li>
+                            <li>Everything in Starter, plus:</li>
+                            <li>Bill & Claim Analysis Agent</li>
+                            <li>Challenge Bills Agent</li>
+                            <li>Fight Denials Agent</li>
+                            <li>Unlimited document uploads</li>
+                            <li>Priority email support</li>
                         </ul>
+                        <p class="cta-reassurance">Cancel anytime</p>
                     </div>
-                    <!-- Complete Care+ Plan -->
-                    <div class="pricing-card">
-                        <h3>Complete Care+ <span class="save-badge">(Save 17%)</span></h3>
-                        <div class="price">$79/year</div>
-                        <button class="btn-secondary" data-plan="yearly">Save with Complete Care+</button>
+                    
+                    <!-- Complete Care Plan (Yearly) -->
+                    <div class="pricing-card yearly-plan">
+                        <h3>Complete Care</h3>
+                        <div class="price yearly-price">$79<span class="price-period">/year</span></div>
+                        <div class="savings-label">(Save 17% with annual billing)</div>
+                        <button class="btn-primary" data-plan="yearly">Get Started</button>
                         <ul class="features-list">
-                            <li>✅ Ask our Q&A Agent Anything</li>
-                            <li>✅ Bill & Claim Analysis Agent</li>
-                            <li>✅ Challenge Bills Agent</li>
-                            <li>✅ Fight Denials Agent</li>
-                            <li>✅ Unlimited Document Uploads</li>
-                            <li>✅ Priority Email Support</li>
+                            <li>All Complete Care features</li>
+                            <li>Save with annual billing</li>
                         </ul>
+                        <p class="cta-reassurance">Cancel anytime</p>
                     </div>
                 </div>
             </div>
@@ -541,8 +683,27 @@
             <button class="close-modal">&times;</button>
             <h2>Sign Up for Early Access</h2>
             <form id="signup-form">
+                <button type="button" id="google-signup-btn" class="google-signin-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    Sign up with Google
+                </button>
+                <div class="form-divider">
+                    <span>or</span>
+                </div>
                 <div class="form-group"><label for="signup-email">Email Address</label><input type="email" id="signup-email" required></div>
-                <div class="form-group"><label for="signup-password">Password (min. 6 characters)</label><input type="password" id="signup-password" required></div>
+                <div class="form-group">
+                    <label for="signup-password">Password</label>
+                    <input type="password" id="signup-password" required minlength="8">
+                    <div id="password-strength" class="password-strength" style="display: none;">
+                        <div class="strength-bar"></div>
+                    </div>
+                    <div id="password-strength-text" class="strength-text"></div>
+                </div>
                 <button type="submit" class="cta-button">Create Account</button>
                 <p id="signup-message" class="form-message"></p>
             </form>
@@ -551,6 +712,18 @@
             <button class="close-modal">&times;</button>
             <h2>Log In</h2>
             <form id="login-form">
+                <button type="button" id="google-login-btn" class="google-signin-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    Sign in with Google
+                </button>
+                <div class="form-divider">
+                    <span>or</span>
+                </div>
                 <div class="form-group"><label for="login-email">Email Address</label><input type="email" id="login-email" required></div>
                 <div class="form-group"><label for="login-password">Password</label><input type="password" id="login-password" required></div>
                 <div class="form-group"><a href="#" id="forgot-password-link" class="form-link">Forgot Password?</a></div>
@@ -576,6 +749,29 @@
         <div class="resource-modal-content">
             <button class="close-modal">&times;</button>
             <div id="resource-modal-body"></div>
+        </div>
+    </div>
+
+    <!-- Quick Answers Soft Gate Modal -->
+    <div id="quick-answers-soft-gate-modal" class="soft-gate-modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <button class="close-modal">&times;</button>
+            <div class="modal-header">
+                <h2>Keep Going with MyCareClaim</h2>
+            </div>
+            <div class="modal-body">
+                <ul class="benefits-list">
+                    <li>✅ Get unlimited Quick Answers</li>
+                    <li>✅ Save bills & documents</li>
+                    <li>✅ Unlock dispute & appeal agents</li>
+                </ul>
+                <div class="modal-actions">
+                    <button id="soft-gate-signup-btn" class="cta-button primary">Sign up free</button>
+                    <a href="#" id="soft-gate-login-link" class="secondary-link">Log in</a>
+                </div>
+                <p class="reassurance">Private & secure. Cancel anytime.</p>
+            </div>
         </div>
     </div>
 
@@ -736,78 +932,32 @@
 
         <!-- PAGE: AGENT 1 - RESEARCH & Q&A -->
         <main id="agent-1-page" class="page hidden">
-            <div class="page-header">
-                <h1>🔍 Quick Answers</h1>
-                <p>Get instant clarity on confusing healthcare questions. Our AI agent doesn't just answer — it explains in plain English and points you to the next step.</p>
-            </div>
-            
-            <div class="agent1-container">
-                <!-- Left Column: Input and Recent Questions -->
-                <div class="agent1-left-column">
-                    <div class="input-section">
-                        <h3>💬 Ask Your Question</h3>
-                        <form id="agent1-qa-form" class="agent1-form">
-                            <input type="text" id="agent1-question" placeholder="Ask a question about your medical bills...">
-                            <button type="submit" class="btn-primary">Ask</button>
-                        </form>
-                        <div class="suggested-questions">
-                            <p class="suggested-label">Common questions:</p>
-                            <div class="question-chips">
-                                <button class="question-chip" data-question="What should I do if my insurance claim is denied?">
-                                    Claim Denials
-                                </button>
-                                <button class="question-chip" data-question="How do I read and understand my medical bill?">
-                                    Reading Bills
-                                </button>
-                                <button class="question-chip" data-question="What is the difference between in-network and out-of-network providers?">
-                                    Network Coverage
-                                </button>
-                                <button class="question-chip" data-question="How do I appeal a denied claim?">
-                                    Appeals Process
-                                </button>
-                                <button class="question-chip" data-question="What are my rights when dealing with medical billing?">
-                                    Patient Rights
-                                </button>
-                                <button class="question-chip" data-question="How do I dispute incorrect charges on my medical bill?">
-                                    Disputing Charges
-                                </button>
+            <div class="chat-interface">
+                <!-- Chat Header -->
+                <div class="chat-header">
+                    <div class="chat-title">
+                        <h1>🔍 Quick Answers</h1>
+                        <p>Get instant clarity on confusing healthcare questions</p>
+                    </div>
+                    <div class="chat-actions">
+                        <button id="new-chat-btn" class="btn-secondary">+ New Chat</button>
+                        <button id="contact-human-agent1" class="btn-secondary contact-human-btn">Contact Human</button>
+                    </div>
+                </div>
+                
+                <!-- Chat Messages Container -->
+                <div class="chat-messages-container">
+                    <div id="agent1-chat" class="chat-messages">
+                        <div class="message ai-message">
+                            <div class="message-bubble">
+                                <p>Hi there, how can I help?</p>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="recent-questions-section">
-                        <div class="recent-questions-header">
-                            <h3>⏰ Recent Questions</h3>
-                            <button id="clear-history-btn" class="btn-text">Clear History</button>
-                        </div>
-                        <ul id="recent-questions-list" class="recent-questions">
-                            <!-- Questions will be dynamically inserted here by app.js -->
-                        </ul>
-                        <div id="view-all-questions" class="view-all-container hidden">
-                            <button id="view-all-btn" class="btn-secondary">View All Questions</button>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Right Column: Chat Display -->
-                <div class="agent1-right-column">
-                    <div class="chat-section">
-                        <div class="chat-header">
-                            <h3>💬 Conversation</h3>
-                            <button id="copy-answer-btn" class="btn-text" style="display: none;">
-                                📋 Copy Answer
-                            </button>
-                        </div>
-                        <div id="agent1-chat" class="chat-container">
-                            <div class="chat-messages">
-                                <div class="message ai-message">
-                                    <div class="message-bubble">
-                                        <p>Hi there! 👋 I'm here to help you with your medical billing and insurance questions. Ask me anything about claims, denials, coverage, or billing disputes.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="feedback-section" class="feedback-section" style="display: none;">
+                    <!-- Feedback Section (hidden by default) -->
+                    <div id="feedback-section" class="feedback-section" style="display: none;">
+                        <div class="feedback-container">
                             <p class="feedback-text">Was this answer helpful?</p>
                             <div class="feedback-buttons">
                                 <button id="feedback-helpful" class="feedback-btn helpful">
@@ -823,11 +973,30 @@
                         </div>
                     </div>
                 </div>
-            </div>
-            
-            <!-- Contact Human Section -->
-            <div class="contact-human-section">
-                <button id="contact-human-agent1" class="btn-secondary contact-human-btn">Contact Human</button>
+                
+                <!-- Chat Input Area -->
+                <div class="chat-input-container">
+                    <form id="agent1-qa-form" class="chat-input-form">
+                        <div class="input-wrapper">
+                            <input type="text" id="agent1-question" placeholder="Ask anything about your medical bills..." autocomplete="off">
+                            <button type="submit" class="send-btn" id="send-btn">
+                                <span class="send-icon">➤</span>
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <!-- Suggested Prompts (shown when chat is empty) -->
+                    <div id="suggested-prompts" class="suggested-prompts">
+                        <div class="prompt-chips">
+                            <button class="prompt-chip" data-question="What should I do if my insurance claim is denied?">Claim Denials</button>
+                            <button class="prompt-chip" data-question="How do I read and understand my medical bill?">Reading Bills</button>
+                            <button class="prompt-chip" data-question="What is the difference between in-network and out-of-network providers?">Network Coverage</button>
+                            <button class="prompt-chip" data-question="How do I appeal a denied claim?">Appeals Process</button>
+                            <button class="prompt-chip" data-question="What are my rights when dealing with medical billing?">Patient Rights</button>
+                            <button class="prompt-chip" data-question="How do I dispute incorrect charges on my medical bill?">Disputing Charges</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </main>
 
@@ -1498,6 +1667,7 @@
         </div>
     </div>
 
-    <script type="module" src="app.js?v=4.1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
+    <script type="module" src="app.js?v=7.7"></script>
 </body>
 </html>

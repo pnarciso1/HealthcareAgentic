@@ -1,6 +1,7 @@
 import os
 import json
 import stripe
+from datetime import datetime
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -23,7 +24,9 @@ CORS(app, resources={r"/*": {"origins": [
     "https://www.mycareclaim.com",
     "https://healthcareagentic--agent2-ui-improvements-4maxho39.web.app",
     "http://localhost:8000",
-    "http://127.0.0.1:8000"
+    "http://localhost:8001",
+    "http://127.0.0.1:8000",
+    "http://127.0.0.1:8001"
 ]}})
 
 db = firestore.Client(project=os.getenv('GCP_PROJECT_ID'))
@@ -39,6 +42,15 @@ PRICE_IDS = {
     'monthly': os.getenv('STRIPE_MONTHLY_PRICE_ID'),
     'yearly': os.getenv('STRIPE_YEARLY_PRICE_ID')
 }
+
+# Debug logging for environment variables
+print("=== ENVIRONMENT VARIABLES DEBUG ===")
+print(f"STRIPE_MONTHLY_PRICE_ID: {os.getenv('STRIPE_MONTHLY_PRICE_ID')}")
+print(f"STRIPE_YEARLY_PRICE_ID: {os.getenv('STRIPE_YEARLY_PRICE_ID')}")
+print(f"STRIPE_SECRET_KEY: {os.getenv('STRIPE_SECRET_KEY', 'NOT_SET')[:20]}...")
+print(f"FRONTEND_DOMAIN: {os.getenv('FRONTEND_DOMAIN', 'NOT_SET')}")
+print(f"GCP_PROJECT_ID: {os.getenv('GCP_PROJECT_ID', 'NOT_SET')}")
+print("=== END ENVIRONMENT DEBUG ===")
 
 # --- STRIPE PROMOTION CONFIGURATION ---
 # Define the FRIENDSFOREVER promotion code
@@ -193,10 +205,61 @@ def verify_firebase_token(token):
     try:
         project_id = os.getenv('GCP_PROJECT_ID')
         decoded_token = id_token.verify_firebase_token(token, requests.Request(), audience=project_id)
+        
+        # Check if email is verified
+        if not decoded_token.get('email_verified', False):
+            print(f"--- EMAIL NOT VERIFIED for user: {decoded_token.get('email', 'unknown')}")
+            return None
+            
         return decoded_token
     except ValueError as e:
         print(f"--- TOKEN VERIFICATION FAILED: {e}")
         return None
+
+# --- SECURITY VALIDATION FUNCTIONS ---
+def validate_password_strength(password):
+    """Validate password meets security requirements"""
+    if not password or len(password) < 8:
+        return False, "Password must be at least 8 characters long"
+    
+    if not any(c.isupper() for c in password):
+        return False, "Password must contain at least one uppercase letter"
+    
+    if not any(c.islower() for c in password):
+        return False, "Password must contain at least one lowercase letter"
+    
+    if not any(c.isdigit() for c in password):
+        return False, "Password must contain at least one number"
+    
+    if not any(c in "!@#$%^&*(),.?\":{}|<>" for c in password):
+        return False, "Password must contain at least one special character"
+    
+    return True, "Password is valid"
+
+def validate_email_format(email):
+    """Basic email format validation"""
+    import re
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return re.match(pattern, email) is not None
+
+def sanitize_input(text):
+    """Basic input sanitization"""
+    if not text:
+        return ""
+    
+    # Remove HTML tags using regex
+    import re
+    text = re.sub(r'<[^>]+>', '', text)
+    
+    # Remove potentially dangerous characters
+    dangerous_chars = ['<', '>', '"', "'", '&', ';', '(', ')', '{', '}', '[', ']']
+    for char in dangerous_chars:
+        text = text.replace(char, '')
+    
+    # Clean up multiple spaces that might be left
+    text = re.sub(r'\s+', ' ', text)
+    
+    return text.strip()
 
 # --- DISPUTE ENGINE CONSTANTS ---
 DISPUTE_TEMPLATES = {
@@ -729,6 +792,66 @@ def format_currency(amount):
 def hello_world():
     return "Hello, your backend server is running!"
 
+@app.route('/api/test', methods=['GET', 'POST'])
+def test_endpoint():
+    """Test endpoint to verify CORS and basic connectivity"""
+    print("=== TEST ENDPOINT CALLED ===")
+    print(f"Method: {request.method}")
+    print(f"Headers: {dict(request.headers)}")
+    return jsonify({
+        'status': 'success',
+        'message': 'Test endpoint working',
+        'method': request.method,
+        'timestamp': str(datetime.now())
+    })
+
+@app.route('/api/security/validate-user', methods=['GET'])
+def validate_user_security():
+    """Validate user security status and requirements"""
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return jsonify({'error': 'Authorization header is missing or invalid'}), 401
+    
+    token = auth_header.split('Bearer ')[1]
+    decoded_token = verify_firebase_token(token)
+    if not decoded_token:
+        return jsonify({'error': 'Invalid or expired authentication token'}), 401
+
+    uid = decoded_token.get('user_id') or decoded_token.get('uid')
+    email = decoded_token.get('email', '')
+    email_verified = decoded_token.get('email_verified', False)
+    
+    if not uid:
+        return jsonify({'error': 'User ID not found in token'}), 400
+
+    try:
+        # Get user document from Firestore
+        user_ref = db.collection('users').document(uid)
+        user_doc = user_ref.get()
+        
+        if not user_doc.exists:
+            return jsonify({'error': 'User not found'}), 404
+        
+        user_data = user_doc.to_dict()
+        
+        # Return security status
+        return jsonify({
+            'uid': uid,
+            'email': email,
+            'email_verified': email_verified,
+            'subscription_tier': user_data.get('subscriptionTier', 'free'),
+            'created_at': user_data.get('createdAt'),
+            'security_status': {
+                'email_verified': email_verified,
+                'account_active': True,
+                'requirements_met': email_verified
+            }
+        })
+        
+    except Exception as e:
+        print(f"--- ERROR during security validation: {e}")
+        return jsonify({'error': 'Failed to validate user security'}), 500
+
 @app.route('/stripe-webhook', methods=['GET'])
 def stripe_webhook_test():
     return "Stripe webhook endpoint is reachable!", 200
@@ -767,9 +890,17 @@ def create_checkout_session():
     print(f"All Price IDs: {PRICE_IDS}")
     print(f"Stripe API Key: {stripe.api_key[:10]}..." if stripe.api_key else "Stripe API Key: NOT SET")
 
+    # Validate price ID configuration
     if not price_id:
-        print("ERROR: Invalid plan specified")
-        return jsonify({'error': 'Invalid plan specified'}), 400
+        error_msg = f"Invalid plan specified: {plan}. Available plans: {list(PRICE_IDS.keys())}"
+        print(f"ERROR: {error_msg}")
+        return jsonify({'error': error_msg}), 400
+    
+    # Check if price ID is None (environment variable not loaded)
+    if price_id is None:
+        error_msg = f"Price ID for plan '{plan}' is not configured. Please check environment variables."
+        print(f"ERROR: {error_msg}")
+        return jsonify({'error': 'Service configuration error. Please contact support.'}), 500
 
     try:
         print("Attempting to access Firestore...")
@@ -854,7 +985,18 @@ def create_checkout_session():
         import traceback
         print(f"Full traceback: {traceback.format_exc()}")
         print("=== STRIPE CHECKOUT DEBUG END ===")
-        return jsonify({'error': str(e)}), 500
+        
+        # Provide more specific error messages based on error type
+        if "No such price" in str(e):
+            error_msg = "Invalid price configuration. Please contact support."
+        elif "Invalid API Key" in str(e):
+            error_msg = "Payment service configuration error. Please contact support."
+        elif "customer" in str(e).lower():
+            error_msg = "Customer setup error. Please try again or contact support."
+        else:
+            error_msg = "Unable to create checkout session. Please try again."
+            
+        return jsonify({'error': error_msg}), 500
 
 @app.route('/validate-coupon', methods=['POST'])
 def validate_coupon():
@@ -949,14 +1091,19 @@ def stripe_webhook():
 
 @app.route('/ask-agent1', methods=['POST'])
 def ask_agent1():
+    # Support both authenticated and guest users
     auth_header = request.headers.get('Authorization')
-    if not auth_header or not auth_header.startswith('Bearer '):
-        return jsonify({'error': 'Authorization header is missing or invalid'}), 401
+    is_guest = True
     
-    token = auth_header.split('Bearer ')[1]
-    decoded_token = verify_firebase_token(token)
-    if not decoded_token:
-        return jsonify({'error': 'Invalid or expired authentication token'}), 401
+    if auth_header and auth_header.startswith('Bearer '):
+        token = auth_header.split('Bearer ')[1]
+        decoded_token = verify_firebase_token(token)
+        if decoded_token:
+            is_guest = False
+            print(f"--- DEBUG: Authenticated user: {decoded_token.get('uid')}")
+    
+    if is_guest:
+        print("--- DEBUG: Guest mode - no authentication required")
     
     data = request.get_json()
     if not data or 'question' not in data:
@@ -970,52 +1117,59 @@ def ask_agent1():
         PROJECT_ID = os.getenv('GCP_PROJECT_ID')
         LOCATION = "global"
         DATA_STORE_ID = os.getenv('DATA_STORE_ID')
-        from google.cloud import discoveryengine_v1alpha as discoveryengine
-        client = discoveryengine.SearchServiceClient()
-        serving_config = (
-            f"projects/{PROJECT_ID}/locations/{LOCATION}/"
-            f"collections/default_collection/dataStores/{DATA_STORE_ID}/"
-            f"servingConfigs/default_config"
-        )
-        search_request = discoveryengine.SearchRequest(
-            serving_config=serving_config,
-            query=question,
-            page_size=5,
-            content_search_spec={
-                "snippet_spec": {"return_snippet": True},
-                "summary_spec": {
-                    "summary_result_count": 3,
-                    "include_citations": True,
+        
+        # Check if DATA_STORE_ID is set
+        if not DATA_STORE_ID:
+            print("--- WARNING: DATA_STORE_ID not set, skipping Vertex AI Search ---")
+            context = ""  # Set empty context to trigger fallback
+        else:
+            from google.cloud import discoveryengine_v1alpha as discoveryengine
+            client = discoveryengine.SearchServiceClient()
+            serving_config = (
+                f"projects/{PROJECT_ID}/locations/{LOCATION}/"
+                f"collections/default_collection/dataStores/{DATA_STORE_ID}/"
+                f"servingConfigs/default_config"
+            )
+            search_request = discoveryengine.SearchRequest(
+                serving_config=serving_config,
+                query=question,
+                page_size=5,
+                content_search_spec={
+                    "snippet_spec": {"return_snippet": True},
+                    "summary_spec": {
+                        "summary_result_count": 3,
+                        "include_citations": True,
+                    },
                 },
-            },
-        )
-        search_response = client.search(search_request)
-        for result in search_response.results:
-            for snippet in result.document.derived_struct_data.get("snippets", []):
-                context += snippet.get("snippet", "") + "\n\n"
+            )
+            search_response = client.search(search_request)
+            for result in search_response.results:
+                for snippet in result.document.derived_struct_data.get("snippets", []):
+                    context += snippet.get("snippet", "") + "\n\n"
     except Exception as e:
         print(f"--- ERROR during Vertex AI Search: {e}")
-        return jsonify({'error': 'Failed to retrieve information from knowledge base.'}), 500
+        context = ""  # Set empty context to trigger fallback instead of returning error
     
     try:
-        if not context:
-            final_answer = "I could not find any specific information related to your question in my knowledge base. Please try rephrasing your question."
-        else:
-            history_string = ""
-            for turn in chat_history:
-                history_string += f"User: {turn['user']}\nAI: {turn['ai']}\n"
-            
+        # Always use Gemini for dynamic responses, with or without knowledge base context
+        print("--- DEBUG: Using Gemini for dynamic response generation...")
+        history_string = ""
+        for turn in chat_history:
+            history_string += f"User: {turn['user']}\nAI: {turn['ai']}\n"
+        
+        if context:
+            print("--- DEBUG: Using knowledge base context with Gemini...")
             prompt = f"""
-            You are MyCareClaim Advocate, a helpful and conversational AI assistant. 
+            You are MyCareClaim Advocate, a helpful and conversational AI assistant specializing in healthcare billing, insurance, and patient advocacy.
             Your tone should be clear, helpful, and empathetic.
 
             CONVERSATION HISTORY:
             {history_string}
 
-            CONTEXT to answer the new question (use this information):
+            KNOWLEDGE BASE CONTEXT to answer the new question (use this information):
             {context}
 
-            Based on the CONVERSATION HISTORY and the new CONTEXT, answer the new user question.
+            Based on the CONVERSATION HISTORY and the KNOWLEDGE BASE CONTEXT, answer the new user question.
             - If the conversation history is empty, you can start with a friendly greeting like "Of course, I can help with that." For subsequent questions, get straight to the point.
             - Synthesize the information into a helpful, conversational paragraph.
             - After answering, proactively ask a follow-up question to guide the user.
@@ -1025,14 +1179,203 @@ def ask_agent1():
 
             Helpful Answer:
             """
-            gemini_model = GenerativeModel("gemini-2.5-pro")
-            response = gemini_model.generate_content(prompt)
-            final_answer = response.text
+        else:
+            print("--- DEBUG: Using Gemini's general healthcare knowledge...")
+            prompt = f"""
+            You are MyCareClaim Advocate, a healthcare billing and insurance expert with deep knowledge of:
+            - Medical billing codes (CPT, ICD-10, HCPCS)
+            - Insurance coverage policies and procedures
+            - Healthcare provider billing practices
+            - Patient rights and billing disputes
+            - Insurance claim denials and appeals
+            - Healthcare cost transparency and billing errors
+            - EOBs (Explanation of Benefits) and medical bills
+            - Healthcare terminology and processes
+
+            CONVERSATION HISTORY:
+            {history_string}
+
+            USER QUESTION: {question}
+
+            INSTRUCTIONS:
+            1. Use your healthcare expertise to provide a helpful, accurate answer
+            2. Explain complex billing and insurance concepts in plain English
+            3. Address the specific situation described in the question
+            4. Provide actionable next steps the user can take
+            5. If this involves billing disputes or errors, suggest using our dispute resolution tools
+            6. Be empathetic and understanding of the user's frustration
+            7. If you're unsure about specific insurance policies, recommend contacting the insurance company directly
+            
+            RESPONSE GUIDELINES:
+            - Start with acknowledging their situation
+            - Provide clear, step-by-step guidance
+            - Explain any technical terms or codes mentioned
+            - Suggest specific actions they can take
+            - End with a helpful follow-up question or next step
+            
+            IMPORTANT: If the user is dealing with billing errors, incorrect charges, or insurance disputes, include this suggestion:
+            "This sounds like a billing issue that our specialized dispute resolution tools can help with. Would you like me to connect you with our Bill & Claim Review Agent to analyze your documents and potentially save you money?"
+            
+            Helpful Expert Response:
+            """
+        
+        gemini_model = GenerativeModel("gemini-2.5-pro")
+        response = gemini_model.generate_content(prompt)
+        final_answer = response.text
+        print(f"--- DEBUG: Gemini response generated, length: {len(final_answer)}")
     except Exception as e:
         print(f"--- ERROR during Gemini call: {e}")
         return jsonify({'error': 'The AI failed to generate an answer.'}), 500
     
     return jsonify({'answer': final_answer})
+
+@app.route('/api/quick-answers', methods=['POST'])
+def quick_answers():
+    """Handle Quick Answers widget - guest mode for unauthenticated users"""
+    print("=== QUICK ANSWERS ENDPOINT CALLED ===")
+    
+    # Check for guest mode (no authentication required)
+    auth_header = request.headers.get('Authorization')
+    is_guest = True
+    
+    if auth_header and auth_header.startswith('Bearer '):
+        token = auth_header.split('Bearer ')[1]
+        decoded_token = verify_firebase_token(token)
+        if decoded_token:
+            is_guest = False
+            print(f"--- DEBUG: Authenticated user: {decoded_token.get('uid')}")
+    
+    if is_guest:
+        print("--- DEBUG: Guest mode - no authentication required")
+    
+    data = request.get_json()
+    if not data or 'question' not in data:
+        return jsonify({'error': 'Request must include a question'}), 400
+    
+    question = data['question']
+    chat_history = data.get('history', [])
+    context = ""
+    
+    try:
+        PROJECT_ID = os.getenv('GCP_PROJECT_ID')
+        LOCATION = "global"
+        DATA_STORE_ID = os.getenv('DATA_STORE_ID')
+        
+        # Check if DATA_STORE_ID is set
+        if not DATA_STORE_ID:
+            print("--- WARNING: DATA_STORE_ID not set, skipping Vertex AI Search ---")
+            context = ""  # Set empty context to trigger fallback
+        else:
+            from google.cloud import discoveryengine_v1alpha as discoveryengine
+            client = discoveryengine.SearchServiceClient()
+            serving_config = (
+                f"projects/{PROJECT_ID}/locations/{LOCATION}/"
+                f"collections/default_collection/dataStores/{DATA_STORE_ID}/"
+                f"servingConfigs/default_config"
+            )
+            search_request = discoveryengine.SearchRequest(
+                serving_config=serving_config,
+                query=question,
+                page_size=5,
+                content_search_spec={
+                    "snippet_spec": {"return_snippet": True},
+                    "summary_spec": {
+                        "summary_result_count": 3,
+                        "include_citations": True,
+                    },
+                },
+            )
+            search_response = client.search(search_request)
+            for result in search_response.results:
+                for snippet in result.document.derived_struct_data.get("snippets", []):
+                    context += snippet.get("snippet", "") + "\n\n"
+    except Exception as e:
+        print(f"--- ERROR during Vertex AI Search: {e}")
+        context = ""  # Set empty context to trigger fallback instead of returning error
+    
+    try:
+        # Always use Gemini for dynamic responses, with or without knowledge base context
+        print("--- DEBUG: Using Gemini for dynamic response generation...")
+        history_string = ""
+        for turn in chat_history:
+            history_string += f"User: {turn['user']}\nAI: {turn['ai']}\n"
+        
+        if context:
+            print("--- DEBUG: Using knowledge base context with Gemini...")
+            prompt = f"""
+            You are MyCareClaim Advocate, a helpful and conversational AI assistant specializing in healthcare billing, insurance, and patient advocacy.
+            Your tone should be clear, helpful, and empathetic.
+
+            CONVERSATION HISTORY:
+            {history_string}
+
+            KNOWLEDGE BASE CONTEXT to answer the new question (use this information):
+            {context}
+
+            Based on the CONVERSATION HISTORY and the KNOWLEDGE BASE CONTEXT, answer the new user question.
+            - If the conversation history is empty, you can start with a friendly greeting like "Of course, I can help with that." For subsequent questions, get straight to the point.
+            - Synthesize the information into a helpful, conversational paragraph.
+            - After answering, proactively ask a follow-up question to guide the user.
+
+            New User Question:
+            {question}
+
+            Helpful Answer:
+            """
+        else:
+            print("--- DEBUG: Using Gemini's general healthcare knowledge...")
+            prompt = f"""
+            You are MyCareClaim Advocate, a healthcare billing and insurance expert with deep knowledge of:
+            - Medical billing codes (CPT, ICD-10, HCPCS)
+            - Insurance coverage policies and procedures
+            - Healthcare provider billing practices
+            - Patient rights and billing disputes
+            - Insurance claim denials and appeals
+            - Healthcare cost transparency and billing errors
+            - EOBs (Explanation of Benefits) and medical bills
+            - Healthcare terminology and processes
+
+            CONVERSATION HISTORY:
+            {history_string}
+
+            USER QUESTION: {question}
+
+            INSTRUCTIONS:
+            1. Use your healthcare expertise to provide a helpful, accurate answer
+            2. Explain complex billing and insurance concepts in plain English
+            3. Address the specific situation described in the question
+            4. Provide actionable next steps the user can take
+            5. If this involves billing disputes or errors, suggest using our dispute resolution tools
+            6. Be empathetic and understanding of the user's frustration
+            7. If you're unsure about specific insurance policies, recommend contacting the insurance company directly
+            
+            RESPONSE GUIDELINES:
+            - Start with acknowledging their situation
+            - Provide clear, step-by-step guidance
+            - Explain any technical terms or codes mentioned
+            - Suggest specific actions they can take
+            - End with a helpful follow-up question or next step
+            
+            IMPORTANT: If the user is dealing with billing errors, incorrect charges, or insurance disputes, include this suggestion:
+            "This sounds like a billing issue that our specialized dispute resolution tools can help with. Would you like me to connect you with our Bill & Claim Review Agent to analyze your documents and potentially save you money?"
+            
+            Helpful Expert Response:
+            """
+        
+        gemini_model = GenerativeModel("gemini-2.5-pro")
+        response = gemini_model.generate_content(prompt)
+        final_answer = response.text
+        print(f"--- DEBUG: Gemini response generated, length: {len(final_answer)}")
+    except Exception as e:
+        print(f"--- ERROR during Gemini call: {e}")
+        import traceback
+        print(f"--- ERROR traceback: {traceback.format_exc()}")
+        return jsonify({'error': 'The AI failed to generate an answer.'}), 500
+    
+    return jsonify({
+        'answer': final_answer,
+        'isGuest': is_guest
+    })
 
 @app.route('/api/document-qa', methods=['POST'])
 def document_qa():
@@ -1405,6 +1748,91 @@ def get_user_disputes():
         print(f"--- ERROR traceback: {traceback.format_exc()}")
         return jsonify({'error': 'Failed to retrieve disputes'}), 500
 
+@app.route('/api/dispute/update-dispute', methods=['PUT'])
+def update_dispute():
+    """Update a dispute's status and details"""
+    print("=== UPDATE DISPUTE ENDPOINT CALLED ===")
+    
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return jsonify({'error': 'Authorization header is missing or invalid'}), 401
+
+    token = auth_header.split('Bearer ')[1]
+    decoded_token = verify_firebase_token(token)
+    if not decoded_token:
+        return jsonify({'error': 'Invalid or expired authentication token'}), 401
+
+    uid = decoded_token.get('user_id') or decoded_token.get('uid')
+    if not uid:
+        return jsonify({'error': 'User ID not found in token'}), 400
+
+    data = request.get_json()
+    dispute_id = data.get('disputeId')
+    dispute_letter = data.get('disputeLetter')
+    status = data.get('status')
+    evidence = data.get('evidence')
+    amount_disputed = data.get('amountDisputed')
+    
+    if not dispute_id:
+        return jsonify({'error': 'Dispute ID is required'}), 400
+
+    try:
+        # Get the dispute document reference
+        dispute_ref = db.collection('users').document(uid).collection('disputes').document(dispute_id)
+        dispute_doc = dispute_ref.get()
+        
+        if not dispute_doc.exists:
+            return jsonify({'error': 'Dispute not found'}), 404
+        
+        # Prepare update data (only include fields that are provided)
+        update_data = {
+            'updated_at': SERVER_TIMESTAMP
+        }
+        
+        if dispute_letter is not None:
+            update_data['dispute_letter'] = dispute_letter
+        
+        if status is not None:
+            # Validate status values
+            valid_statuses = ['draft', 'submitted', 'in_progress', 'resolved', 'cancelled']
+            if status not in valid_statuses:
+                return jsonify({'error': f'Invalid status. Must be one of: {", ".join(valid_statuses)}'}), 400
+            update_data['status'] = status
+        
+        if evidence is not None:
+            update_data['evidence'] = evidence
+        
+        if amount_disputed is not None:
+            try:
+                update_data['amount_disputed'] = float(amount_disputed)
+            except (ValueError, TypeError):
+                return jsonify({'error': 'Amount disputed must be a valid number'}), 400
+        
+        # Update the dispute
+        dispute_ref.update(update_data)
+        
+        # Get the updated dispute data
+        updated_dispute = dispute_ref.get()
+        dispute_data = updated_dispute.to_dict()
+        dispute_data['id'] = updated_dispute.id
+        
+        print(f"--- Dispute {dispute_id} updated successfully ---")
+        
+        return jsonify({
+            'dispute_id': dispute_id,
+            'status': dispute_data.get('status', 'unknown'),
+            'message': 'Dispute updated successfully',
+            'dispute': dispute_data
+        })
+        
+    except Exception as e:
+        print(f"--- ERROR during dispute update: {e}")
+        import traceback
+        print(f"--- ERROR traceback: {traceback.format_exc()}")
+        return jsonify({'error': 'Failed to update dispute'}), 500
+
+# Removed generate_healthcare_expert_response function - now using dynamic Gemini responses directly in endpoints
+
 def create_document_qa_prompt(context, question):
     """Create enhanced prompt for document-specific Q&A with dispute detection"""
     return f"""
@@ -1484,6 +1912,9 @@ def upload_document():
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
 
+    # Get upload category from form data
+    upload_category = request.form.get('category', 'bills')  # Default to 'bills' if not specified
+    
     if file:
         try:
             filename = secure_filename(file.filename)
@@ -1493,24 +1924,16 @@ def upload_document():
             # Upload the file to Google Cloud Storage
             blob.upload_from_file(file.stream, content_type=file.content_type)
             
-            # Create a placeholder document in Firestore to track the upload
-            user_ref = db.collection('users').document(uid)
-            analyses_collection = user_ref.collection('analyses')
+            # Store category metadata in blob metadata for Cloud Function to access
+            blob.metadata = {'upload_category': upload_category, 'user_id': uid}
+            blob.patch()
             
-            # Add a placeholder document that will be updated by the Cloud Function
-            placeholder_doc = analyses_collection.add({
-                'original_filename': filename,
-                'gcs_uri': f"gs://{UPLOAD_BUCKET_NAME}/user_uploads/{uid}/{filename}",
-                'status': 'processing',
-                'created_at': SERVER_TIMESTAMP,
-                'upload_timestamp': SERVER_TIMESTAMP
-            })
-            
-            print(f"--- File {filename} uploaded successfully for user {uid}. Cloud Function will process it automatically. ---")
+            print(f"--- File {filename} uploaded successfully for user {uid} in category '{upload_category}'. Cloud Function will process it automatically. ---")
             
             return jsonify({
                 'message': f'File {filename} uploaded successfully. AI analysis has started automatically.',
-                'document_id': placeholder_doc[1].id,
+                'filename': filename,
+                'category': upload_category,
                 'status': 'processing'
             }), 200
             

@@ -179,13 +179,59 @@ def extract_financial_data(analysis_json, extracted_text):
                     except ValueError:
                         continue
         
-        # Determine document type
-        if 'eob' in search_text or 'explanation of benefits' in search_text:
-            financial_data['document_type'] = 'eob'
-        elif 'insurance' in search_text or 'policy' in search_text or 'coverage' in search_text or 'benefits' in search_text:
-            financial_data['document_type'] = 'insurance_plan'
-        elif 'bill' in search_text or 'statement' in search_text:
+        # Determine document type with improved logic
+        search_text_lower = search_text.lower()
+        
+        # Priority 1: Check for bill-specific indicators (most specific first)
+        bill_indicators = [
+            'amount due', 'payment required', 'pay this amount', 'total due',
+            'balance due', 'outstanding balance', 'payment due', 'please pay',
+            'remit payment', 'send payment', 'payment amount', 'amount owed',
+            'your responsibility', 'patient responsibility', 'you owe',
+            'service date', 'date of service', 'billing statement',
+            'statement of account', 'account statement', 'invoice',
+            'charges for services', 'services rendered', 'medical services',
+            'hospital bill', 'physician bill', 'clinic bill', 'medical bill'
+        ]
+        
+        # Priority 2: Check for EOB-specific indicators
+        eob_indicators = [
+            'explanation of benefits', 'eob', 'this is not a bill',
+            'claim processed', 'claim number', 'claim details',
+            'benefits paid', 'insurance paid', 'plan paid',
+            'deductible applied', 'copay applied', 'coinsurance applied',
+            'allowed amount', 'plan discount', 'provider discount',
+            'member responsibility', 'what you owe', 'your share'
+        ]
+        
+        # Priority 3: Check for insurance plan-specific indicators
+        insurance_plan_indicators = [
+            'summary of benefits', 'evidence of coverage', 'plan document',
+            'benefit summary', 'coverage summary', 'plan summary',
+            'member handbook', 'plan handbook', 'benefits handbook',
+            'annual deductible', 'family deductible', 'individual deductible',
+            'preventive care', 'wellness benefits', 'plan year',
+            'open enrollment', 'plan effective date', 'coverage effective',
+            'network providers', 'in-network', 'out-of-network',
+            'prior authorization', 'referral required', 'plan limits'
+        ]
+        
+        # Check for bill indicators first (highest priority)
+        if any(indicator in search_text_lower for indicator in bill_indicators):
             financial_data['document_type'] = 'bill'
+        # Check for EOB indicators second
+        elif any(indicator in search_text_lower for indicator in eob_indicators):
+            financial_data['document_type'] = 'eob'
+        # Check for insurance plan indicators third
+        elif any(indicator in search_text_lower for indicator in insurance_plan_indicators):
+            financial_data['document_type'] = 'insurance_plan'
+        # Fallback to simple keyword matching
+        elif 'bill' in search_text_lower or 'statement' in search_text_lower:
+            financial_data['document_type'] = 'bill'
+        elif 'eob' in search_text_lower or 'explanation of benefits' in search_text_lower:
+            financial_data['document_type'] = 'eob'
+        elif 'insurance' in search_text_lower or 'policy' in search_text_lower:
+            financial_data['document_type'] = 'insurance_plan'
         else:
             financial_data['document_type'] = 'unknown'
         
@@ -239,6 +285,96 @@ def extract_financial_data(analysis_json, extracted_text):
                 'network_type': None,
                 'coverage_details': []
             }
+        }
+
+def generate_insurance_plan_analysis(extracted_text, financial_data):
+    """
+    Generate specialized analysis for Insurance Plan documents with benefits summary,
+    optimization tips, and out-of-network prevention guidance.
+    """
+    try:
+        model = GenerativeModel("gemini-2.5-pro")
+        
+        prompt = f"""
+        You are an expert insurance benefits advisor. Analyze this insurance plan document and provide a comprehensive analysis.
+
+        DOCUMENT TEXT:
+        {extracted_text}
+
+        EXTRACTED FINANCIAL DATA:
+        {json.dumps(financial_data, indent=2)}
+
+        Please provide a detailed analysis in the following JSON format:
+
+        {{
+            "summary": "Brief overview of the insurance plan",
+            "key_benefits": [
+                "List of main benefits and coverage areas"
+            ],
+            "cost_structure": {{
+                "deductible": "Annual deductible amount and details",
+                "copay": "Copay amounts for different services",
+                "coinsurance": "Coinsurance percentages",
+                "out_of_pocket_max": "Maximum out-of-pocket costs"
+            }},
+            "network_info": {{
+                "type": "HMO, PPO, EPO, etc.",
+                "in_network_benefits": "Benefits of staying in-network",
+                "out_of_network_penalties": "Costs of going out-of-network"
+            }},
+            "optimization_tips": [
+                "Specific tips to maximize benefits and minimize costs"
+            ],
+            "out_of_network_prevention": [
+                "Strategies to avoid out-of-network charges"
+            ],
+            "important_limitations": [
+                "Key limitations, exclusions, or restrictions"
+            ],
+            "action_items": [
+                "Specific actions the user should take to optimize their plan"
+            ]
+        }}
+
+        Focus on practical, actionable advice that helps the user:
+        1. Understand their coverage and benefits
+        2. Avoid unexpected out-of-network charges
+        3. Maximize their insurance benefits
+        4. Minimize out-of-pocket costs
+        5. Navigate their plan effectively
+
+        Be specific and practical in your recommendations.
+        """
+        
+        response = model.generate_content(prompt)
+        analysis_text = response.text
+        
+        # Try to parse as JSON, fallback to text if parsing fails
+        try:
+            return json.loads(analysis_text)
+        except json.JSONDecodeError:
+            return {
+                "summary": analysis_text[:500] + "..." if len(analysis_text) > 500 else analysis_text,
+                "key_benefits": ["Analysis completed - see summary for details"],
+                "cost_structure": financial_data.get('insurance_data', {}),
+                "network_info": {"type": "See document for details"},
+                "optimization_tips": ["Review the full analysis for specific recommendations"],
+                "out_of_network_prevention": ["Always verify provider network status before appointments"],
+                "important_limitations": ["See document for complete terms and conditions"],
+                "action_items": ["Review your plan documents carefully"]
+            }
+            
+    except Exception as e:
+        print(f"--- ERROR in insurance plan analysis: {e}")
+        return {
+            "summary": "Insurance plan analysis completed with basic information extraction.",
+            "key_benefits": ["See document for complete benefits details"],
+            "cost_structure": financial_data.get('insurance_data', {}),
+            "network_info": {"type": "See document for network details"},
+            "optimization_tips": ["Always verify provider network status before appointments"],
+            "out_of_network_prevention": ["Check with your insurance before receiving care"],
+            "important_limitations": ["Review plan documents for complete terms"],
+            "action_items": ["Contact your insurance company for specific questions"]
         }
 
 def process_medical_bill(event, context):
@@ -320,6 +456,10 @@ def process_medical_bill(event, context):
         blob = bucket.get_blob(file_name)
         if not blob:
             raise FileNotFoundError(f"Could not find file {file_name} in bucket {bucket_name}.")
+        
+        # Get upload category from blob metadata
+        upload_category = blob.metadata.get('upload_category', 'bills') if blob.metadata else 'bills'
+        print(f"--- Upload category: {upload_category} ---")
             
         file_content = blob.download_as_bytes()
         mime_type = blob.content_type
@@ -328,10 +468,21 @@ def process_medical_bill(event, context):
         raw_document = documentai.RawDocument(content=file_content, mime_type=mime_type)
         request = documentai.ProcessRequest(name=resource_name, raw_document=raw_document)
 
-        result = docai_client.process_document(request=request)
-        extracted_text = result.document.text
-        
-        print("--- Document AI processing successful. ---")
+        try:
+            result = docai_client.process_document(request=request)
+            extracted_text = result.document.text
+            print("--- Document AI processing successful. ---")
+        except Exception as e:
+            if "PAGE_LIMIT_EXCEEDED" in str(e):
+                print(f"--- WARNING: Document has too many pages for Document AI. Creating fallback analysis. ---")
+                # Create a fallback analysis for large documents
+                extracted_text = f"Large document detected ({original_filename}). This document appears to be an insurance plan document with many pages. Due to processing limitations, we cannot extract the full text, but we can still provide general guidance based on the document type."
+                
+                # Create a basic analysis for large insurance documents
+                if upload_category == 'insurance':
+                    extracted_text += "\n\nThis appears to be an insurance plan document. For comprehensive analysis, please consider uploading a summary page or key sections of the document."
+            else:
+                raise e
 
         # --- 7. ANALYZING THE CONTENT WITH GEMINI ---
         print("--- Starting analysis with Gemini. ---")
@@ -375,6 +526,65 @@ def process_medical_bill(event, context):
         financial_data = extract_financial_data(analysis_json, extracted_text)
         print(f"--- Financial data extracted: {financial_data} ---")
         
+        # --- 8.5. GENERATE CATEGORY-SPECIFIC ANALYSIS ---
+        print(f"--- Generating category-specific analysis for: {upload_category} ---")
+        
+        if upload_category == 'insurance':
+            # Generate specialized Insurance Plan analysis
+            if "Large document detected" in extracted_text:
+                # Special handling for large insurance documents
+                insurance_analysis = {
+                    "summary": "Large insurance plan document detected. Due to the document size (108+ pages), we cannot process the full text, but we can provide general guidance.",
+                    "key_benefits": [
+                        "This appears to be a comprehensive insurance plan document",
+                        "Contains detailed coverage information and terms",
+                        "Includes benefits, limitations, and cost structures"
+                    ],
+                    "cost_structure": {
+                        "deductible": "See document for specific deductible amounts",
+                        "copay": "Check document for copay schedules",
+                        "coinsurance": "Review document for coinsurance percentages",
+                        "out_of_pocket_max": "Document contains out-of-pocket maximum details"
+                    },
+                    "network_info": {
+                        "type": "Check document for network type (HMO, PPO, EPO, etc.)",
+                        "in_network_benefits": "Document contains in-network provider information",
+                        "out_of_network_penalties": "Review document for out-of-network costs"
+                    },
+                    "optimization_tips": [
+                        "Upload key summary pages for detailed analysis",
+                        "Focus on benefits summary and coverage details",
+                        "Review deductible and copay information",
+                        "Check network provider directories"
+                    ],
+                    "out_of_network_prevention": [
+                        "Always verify provider network status before appointments",
+                        "Check with your insurance company before receiving care",
+                        "Review the provider directory in your plan documents",
+                        "Ask providers directly if they accept your insurance"
+                    ],
+                    "important_limitations": [
+                        "Review the complete document for all terms and conditions",
+                        "Check for pre-authorization requirements",
+                        "Understand coverage limitations and exclusions"
+                    ],
+                    "action_items": [
+                        "Upload summary pages or key sections for detailed analysis",
+                        "Contact your insurance company for specific questions",
+                        "Review the benefits summary section",
+                        "Keep this document for reference during medical visits"
+                    ]
+                }
+            else:
+                insurance_analysis = generate_insurance_plan_analysis(extracted_text, financial_data)
+            
+            # Merge with existing analysis
+            analysis_json = json.dumps({
+                "key_information": analysis_json,
+                "insurance_plan_analysis": insurance_analysis
+            })
+            print("--- Insurance Plan analysis generated successfully. ---")
+        
         # --- 9. SAVING THE ANALYSIS TO FIRESTORE ---
         print("--- Saving analysis to Firestore. ---")
         
@@ -387,6 +597,7 @@ def process_medical_bill(event, context):
             'extracted_text': extracted_text,  # CRITICAL: Save the extracted text for dispute letters
             'original_filename': original_filename,
             'gcs_uri': gcs_uri,
+            'upload_category': upload_category,  # Store the upload category
             'status': 'completed',
             'created_at': firestore.SERVER_TIMESTAMP
         }

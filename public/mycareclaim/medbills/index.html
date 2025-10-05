@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyCareClaim – Check Your Medical Bill</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='url(%23gradient)'/><defs><linearGradient id='gradient' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' style='stop-color:%234F46E5'/><stop offset='100%' style='stop-color:%237C3AED'/></linearGradient></defs><text x='16' y='22' font-family='Arial, sans-serif' font-size='14' font-weight='bold' text-anchor='middle' fill='white'>MC</text></svg>">
+    <link rel="stylesheet" href="../../style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<style>
+    /* Increase hero H1 font-size by ~20% vs homepage defaults */
+    .medbills-hero h1 { font-size: 2.4rem; }
+    @media (min-width: 768px) { .medbills-hero h1 { font-size: 3.6rem; } }
+    @media (min-width: 1024px) { .medbills-hero h1 { font-size: 4.8rem; } }
+</style>
+ 
+<body>
+    <section id="auth-section">
+        <!-- Reused header/navigation (links point to main site) -->
+        <header class="landing-header">
+            <a href="/index.html" class="logo" style="cursor: pointer; text-decoration: none;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" stroke="#4F46E5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 7L12 12L22 7" stroke="#4F46E5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 12V22" stroke="#4F46E5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span>MyCareClaim</span>
+            </a>
+            <nav class="main-nav">
+                <a href="/index.html#how-it-works">How it works</a>
+                <a href="/index.html#pricing">Pricing</a>
+                <a href="/resources.html">Resources</a>
+                <a href="/index.html#about-us">About Us</a>
+                <a href="/index.html#contact-human">Contact Human</a>
+            </nav>
+            <div class="auth-buttons">
+                <button id="login-nav-button" class="btn-secondary">Log in</button>
+                <button id="get-started-button" class="btn-primary">Get started</button>
+            </div>
+        </header>
+
+        <main class="page-content">
+            <!-- Custom Hero -->
+            <section class="hero medbills-hero" style="text-align:center; padding: 72px 20px;">
+                <h1 style="max-width: 900px; margin: 0 auto 16px;">
+                    80% of medical bills have errors. Find out if the one you just received is correct.
+                </h1>
+                <div class="cta-buttons" style="justify-content:center;">
+                    <a href="/index.html#signup" class="btn-primary">Get Started</a>
+                </div>
+            </section>
+
+            <!-- Testimonials (reused structure) -->
+            <div class="testimonials-section">
+                <h2>What Our Users Say</h2>
+                <div class="testimonials-grid">
+                    <div class="testimonial-card">
+                        <div class="testimonial-content">
+                            <p>"MyCareClaim's AI agent helped me understand a confusing $2,400 hospital bill. It identified duplicate charges and coding errors that saved me over $800. The process was so much easier than calling billing departments."</p>
+                        </div>
+                        <div class="testimonial-author">
+                            <span class="author-name">Sarah M.</span>
+                            <span class="author-location">Austin, TX</span>
+                        </div>
+                    </div>
+                    <div class="testimonial-card">
+                        <div class="testimonial-content">
+                            <p>"When my insurance denied coverage for a necessary procedure, I was overwhelmed. The AI agent walked me through the appeals process step-by-step and helped me write a compelling appeal letter. My claim was approved!"</p>
+                        </div>
+                        <div class="testimonial-author">
+                            <span class="author-name">Michael R.</span>
+                            <span class="author-location">Denver, CO</span>
+                        </div>
+                    </div>
+                    <div class="testimonial-card">
+                        <div class="testimonial-content">
+                            <p>"I used to spend hours on hold with insurance companies trying to understand my bills. Now I just ask the AI agent and get clear, accurate answers instantly. It's like having a healthcare expert on call 24/7."</p>
+                        </div>
+                        <div class="testimonial-author">
+                            <span class="author-name">Jennifer L.</span>
+                            <span class="author-location">Seattle, WA</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Simple CTA -->
+            <div class="cta-section">
+                <h2>Ready to Get Started?</h2>
+                <p>Sign up today and let your AI agents take the stress out of healthcare.</p>
+                <div class="cta-buttons">
+                    <a href="/index.html#signup" class="btn-primary">Get started</a>
+                    <a href="/index.html#how-it-works" class="btn-secondary">Learn more</a>
+                </div>
+            </div>
+        </main>
+
+        <footer class="landing-footer">
+            <a href="/index.html">Terms of Service</a>
+            <span>&copy; 2025 MyCareClaim. All rights reserved.</span>
+            <a href="/index.html">Privacy Policy</a>
+        </footer>
+    </section>
+
+    <script>
+        // Forward button clicks to main app handlers
+        document.addEventListener('DOMContentLoaded', function() {
+            // Login button
+            const loginBtn = document.getElementById('login-nav-button');
+            if (loginBtn) {
+                loginBtn.addEventListener('click', function() {
+                    window.location.href = '/index.html#login';
+                });
+            }
+
+            // Get started button
+            const getStartedBtn = document.getElementById('get-started-button');
+            if (getStartedBtn) {
+                getStartedBtn.addEventListener('click', function() {
+                    window.location.href = '/index.html#signup';
+                });
+            }
+        });
+    </script>
+</body>
+</html>
+
+

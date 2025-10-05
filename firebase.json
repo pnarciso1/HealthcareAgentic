@@ -12,6 +12,10 @@
         "**/.*",
         "**/node_modules/**"
       ],
+      "redirects": [
+        { "source": "/medbills", "destination": "/mycareclaim/medbills", "type": 301 },
+        { "source": "/medbills/", "destination": "/mycareclaim/medbills", "type": 301 }
+      ],
       "rewrites": [
         {
           "source": "/resources",
@@ -41,6 +45,10 @@
         "firebase.json",
         "**/.*",
         "**/node_modules/**"
+      ],
+      "redirects": [
+        { "source": "/medbills", "destination": "/mycareclaim/medbills", "type": 301 },
+        { "source": "/medbills/", "destination": "/mycareclaim/medbills", "type": 301 }
       ],
       "rewrites": [
         {

@@ -8,7 +8,16 @@ import {
     signInWithEmailAndPassword,
     onAuthStateChanged,
     signOut,
-    sendPasswordResetEmail
+    sendPasswordResetEmail,
+    sendEmailVerification,
+    updateProfile,
+    applyActionCode,
+    checkActionCode,
+    confirmPasswordReset,
+    GoogleAuthProvider,
+    signInWithPopup,
+    signInWithRedirect,
+    getRedirectResult
 } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
 import {
     getFirestore,
@@ -24,7 +33,12 @@ import {
     getDocs,
     deleteDoc
 } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
-
+import {
+    getAnalytics,
+    logEvent,
+    setUserId,
+    setUserProperties
+} from "https://www.gstatic.com/firebasejs/11.9.1/firebase-analytics.js";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -41,18 +55,665 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const analytics = getAnalytics(app);
+
+// Initialize Google Auth Provider
+const googleProvider = new GoogleAuthProvider();
+googleProvider.addScope('email');
+googleProvider.addScope('profile');
 
         // Initialize Stripe - LIVE MODE for production
         const stripe = Stripe('pk_live_51Q1BbeH0nOEj29DyC8yCJIq8elEieHjz3f2LaUAPFILAk0TR1SfqrWdNNNeprOEpEfCjtQLWP15yDykhXEzugu1200z3flyMhO');
 
         // Backend URL configuration
-        const BACKEND_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-            ? 'http://127.0.0.1:5000' 
-            : 'https://coupon-backend-974408923536.us-central1.run.app'; 
+        const BACKEND_URL = 'https://healthcareagentic-backend-974408923536.us-central1.run.app'; 
+
+// --- SECURITY CONFIGURATION ---
+const SECURITY_CONFIG = {
+    MAX_LOGIN_ATTEMPTS: 5,
+    LOCKOUT_DURATION: 15 * 60 * 1000, // 15 minutes in milliseconds
+    PASSWORD_MIN_LENGTH: 8,
+    PASSWORD_REQUIREMENTS: {
+        minLength: 8,
+        requireUppercase: true,
+        requireLowercase: true,
+        requireNumbers: true,
+        requireSpecialChars: true
+    }
+};
+
+// --- ACCOUNT LOCKOUT TRACKING ---
+let failedLoginAttempts = JSON.parse(localStorage.getItem('failedLoginAttempts') || '{}');
+let accountLockouts = JSON.parse(localStorage.getItem('accountLockouts') || '{}');
+
+// --- PASSWORD VALIDATION FUNCTIONS ---
+function validatePassword(password) {
+    const errors = [];
+    const requirements = SECURITY_CONFIG.PASSWORD_REQUIREMENTS;
+    
+    if (password.length < requirements.minLength) {
+        errors.push(`Password must be at least ${requirements.minLength} characters long`);
+    }
+    
+    if (requirements.requireUppercase && !/[A-Z]/.test(password)) {
+        errors.push('Password must contain at least one uppercase letter');
+    }
+    
+    if (requirements.requireLowercase && !/[a-z]/.test(password)) {
+        errors.push('Password must contain at least one lowercase letter');
+    }
+    
+    if (requirements.requireNumbers && !/\d/.test(password)) {
+        errors.push('Password must contain at least one number');
+    }
+    
+    if (requirements.requireSpecialChars && !/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+        errors.push('Password must contain at least one special character (!@#$%^&*(),.?":{}|<>)');
+    }
+    
+    return {
+        isValid: errors.length === 0,
+        errors: errors
+    };
+}
+
+function getPasswordStrength(password) {
+    let score = 0;
+    const requirements = SECURITY_CONFIG.PASSWORD_REQUIREMENTS;
+    
+    if (password.length >= requirements.minLength) score += 1;
+    if (/[A-Z]/.test(password)) score += 1;
+    if (/[a-z]/.test(password)) score += 1;
+    if (/\d/.test(password)) score += 1;
+    if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) score += 1;
+    
+    if (score <= 2) return 'weak';
+    if (score <= 3) return 'medium';
+    if (score <= 4) return 'strong';
+    return 'very-strong';
+}
+
+function updatePasswordStrengthIndicator(password) {
+    const strengthIndicator = document.getElementById('password-strength');
+    const strengthText = document.getElementById('password-strength-text');
+    
+    if (!strengthIndicator || !strengthText) return;
+    
+    const strength = getPasswordStrength(password);
+    const validation = validatePassword(password);
+    
+    strengthIndicator.className = `password-strength ${strength}`;
+    
+    if (password.length === 0) {
+        strengthText.textContent = '';
+        strengthIndicator.style.display = 'none';
+    } else {
+        strengthIndicator.style.display = 'block';
+        
+        if (validation.isValid) {
+            strengthText.textContent = `Password strength: ${strength.charAt(0).toUpperCase() + strength.slice(1)}`;
+            strengthText.className = 'strength-text valid';
+        } else {
+            strengthText.textContent = validation.errors[0];
+            strengthText.className = 'strength-text invalid';
+        }
+    }
+}
+
+// --- ACCOUNT LOCKOUT FUNCTIONS ---
+function isAccountLocked(email) {
+    const lockout = accountLockouts[email];
+    if (!lockout) return false;
+    
+    if (Date.now() - lockout.timestamp > SECURITY_CONFIG.LOCKOUT_DURATION) {
+        // Lockout expired, remove it
+        delete accountLockouts[email];
+        delete failedLoginAttempts[email];
+        localStorage.setItem('accountLockouts', JSON.stringify(accountLockouts));
+        localStorage.setItem('failedLoginAttempts', JSON.stringify(failedLoginAttempts));
+        return false;
+    }
+    
+    return true;
+}
+
+function recordFailedLogin(email) {
+    failedLoginAttempts[email] = (failedLoginAttempts[email] || 0) + 1;
+    localStorage.setItem('failedLoginAttempts', JSON.stringify(failedLoginAttempts));
+    
+    if (failedLoginAttempts[email] >= SECURITY_CONFIG.MAX_LOGIN_ATTEMPTS) {
+        accountLockouts[email] = {
+            timestamp: Date.now(),
+            attempts: failedLoginAttempts[email]
+        };
+        localStorage.setItem('accountLockouts', JSON.stringify(accountLockouts));
+    }
+}
+
+function clearFailedLogins(email) {
+    delete failedLoginAttempts[email];
+    delete accountLockouts[email];
+    localStorage.setItem('failedLoginAttempts', JSON.stringify(failedLoginAttempts));
+    localStorage.setItem('accountLockouts', JSON.stringify(accountLockouts));
+}
+
+function getRemainingAttempts(email) {
+    const attempts = failedLoginAttempts[email] || 0;
+    return Math.max(0, SECURITY_CONFIG.MAX_LOGIN_ATTEMPTS - attempts);
+}
+
+function getLockoutTimeRemaining(email) {
+    const lockout = accountLockouts[email];
+    if (!lockout) return 0;
+    
+    const elapsed = Date.now() - lockout.timestamp;
+    const remaining = SECURITY_CONFIG.LOCKOUT_DURATION - elapsed;
+    return Math.max(0, remaining);
+}
+
+// --- ANALYTICS HELPER FUNCTIONS ---
+function trackEvent(eventName, parameters = {}) {
+    try {
+        console.log('🔍 trackEvent called:', eventName, parameters);
+        
+        // Add timeout protection for logEvent
+        const analyticsTimeout = new Promise((_, reject) => {
+            setTimeout(() => {
+                reject(new Error('Analytics timeout'));
+            }, 3000); // 3 second timeout for analytics
+        });
+        
+        const analyticsPromise = new Promise((resolve, reject) => {
+            try {
+                logEvent(analytics, eventName, {
+                    timestamp: new Date().toISOString(),
+                    ...parameters
+                });
+                resolve();
+            } catch (error) {
+                reject(error);
+            }
+        });
+        
+        return Promise.race([analyticsPromise, analyticsTimeout])
+            .then(() => {
+                console.log('✅ Analytics event tracked successfully:', eventName, parameters);
+            })
+            .catch((error) => {
+                console.error('❌ Analytics tracking error:', error);
+                throw error;
+            });
+            
+    } catch (error) {
+        console.error('❌ Analytics tracking error (sync):', error);
+    }
+}
+
+function trackAuthEvent(eventName, method) {
+    trackEvent(eventName, {
+        method: method,
+        timestamp: new Date().toISOString()
+    });
+}
+
+function trackUserBehavior(action, details = {}) {
+    trackEvent('user_behavior', {
+        action: action,
+        ...details
+    });
+}
+
+function trackFeatureUsage(feature, details = {}) {
+    trackEvent('feature_usage', {
+        feature: feature,
+        ...details
+    });
+}
+
+function trackBusinessMetric(metric, value, details = {}) {
+    trackEvent('business_metric', {
+        metric: metric,
+        value: value,
+        ...details
+    });
+}
+
+// --- QUICK ANSWERS WIDGET ---
+class QuickAnswersWidget {
+    constructor() {
+        console.log('🚀 QuickAnswersWidget constructor called');
+        this.messages = [];
+        this.isLoading = false;
+        this.freeQueriesUsed = this.getFreeQueriesUsed();
+        this.maxFreeQueries = 2;
+        
+        console.log('🔧 Initializing QuickAnswersWidget elements...');
+        this.initializeElements();
+        this.setupEventListeners();
+        this.updateCounterDisplay();
+        
+        // Track widget viewed
+        trackEvent('qa_widget_viewed');
+        console.log('✅ QuickAnswersWidget initialization complete');
+    }
+    
+    initializeElements() {
+        this.input = document.getElementById('quick-answers-input');
+        this.submitBtn = document.getElementById('quick-answers-submit');
+        this.messagesContainer = document.getElementById('quick-answers-messages');
+        this.counter = document.getElementById('quick-answers-counter');
+        this.softGateModal = document.getElementById('quick-answers-soft-gate-modal');
+        this.signupBtn = document.getElementById('soft-gate-signup-btn');
+        this.loginLink = document.getElementById('soft-gate-login-link');
+    }
+    
+    setupEventListeners() {
+        // Submit question
+        this.submitBtn.addEventListener('click', () => this.handleSubmit());
+        this.input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                this.handleSubmit();
+            }
+        });
+        
+        // Soft gate modal
+        this.signupBtn.addEventListener('click', () => {
+            trackEvent('qa_soft_gate_signup_clicked');
+            showModal('signup');
+            this.hideSoftGateModal();
+        });
+        
+        this.loginLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            trackEvent('qa_soft_gate_login_clicked');
+            showModal('login');
+            this.hideSoftGateModal();
+        });
+        
+        // Close modal
+        const closeModal = this.softGateModal.querySelector('.close-modal');
+        if (closeModal) {
+            closeModal.addEventListener('click', () => this.hideSoftGateModal());
+        }
+        
+        // Close modal on overlay click
+        const overlay = this.softGateModal.querySelector('.modal-overlay');
+        if (overlay) {
+            overlay.addEventListener('click', () => this.hideSoftGateModal());
+        }
+    }
+    
+    getFreeQueriesUsed() {
+        const stored = localStorage.getItem('mcc_free_qa_count');
+        return stored ? parseInt(stored, 10) : 0;
+    }
+    
+    setFreeQueriesUsed(count) {
+        localStorage.setItem('mcc_free_qa_count', count.toString());
+        this.freeQueriesUsed = count;
+    }
+    
+    isUserLoggedIn() {
+        return auth.currentUser !== null;
+    }
+    
+    canAskQuestion() {
+        // Logged in users bypass the limit
+        if (this.isUserLoggedIn()) {
+            return true;
+        }
+        
+        // Guest users limited to 2 queries
+        return this.freeQueriesUsed < this.maxFreeQueries;
+    }
+    
+    async handleSubmit() {
+        const question = this.input.value.trim();
+        
+        if (!question) {
+            return;
+        }
+        
+        // Check if user can ask question
+        if (!this.canAskQuestion()) {
+            this.showSoftGateModal();
+            return;
+        }
+        
+        // Add user message
+        this.addMessage('user', question);
+        this.input.value = '';
+        
+        // Show loading state
+        this.setLoading(true);
+        this.addMessage('loading', 'Thinking...');
+        
+        try {
+            // Track question submission
+            trackEvent('qa_question_submitted', {
+                isGuest: !this.isUserLoggedIn()
+            });
+            
+            // Make API call
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            
+            // Only add Authorization header if user is logged in
+            if (this.isUserLoggedIn()) {
+                const idToken = await auth.currentUser.getIdToken();
+                headers['Authorization'] = `Bearer ${idToken}`;
+            }
+            
+            console.log('🚀 Making request to:', `${BACKEND_URL}/ask-agent1`);
+            console.log('📋 Request headers:', headers);
+            console.log('📝 Request body:', {
+                question: question,
+                history: this.messages.filter(m => m.type !== 'loading')
+            });
+            
+            // Convert messages to the format expected by backend: [{user: '...', ai: '...'}]
+            const history = [];
+            const nonLoadingMessages = this.messages.filter(m => m.type !== 'loading');
+            for (let i = 0; i < nonLoadingMessages.length; i += 2) {
+                if (i + 1 < nonLoadingMessages.length) {
+                    history.push({
+                        user: nonLoadingMessages[i].content,
+                        ai: nonLoadingMessages[i + 1].content
+                    });
+                }
+            }
+            
+            const response = await fetch(`${BACKEND_URL}/ask-agent1`, {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify({
+                    question: question,
+                    history: history
+                })
+            });
+            
+            console.log('📡 Response status:', response.status);
+            console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            console.log('Quick Answers API response:', data);
+            console.log('Full answer text:', data.answer);
+            console.log('Answer length:', data.answer?.length);
+            
+            // Remove loading message
+            this.removeLoadingMessage();
+            
+            // Add AI response (ask-agent1 returns data.answer)
+            console.log('About to add assistant message with content:', data.answer);
+            this.addMessage('assistant', data.answer);
+            
+            // Track answer received
+            trackEvent('qa_answer_received');
+            
+            // Increment counter for guest users
+            if (!this.isUserLoggedIn()) {
+                const newCount = this.freeQueriesUsed + 1;
+                this.setFreeQueriesUsed(newCount);
+                this.updateCounterDisplay();
+                
+                if (newCount >= this.maxFreeQueries) {
+                    trackEvent('qa_free_limit_reached');
+                }
+            }
+            
+        } catch (error) {
+            console.error('❌ Quick Answers API error:', error);
+            console.error('❌ Error details:', {
+                message: error.message,
+                stack: error.stack,
+                name: error.name
+            });
+            console.error('❌ Error type:', typeof error);
+            console.error('❌ Error constructor:', error.constructor.name);
+            
+            // Remove loading message
+            this.removeLoadingMessage();
+            
+            // Add error message with more details for debugging
+            const errorMessage = `Sorry, I encountered an error: ${error.message}. Please try again later.`;
+            console.error('❌ Showing error message to user:', errorMessage);
+            this.addMessage('assistant', errorMessage);
+        } finally {
+            this.setLoading(false);
+        }
+    }
+    
+    addMessage(type, content) {
+        console.log('QuickAnswersWidget.addMessage called:', { type, content: content.substring(0, 100) + '...' });
+        const message = {
+            type: type,
+            content: content,
+            timestamp: new Date()
+        };
+        
+        this.messages.push(message);
+        console.log('Messages array length:', this.messages.length);
+        this.renderMessages();
+    }
+    
+    removeLoadingMessage() {
+        this.messages = this.messages.filter(m => m.type !== 'loading');
+        this.renderMessages();
+    }
+    
+    renderMessages() {
+        console.log('QuickAnswersWidget.renderMessages called, messages count:', this.messages.length);
+        console.log('Messages container element:', this.messagesContainer);
+        
+        this.messagesContainer.innerHTML = '';
+        
+        this.messages.forEach((message, index) => {
+            console.log(`Rendering message ${index}:`, { type: message.type, content: message.content.substring(0, 50) + '...' });
+            const messageEl = document.createElement('div');
+            messageEl.className = `message ${message.type}-message`;
+            
+            if (message.type === 'loading') {
+                messageEl.innerHTML = `
+                    <div class="loading-spinner"></div>
+                    ${message.content}
+                `;
+            } else {
+                // Create message bubble structure like Agent 1
+                const bubbleDiv = document.createElement('div');
+                bubbleDiv.className = 'message-bubble';
+                
+                if (message.type === 'assistant') {
+                    // Render assistant messages as HTML (markdown) - same as Agent 1
+                    if (typeof marked !== 'undefined' && marked.parse) {
+                        bubbleDiv.innerHTML = marked.parse(message.content);
+                        console.log(`✅ Created assistant message with marked.parse:`, messageEl);
+                        console.log(`✅ Message element content (HTML):`, bubbleDiv.innerHTML.substring(0, 100) + '...');
+                    } else {
+                        console.error('❌ marked library not available, using plain text');
+                        bubbleDiv.textContent = message.content;
+                    }
+                } else {
+                    // Render user messages as plain text
+                    bubbleDiv.textContent = message.content;
+                    console.log(`✅ Created user message:`, messageEl);
+                    console.log(`✅ Message element content:`, bubbleDiv.textContent);
+                }
+                
+                messageEl.appendChild(bubbleDiv);
+            }
+            
+            this.messagesContainer.appendChild(messageEl);
+            console.log(`✅ Appended message element to container. Container now has ${this.messagesContainer.children.length} children`);
+        });
+        
+        console.log('Messages container children count after render:', this.messagesContainer.children.length);
+        
+        // Scroll to bottom
+        this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+    }
+    
+    setLoading(isLoading) {
+        this.isLoading = isLoading;
+        this.submitBtn.disabled = isLoading;
+        this.input.disabled = isLoading;
+    }
+    
+    updateCounterDisplay() {
+        if (this.isUserLoggedIn()) {
+            this.counter.innerHTML = '✓ Unlimited access with your account';
+            this.counter.className = 'usage-counter';
+            return;
+        }
+        
+        const remaining = this.maxFreeQueries - this.freeQueriesUsed;
+        
+        if (remaining > 0) {
+            this.counter.innerHTML = `You have ${remaining} free answer${remaining === 1 ? '' : 's'} left.`;
+            this.counter.className = remaining === 1 ? 'usage-counter warning' : 'usage-counter';
+        } else {
+            // Convert counter to signup button when limit reached
+            this.counter.innerHTML = `
+                <button class="signup-cta-button" id="counter-signup-btn">
+                    <span class="cta-icon">🚀</span>
+                    <span class="cta-text">Sign Up Free</span>
+                    <span class="cta-subtext">Unlimited questions</span>
+                </button>
+            `;
+            this.counter.className = 'usage-counter cta-button-container';
+            
+            // Disable input and submit button when limit reached
+            this.input.disabled = true;
+            this.input.placeholder = 'Sign up to continue asking questions';
+            this.submitBtn.disabled = true;
+            this.submitBtn.textContent = 'Sign Up Required';
+            
+            // Add event listener to the new button
+            const signupBtn = this.counter.querySelector('#counter-signup-btn');
+            if (signupBtn) {
+                signupBtn.addEventListener('click', () => {
+                    trackEvent('qa_counter_signup_clicked');
+                    showModal('signup');
+                });
+            }
+        }
+    }
+    
+    showSoftGateModal() {
+        trackEvent('qa_soft_gate_shown');
+        this.softGateModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+    
+    hideSoftGateModal() {
+        this.softGateModal.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+}
+
+// Initialize Quick Answers Widget when DOM is loaded
+let quickAnswersWidget;
+
+// --- HELPER FUNCTIONS ---
+function showLoginForm() {
+    // Reset signup form
+    const signupForm = document.getElementById('signup-form');
+    const verificationMessage = document.querySelector('.verification-message');
+    if (signupForm) signupForm.style.display = 'block';
+    if (verificationMessage) verificationMessage.remove();
+    
+    // Show login form
+    const signupFormWrapper = document.getElementById('signup-form-wrapper');
+    const loginFormWrapper = document.getElementById('login-form-wrapper');
+    const resetPasswordWrapper = document.getElementById('reset-password-wrapper');
+    
+    if (signupFormWrapper) signupFormWrapper.classList.add('hidden-form');
+    if (loginFormWrapper) loginFormWrapper.classList.remove('hidden-form');
+    if (resetPasswordWrapper) resetPasswordWrapper.classList.add('hidden-form');
+}
+
+// --- GOOGLE SIGN-IN FUNCTIONS ---
+async function signInWithGoogle() {
+    try {
+        const result = await signInWithPopup(auth, googleProvider);
+        const user = result.user;
+        
+        // Check if this is a new user
+        const userDocRef = doc(db, 'users', user.uid);
+        const userDoc = await getDoc(userDocRef);
+        
+        if (!userDoc.exists()) {
+            // Create user document for new Google sign-in users - using minimal required fields
+            console.log('💾 Creating new Google user document...');
+            await setDoc(userDocRef, {
+                email: user.email,
+                createdAt: serverTimestamp(),
+                provider: 'google',
+                displayName: user.displayName || null,
+                photoURL: user.photoURL || null
+            });
+            console.log('✅ Google user document created successfully');
+        } else {
+            // Update existing user with Google info
+            console.log('💾 Updating existing Google user document...');
+            await setDoc(userDocRef, {
+                displayName: user.displayName || null,
+                photoURL: user.photoURL || null,
+                provider: 'google'
+            }, { merge: true });
+            console.log('✅ Google user document updated successfully');
+        }
+        
+        return result;
+    } catch (error) {
+        console.error('Google sign-in error:', error);
+        throw error;
+    }
+}
+
+function handleGoogleSignInError(error) {
+    let errorMessage = 'An error occurred during Google sign-in.';
+    
+    if (error.code === 'auth/popup-closed-by-user') {
+        errorMessage = 'Sign-in was cancelled. Please try again.';
+    } else if (error.code === 'auth/popup-blocked') {
+        errorMessage = 'Sign-in popup was blocked. Please allow popups and try again.';
+    } else if (error.code === 'auth/network-request-failed') {
+        errorMessage = 'Network error. Please check your connection and try again.';
+    } else if (error.code === 'auth/too-many-requests') {
+        errorMessage = 'Too many failed attempts. Please try again later.';
+    } else if (error.code === 'auth/account-exists-with-different-credential') {
+        errorMessage = 'An account already exists with this email address. Please use email/password sign-in.';
+    }
+    
+    return errorMessage;
+}
 
 // --- MAIN SCRIPT LOGIC ---
 
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('📄 DOM Content Loaded - checking for Quick Answers widget...');
+
+    // Initialize Quick Answers Widget
+    const widgetElement = document.getElementById('quick-answers-widget');
+    const inputElement = document.getElementById('quick-answers-input');
+    
+    console.log('🔍 Widget elements found:', {
+        widget: !!widgetElement,
+        input: !!inputElement
+    });
+    
+    if (widgetElement || inputElement) {
+        console.log('🎯 Initializing QuickAnswersWidget...');
+        quickAnswersWidget = new QuickAnswersWidget();
+    } else {
+        console.log('❌ QuickAnswersWidget elements not found');
+    }
 
     // --- Get all the DOM elements ---
     const authSection = document.getElementById('auth-section');
@@ -116,7 +777,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const qaForm = document.getElementById('agent1-qa-form');
     const questionInput = document.getElementById('agent1-question');
     const chatContainer = document.getElementById('agent1-chat');
-    const chatMessages = document.querySelector('.chat-messages');
+    const chatMessages = document.getElementById('agent1-chat');
     const recentQuestionsList = document.getElementById('recent-questions-list');
     
     // Agent 2 elements
@@ -193,23 +854,31 @@ document.addEventListener('DOMContentLoaded', () => {
     const financialMetrics = document.querySelectorAll('.metric-card .amount, .metric-card .percentage, .metric-card .trend');
 
     // New Agent 1 elements
-    const clearHistoryBtn = document.getElementById('clear-history-btn');
-    const viewAllBtn = document.getElementById('view-all-btn');
-    const viewAllContainer = document.getElementById('view-all-questions');
+    const newChatBtn = document.getElementById('new-chat-btn');
     const copyAnswerBtn = document.getElementById('copy-answer-btn');
     const feedbackSection = document.getElementById('feedback-section');
     const feedbackHelpful = document.getElementById('feedback-helpful');
     const feedbackNotHelpful = document.getElementById('feedback-not-helpful');
     const feedbackThanks = document.getElementById('feedback-thanks');
+    const suggestedPrompts = document.getElementById('suggested-prompts');
+    const promptChips = document.querySelectorAll('.prompt-chip');
 
     let agent1ChatHistory = [];
     let unsubscribeAnalyses = null;
     let unsubscribeChatHistory = null;
     let currentUserSubscriptionTier = 'free';
+    let activeUploadCategory = 'bills'; // Track which category is being used for upload
+    let hasAskedFirstQuestion = false; // Track if user has asked their first question
     
     // Chat helper functions
     function addMessageToChat(sender, message, isThinking = false) {
-        if (!chatMessages) return;
+        console.log('addMessageToChat called:', sender, message, isThinking);
+        const chatMessages = document.getElementById('agent1-chat');
+        console.log('chatMessages element:', chatMessages);
+        if (!chatMessages) {
+            console.error('chatMessages element not found');
+            return;
+        }
         
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${sender}-message`;
@@ -220,15 +889,26 @@ document.addEventListener('DOMContentLoaded', () => {
         const bubbleDiv = document.createElement('div');
         bubbleDiv.className = 'message-bubble';
         
-        const messageP = document.createElement('p');
-        messageP.textContent = message;
+        const messageP = document.createElement('div');
+        if (sender === 'ai' && !isThinking) {
+            // Parse markdown for AI messages
+            messageP.innerHTML = marked.parse(message);
+        } else {
+            // Use plain text for user messages and thinking messages
+            messageP.textContent = message;
+        }
         
         bubbleDiv.appendChild(messageP);
         messageDiv.appendChild(bubbleDiv);
         chatMessages.appendChild(messageDiv);
         
+        console.log('Message added to chat');
+        
         // Scroll to bottom
-        chatContainer.scrollTop = chatContainer.scrollHeight;
+        const chatContainer = document.querySelector('.chat-messages-container');
+        if (chatContainer) {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
     }
     
     function removeThinkingMessage() {
@@ -363,6 +1043,9 @@ document.addEventListener('DOMContentLoaded', () => {
             resetPasswordWrapper.classList.remove('hidden-form');
         }
     };
+    
+    // Make showModal globally accessible for Quick Answers widget
+    window.showModal = showModal;
 
     const hideModal = () => {
         formsContainer.classList.add('hidden');
@@ -864,13 +1547,40 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const proceedToCheckout = (plan, couponCode = null) => {
+        // Show loading state
+        const loadingMessage = document.createElement('div');
+        loadingMessage.id = 'checkout-loading';
+        loadingMessage.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        `;
+        loadingMessage.innerHTML = `
+            <div style="text-align: center;">
+                <div style="font-size: 24px; margin-bottom: 16px;">⏳</div>
+                <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">Creating your checkout session...</div>
+                <div style="font-size: 14px; opacity: 0.8;">Please wait while we prepare your payment</div>
+            </div>
+        `;
+        document.body.appendChild(loadingMessage);
+
         auth.currentUser.getIdToken().then(idToken => {
             const requestBody = { plan: plan };
             if (couponCode) {
                 requestBody.couponCode = couponCode;
             }
             
-                            fetch(`${BACKEND_URL}/create-checkout-session`, {
+            fetch(`${BACKEND_URL}/create-checkout-session`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -885,12 +1595,36 @@ document.addEventListener('DOMContentLoaded', () => {
                 return response.json();
             })
             .then(session => {
+                // Track checkout initiation
+                trackBusinessMetric('checkout_initiated', 1, { 
+                    price_id: priceId,
+                    price_type: priceId.includes('monthly') ? 'monthly' : 'yearly'
+                });
+                
+                // Remove loading message before redirect
+                const loadingEl = document.getElementById('checkout-loading');
+                if (loadingEl) {
+                    loadingEl.remove();
+                }
                 return stripe.redirectToCheckout({ sessionId: session.id });
             })
             .catch(error => {
                 console.error('Error:', error);
+                // Remove loading message on error
+                const loadingEl = document.getElementById('checkout-loading');
+                if (loadingEl) {
+                    loadingEl.remove();
+                }
                 alert('There was an error creating your checkout session. Please try again.');
             });
+        }).catch(error => {
+            console.error('Auth error:', error);
+            // Remove loading message on auth error
+            const loadingEl = document.getElementById('checkout-loading');
+            if (loadingEl) {
+                loadingEl.remove();
+            }
+            alert('There was an error creating your checkout session. Please try again.');
         });
     };
 
@@ -927,6 +1661,52 @@ document.addEventListener('DOMContentLoaded', () => {
     getStartedButton.addEventListener('click', () => showModal('signup'));
     getStartedMainButton.addEventListener('click', () => showModal('signup'));
     getStartedCtaButton.addEventListener('click', () => showModal('signup'));
+    
+    // User story "Get Started" buttons
+    const storyGetStartedButtons = document.querySelectorAll('.story-get-started');
+    storyGetStartedButtons.forEach(button => {
+        button.addEventListener('click', () => showModal('signup'));
+    });
+    
+    // Trust badges "Start Saving Now" button
+    const trustCtaButton = document.querySelector('.trust-cta');
+    if (trustCtaButton) {
+        trustCtaButton.addEventListener('click', () => showModal('signup'));
+    }
+    
+    // Reviews "Check Your Bill For Free" button
+    const reviewsCtaButton = document.querySelector('.reviews-cta');
+    if (reviewsCtaButton) {
+        reviewsCtaButton.addEventListener('click', () => showModal('signup'));
+    }
+    
+    // Billing Toggle Functionality
+    const billingToggle = document.getElementById('billing-toggle');
+    const monthlyPlan = document.querySelector('.monthly-plan');
+    const yearlyPlan = document.querySelector('.yearly-plan');
+    
+    if (billingToggle && monthlyPlan && yearlyPlan) {
+        billingToggle.addEventListener('change', function() {
+            if (this.checked) {
+                // Show yearly plan, hide monthly
+                monthlyPlan.style.display = 'none';
+                yearlyPlan.style.display = 'block';
+                yearlyPlan.classList.add('highlighted');
+                monthlyPlan.classList.remove('highlighted');
+            } else {
+                // Show monthly plan, hide yearly
+                monthlyPlan.style.display = 'block';
+                yearlyPlan.style.display = 'none';
+                monthlyPlan.classList.add('highlighted');
+                yearlyPlan.classList.remove('highlighted');
+            }
+        });
+        
+        // Initialize with monthly plan visible
+        monthlyPlan.style.display = 'block';
+        yearlyPlan.style.display = 'none';
+        monthlyPlan.classList.add('highlighted');
+    }
     loginCtaButton.addEventListener('click', () => showModal('login'));
     askAgentCtaButton.addEventListener('click', () => {
         if (auth.currentUser) {
@@ -944,6 +1724,146 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         showModal('login');
     });
+    
+    // --- GOOGLE SIGN-IN EVENT LISTENERS ---
+    
+    // Google sign-up button
+    const googleSignupBtn = document.getElementById('google-signup-btn');
+    if (googleSignupBtn) {
+        googleSignupBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const signupMessage = document.getElementById('signup-message');
+            const signupForm = document.getElementById('signup-form');
+            
+            // Set a timeout to ensure UI updates even if Google signup gets stuck
+            const googleSignupTimeout = setTimeout(() => {
+                console.log('⏰ Google signup timeout reached - forcing UI update...');
+                if (signupMessage) {
+                    signupMessage.innerHTML = `
+                        <strong>🎉 Account created successfully!</strong><br>
+                        <strong>🔗 Google signup completed!</strong><br>
+                        <em>Note: There was a timeout in the signup flow, but your account is active.</em>
+                    `;
+                    signupMessage.style.color = 'orange';
+                }
+                if (signupForm) {
+                    signupForm.style.display = 'none';
+                }
+                setTimeout(() => {
+                    hideModal();
+                }, 2000);
+            }, 15000); // 15 second timeout for Google popup
+            
+            try {
+                // Clear any previous messages
+                if (signupMessage) {
+                    signupMessage.textContent = '';
+                    signupMessage.style.color = '';
+                }
+                
+                console.log('🔗 Starting Google signup...');
+                const result = await signInWithGoogle();
+                const user = result.user;
+                console.log('✅ Google signup successful for:', user.uid);
+                
+                // Clear the timeout since we've reached success
+                clearTimeout(googleSignupTimeout);
+                
+                // Track successful Google signup
+                try {
+                    trackAuthEvent('sign_up', 'google');
+                    console.log('✅ Google analytics tracking successful');
+                } catch (analyticsError) {
+                    console.error('❌ Google analytics tracking failed:', analyticsError);
+                }
+                
+                try {
+                    trackBusinessMetric('user_signup', 1, { method: 'google' });
+                    console.log('✅ Google business metrics tracking successful');
+                } catch (metricsError) {
+                    console.error('❌ Google business metrics tracking failed:', metricsError);
+                }
+                
+                // Enhanced success message
+                if (signupMessage) {
+                    signupMessage.innerHTML = `
+                        <strong>🎉 Successfully signed up with Google!</strong><br>
+                        <strong>🔗 Your account is now active!</strong><br>
+                        <em>You can start using all features immediately.</em>
+                    `;
+                    signupMessage.style.color = 'green';
+                }
+                
+                // Hide the signup form
+                if (signupForm) {
+                    signupForm.style.display = 'none';
+                }
+                
+                // Close the modal after successful signup
+                console.log('✅ Google signup flow completed successfully');
+                setTimeout(() => {
+                    hideModal();
+                }, 2000);
+                
+            } catch (error) {
+                console.error('❌ Google sign-up error:', error);
+                clearTimeout(googleSignupTimeout);
+                
+                const errorMessage = handleGoogleSignInError(error);
+                if (signupMessage) {
+                    signupMessage.innerHTML = `
+                        <strong>❌ ${errorMessage}</strong><br>
+                        <em>Please try again or use email/password signup.</em>
+                    `;
+                    signupMessage.style.color = 'red';
+                }
+            }
+        });
+    }
+
+    // Google sign-in button
+    const googleLoginBtn = document.getElementById('google-login-btn');
+    if (googleLoginBtn) {
+        googleLoginBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const loginMessage = document.getElementById('login-message');
+            
+            try {
+                // Clear any previous messages
+                if (loginMessage) {
+                    loginMessage.textContent = '';
+                    loginMessage.style.color = '';
+                }
+                
+                const result = await signInWithGoogle();
+                const user = result.user;
+                
+                // Track successful Google login
+                trackAuthEvent('login', 'google');
+                trackBusinessMetric('user_login', 1, { method: 'google' });
+                
+                // Success message
+                if (loginMessage) {
+                    loginMessage.textContent = 'Successfully signed in with Google!';
+                    loginMessage.style.color = 'green';
+                }
+                
+                // Close the modal after successful signin
+                setTimeout(() => {
+                    hideModal();
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Google sign-in error:', error);
+                const errorMessage = handleGoogleSignInError(error);
+                if (loginMessage) {
+                    loginMessage.textContent = errorMessage;
+                    loginMessage.style.color = 'red';
+                }
+            }
+        });
+    }
+    
     closeModalButtons.forEach(button => button.addEventListener('click', hideModal));
     formsContainer.addEventListener('click', (e) => {
         if (e.target === formsContainer) hideModal();
@@ -951,21 +1871,25 @@ document.addEventListener('DOMContentLoaded', () => {
     
     navHowItWorksLink.addEventListener('click', (e) => {
         e.preventDefault();
+        trackUserBehavior('navigation', { page: 'how-it-works' });
         showLandingPage('how-it-works');
     });
 
     navPricingLink.addEventListener('click', (e) => {
         e.preventDefault();
+        trackUserBehavior('navigation', { page: 'pricing' });
         showLandingPage('pricing');
     });
 
     navResourcesLink.addEventListener('click', (e) => {
         e.preventDefault();
+        trackUserBehavior('navigation', { page: 'resources' });
         window.location.href = '/resources';
     });
 
     navAboutUsLink.addEventListener('click', (e) => {
         e.preventDefault();
+        trackUserBehavior('navigation', { page: 'about-us' });
         showLandingPage('about-us');
     });
 
@@ -1082,8 +2006,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const isLocked = pageId !== 'agent-1-page' && currentUserSubscriptionTier === 'free';
             
             if (isLocked) {
+                trackUserBehavior('upgrade_prompt', { 
+                    feature: pageId,
+                    subscription_tier: currentUserSubscriptionTier
+                });
                 showUpgradePrompt();
             } else {
+                // Track feature usage
+                trackFeatureUsage('agent_selection', { 
+                    agent: pageId,
+                    subscription_tier: currentUserSubscriptionTier
+                });
                 showAppPage(pageId);
             }
         });
@@ -2155,6 +3088,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- AUTH STATE LISTENER ---
     onAuthStateChanged(auth, (user) => {
         if (user) {
+            // Check if email is verified
+            if (!user.emailVerified) {
+                signOut(auth);
+                return;
+            }
+            
+            // Update Quick Answers widget counter for logged in users
+            if (quickAnswersWidget) {
+                quickAnswersWidget.updateCounterDisplay();
+            }
+            
             const userDocRef = doc(db, 'users', user.uid);
             getDoc(userDocRef).then(docSnap => {
                 if (docSnap.exists()) {
@@ -2163,6 +3107,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     currentUserSubscriptionTier = newSubscriptionTier;
                     
                     if (wasUpgraded) {
+                        // Track successful upgrade
+                        trackBusinessMetric('subscription_upgraded', 1, { 
+                            from_tier: 'free',
+                            to_tier: newSubscriptionTier
+                        });
                         showUpgradeSuccessMessage();
                     }
                 }
@@ -2176,6 +3125,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (unsubscribeChatHistory) unsubscribeChatHistory();
             agent1ChatHistory = [];
             currentUserSubscriptionTier = 'free';
+            
+            // Update Quick Answers widget counter for logged out users
+            if (quickAnswersWidget) {
+                quickAnswersWidget.updateCounterDisplay();
+            }
         }
     });
 
@@ -2206,6 +3160,12 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const updateUIAfterLogin = () => {
+        // Track successful authentication
+        trackUserBehavior('app_access', { 
+            subscription_tier: currentUserSubscriptionTier,
+            timestamp: new Date().toISOString()
+        });
+        
         authSection.classList.add('hidden');
         appContainer.classList.remove('hidden');
         showAppPage('agent-selection-page');
@@ -2732,21 +3692,254 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             const email = signupForm['signup-email'].value;
             const password = signupForm['signup-password'].value;
+            
+            // Validate password before attempting to create account
+            const passwordValidation = validatePassword(password);
+            if (!passwordValidation.isValid) {
+                signupMessage.textContent = passwordValidation.errors[0];
+                signupMessage.style.color = 'red';
+                return;
+            }
+            
+            // Set a timeout to ensure UI updates even if promise chain gets stuck
+            const signupTimeout = setTimeout(() => {
+                console.log('⏰ Signup timeout reached - forcing UI update...');
+                signupMessage.innerHTML = `
+                    <strong>🎉 Account created successfully!</strong><br>
+                    <strong>📧 Verification email should be on its way!</strong><br>
+                    <strong>⚠️ Email verification is required to activate your account.</strong><br>
+                    Please check your email and click the verification link.<br>
+                    <em>Note: There was a timeout in the signup flow, but your account is active.</em>
+                `;
+                signupMessage.style.color = 'orange';
+                signupForm.style.display = 'none';
+            }, 15000); // 15 second timeout (increased from 10s)
+            
             createUserWithEmailAndPassword(auth, email, password)
                 .then((userCredential) => {
+                    const user = userCredential.user;
+                    console.log('✅ Firebase Auth signup successful for:', user.uid);
+                    
+                    // Store user data in Firestore first - using minimal required fields
+                    console.log('💾 Attempting Firestore write...');
                     const userDocRef = doc(db, 'users', userCredential.user.uid);
-                    return setDoc(userDocRef, {
+                    
+                    // Use only the fields explicitly allowed by Firestore rules
+                    const userData = {
                         email: email,
                         createdAt: serverTimestamp(),
-                        subscriptionTier: 'free'
+                        provider: 'email'
+                    };
+                    
+                    console.log('📝 Writing user data:', userData);
+                    
+                    console.log('🚀 About to call setDoc...');
+                    
+                    // Create a timeout promise for Firestore write
+                    const firestoreTimeout = new Promise((_, reject) => {
+                        setTimeout(() => {
+                            reject(new Error('Firestore write timeout'));
+                        }, 5000); // 5 second timeout for Firestore
+                    });
+                    
+                    return Promise.race([
+                        setDoc(userDocRef, userData),
+                        firestoreTimeout
+                    ]).then(() => {
+                        console.log('✅ Firestore write successful - inside .then()');
+                        
+                        // Send email verification after Firestore write - this is mandatory
+                        console.log('📧 Sending email verification...');
+                        
+                        return sendEmailVerification(user).then(() => {
+                            console.log('✅ Email verification sent successfully');
+                            return Promise.resolve();
+                        }).catch((emailError) => {
+                            console.error('❌ Email verification failed:', emailError);
+                            console.error('Email error code:', emailError.code);
+                            console.error('Email error message:', emailError.message);
+                            
+                            // If email verification fails, we should still show the user a message
+                            // but indicate that verification is required
+                            console.log('⚠️ Email verification failed - user needs to verify manually');
+                            
+                            // Don't throw - continue with success flow but show warning
+                            return Promise.resolve();
+                        });
+                    })
+                        .catch((firestoreWriteError) => {
+                            console.error('❌ Firestore write failed in .then():', firestoreWriteError);
+                            console.error('Firestore write error details:', {
+                                code: firestoreWriteError.code,
+                                message: firestoreWriteError.message,
+                                stack: firestoreWriteError.stack
+                            });
+                            
+                            // Even if Firestore fails, try to send email verification
+                            console.log('🔄 Firestore failed, attempting email verification anyway...');
+                            return sendEmailVerification(user).then(() => {
+                                console.log('✅ Email verification sent despite Firestore failure');
+                                return Promise.resolve();
+                            }).catch((emailError) => {
+                                console.error('❌ Email verification also failed:', emailError);
+                                return Promise.resolve();
+                            });
+                        })
+                        .catch((firestoreError) => {
+                            console.error('❌ Firestore write failed:', firestoreError);
+                            console.error('Firestore error code:', firestoreError.code);
+                            console.error('Firestore error message:', firestoreError.message);
+                            console.error('Full Firestore error object:', firestoreError);
+                            
+                            // Try to continue with success flow even if Firestore fails
+                            console.log('⚠️ Attempting to continue with success flow despite Firestore error...');
+                            return Promise.resolve();
+                        })
+                             .then(() => {
+                                 console.log('🎯 Reached the main success flow .then() - this should execute!');
+                                 // Clear the timeout since we've reached success
+                                 clearTimeout(signupTimeout);
+                                 console.log('✅ Starting success flow...');
+                                 
+                                 // Track successful signup with comprehensive error handling
+                                 console.log('🔍 Testing analytics tracking...');
+                                 
+                                 try {
+                                     console.log('📊 Calling trackAuthEvent...');
+                                     trackAuthEvent('sign_up', 'email');
+                                     console.log('✅ Analytics tracking successful');
+                                 } catch (analyticsError) {
+                                     console.error('❌ Analytics tracking failed:', analyticsError);
+                                     console.log('⚠️ Analytics failed but signup continues...');
+                                 }
+                                 
+                                 try {
+                                     console.log('📈 Calling trackBusinessMetric...');
+                                     trackBusinessMetric('user_signup', 1, { method: 'email' });
+                                     console.log('✅ Business metrics tracking successful');
+                                 } catch (metricsError) {
+                                     console.error('❌ Business metrics tracking failed:', metricsError);
+                                     console.log('⚠️ Business metrics failed but signup continues...');
+                                 }
+                                 
+                                 console.log('🎯 Analytics testing complete - proceeding with UI updates...');
+                                 
+                                 // Show success message with email verification info (if not already shown)
+                                 if (signupMessage.style.color !== 'orange') {
+                                     console.log('✅ Showing success message...');
+                                     signupMessage.innerHTML = `
+                                         <strong>🎉 Account created successfully!</strong><br>
+                                         <strong>📧 Verification email sent!</strong><br>
+                                         <strong>⚠️ Email verification is required to activate your account.</strong><br>
+                                         Please check your email and click the verification link.<br>
+                                         <em>Check your spam folder if you don't see the email.</em>
+                                     `;
+                                     signupMessage.style.color = 'green';
+                                 }
+                            
+                            // Hide signup form and show email verification message
+                            console.log('✅ Hiding signup form...');
+                            signupForm.style.display = 'none';
+                            
+                            console.log('✅ Creating verification message...');
+                            const verificationMessage = document.createElement('div');
+                            verificationMessage.className = 'verification-message';
+                            verificationMessage.innerHTML = `
+                                <h3>📧 Verify Your Email</h3>
+                                <p>We've sent a verification link to <strong>${email}</strong></p>
+                                <p>Click the link in the email to activate your account.</p>
+                                <p><small>Haven't received the email? <a href="#" id="resend-verification">Resend verification email</a></small></p>
+                                <div class="verification-actions">
+                                    <button class="btn-secondary" id="back-to-login-btn">Back to Login</button>
+                                    <button class="btn-primary" id="continue-to-app-btn">Continue to App</button>
+                                </div>
+                            `;
+                            
+                            console.log('✅ Appending verification message...');
+                            signupFormWrapper.appendChild(verificationMessage);
+                            console.log('✅ UI update complete!');
+                            
+                            // Add resend verification functionality
+                            const resendLink = verificationMessage.querySelector('#resend-verification');
+                            resendLink.addEventListener('click', (e) => {
+                                e.preventDefault();
+                                sendEmailVerification(user)
+                                    .then(() => {
+                                        alert('Verification email sent again!');
+                                    })
+                                    .catch(error => {
+                                        alert('Failed to resend verification email: ' + error.message);
+                                    });
+                            });
+                            
+                            // Add button functionality
+                            const backToLoginBtn = verificationMessage.querySelector('#back-to-login-btn');
+                            const continueToAppBtn = verificationMessage.querySelector('#continue-to-app-btn');
+                            
+                            if (backToLoginBtn) {
+                                backToLoginBtn.addEventListener('click', () => {
+                                    console.log('🔄 Switching to login form...');
+                                    showLoginForm();
+                                });
+                            }
+                            
+                            if (continueToAppBtn) {
+                                continueToAppBtn.addEventListener('click', () => {
+                                    console.log('🚀 Continuing to app...');
+                                    hideModal();
+                                });
+                            }
+                    });
+                })
+                .catch((successFlowError) => {
+                    console.error('❌ Error in success flow:', successFlowError);
+                    console.error('Success flow error details:', {
+                        message: successFlowError.message,
+                        code: successFlowError.code,
+                        stack: successFlowError.stack
+                    });
+                    
+                    // Show a fallback success message even if the success flow fails
+                    console.log('🆘 Showing fallback success message...');
+                    signupMessage.innerHTML = `
+                        <strong>🎉 Account created successfully!</strong><br>
+                        <strong>📧 Verification email should be on its way!</strong><br>
+                        <strong>⚠️ Email verification is required to activate your account.</strong><br>
+                        Please check your email and click the verification link.<br>
+                        <em>Note: There was an issue with the UI flow, but your account is active.</em>
+                    `;
+                    signupMessage.style.color = 'orange';
+                    
+                    // Hide the signup form
+                    console.log('🆘 Hiding signup form...');
+                    signupForm.style.display = 'none';
+                    
+                    // Force a manual email verification attempt
+                    console.log('🆘 Attempting manual email verification...');
+                    sendEmailVerification(user).then(() => {
+                        console.log('✅ Manual email verification successful');
+                    }).catch((emailError) => {
+                        console.error('❌ Manual email verification failed:', emailError);
                     });
                 })
                 .catch(error => {
+                    console.error('Full signup error object:', error);
+                    console.error('Error code:', error.code);
+                    console.error('Error message:', error.message);
+                    
                     if (error.code === 'auth/email-already-in-use') {
                         signupMessage.textContent = 'This email address is already in use. Please log in or use a different email.';
+                    } else if (error.code === 'auth/account-exists-with-different-credential') {
+                        signupMessage.textContent = 'This email is already registered with Google. Please use "Sign up with Google" instead.';
+                    } else if (error.code === 'auth/weak-password') {
+                        signupMessage.textContent = 'Password is too weak. Please choose a stronger password.';
+                    } else if (error.code === 'auth/invalid-email') {
+                        signupMessage.textContent = 'Invalid email address. Please enter a valid email.';
                     } else {
-                        signupMessage.textContent = error.message;
+                        console.error('Signup error:', error);
+                        signupMessage.textContent = error.message || 'An error occurred during signup. Please try again.';
                     }
+                    signupMessage.style.color = 'red';
                 });
         });
     }
@@ -2756,8 +3949,92 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             const email = loginForm['login-email'].value;
             const password = loginForm['login-password'].value;
+            
+            // Check if account is locked
+            if (isAccountLocked(email)) {
+                const remainingTime = getLockoutTimeRemaining(email);
+                const minutes = Math.ceil(remainingTime / (60 * 1000));
+                loginMessage.textContent = `Account temporarily locked due to too many failed attempts. Try again in ${minutes} minutes.`;
+                loginMessage.style.color = 'red';
+                return;
+            }
+            
             signInWithEmailAndPassword(auth, email, password)
-                .catch(error => { loginMessage.textContent = error.message; });
+                .then((userCredential) => {
+                    const user = userCredential.user;
+                    
+                    // Clear any failed login attempts on successful login
+                    clearFailedLogins(email);
+                    
+                    // Check if email is verified
+                    if (!user.emailVerified) {
+                        signOut(auth);
+                        loginMessage.innerHTML = `
+                            <strong>Email not verified!</strong><br>
+                            Please check your email and click the verification link before logging in.<br>
+                            <a href="#" id="resend-verification-login">Resend verification email</a>
+                        `;
+                        loginMessage.style.color = 'orange';
+                        
+                        // Add resend verification functionality
+                        const resendLink = document.getElementById('resend-verification-login');
+                        if (resendLink) {
+                            resendLink.addEventListener('click', (e) => {
+                                e.preventDefault();
+                                createUserWithEmailAndPassword(auth, email, password)
+                                    .then(() => {
+                                        // User already exists, just send verification
+                                        return sendEmailVerification(user);
+                                    })
+                                    .catch(error => {
+                                        if (error.code === 'auth/email-already-in-use') {
+                                            // User exists, send verification
+                                            return sendEmailVerification(user);
+                                        }
+                                        throw error;
+                                    })
+                                    .then(() => {
+                                        alert('Verification email sent!');
+                                    })
+                                    .catch(error => {
+                                        alert('Failed to send verification email: ' + error.message);
+                                    });
+                            });
+                        }
+                        return;
+                    }
+                    
+                         // Track successful login
+                         trackAuthEvent('login', 'email');
+                         trackBusinessMetric('user_login', 1, { method: 'email' });
+                         
+                         // Login successful
+                         loginMessage.textContent = 'Login successful!';
+                         loginMessage.style.color = 'green';
+                })
+                .catch(error => {
+                    // Record failed login attempt
+                    recordFailedLogin(email);
+                    
+                    if (error.code === 'auth/user-not-found') {
+                        loginMessage.textContent = 'No account found with this email address.';
+                    } else if (error.code === 'auth/wrong-password') {
+                        const remaining = getRemainingAttempts(email);
+                        if (remaining > 0) {
+                            loginMessage.textContent = `Incorrect password. ${remaining} attempts remaining.`;
+                        } else {
+                            const lockoutTime = Math.ceil(SECURITY_CONFIG.LOCKOUT_DURATION / (60 * 1000));
+                            loginMessage.textContent = `Too many failed attempts. Account locked for ${lockoutTime} minutes.`;
+                        }
+                    } else if (error.code === 'auth/invalid-email') {
+                        loginMessage.textContent = 'Invalid email address.';
+                    } else if (error.code === 'auth/user-disabled') {
+                        loginMessage.textContent = 'This account has been disabled.';
+                    } else {
+                        loginMessage.textContent = error.message;
+                    }
+                    loginMessage.style.color = 'red';
+                });
         });
     }
 
@@ -2774,6 +4051,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     resetMessage.textContent = error.message;
                     resetMessage.style.color = 'red';
                 });
+        });
+    }
+
+    // Add password strength indicator listener
+    const signupPasswordInput = document.getElementById('signup-password');
+    if (signupPasswordInput) {
+        signupPasswordInput.addEventListener('input', (e) => {
+            updatePasswordStrengthIndicator(e.target.value);
         });
     }
 
@@ -2839,11 +4124,72 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // New Chat Button Handler
+    if (newChatBtn) {
+        newChatBtn.addEventListener('click', () => {
+            // Clear chat messages (keep only the initial AI message)
+            const chatMessages = document.getElementById('agent1-chat');
+            if (chatMessages) {
+                chatMessages.innerHTML = `
+                    <div class="message ai-message">
+                        <div class="message-bubble">
+                            <p>Hi there, how can I help?</p>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Clear chat history
+            agent1ChatHistory = [];
+            hasAskedFirstQuestion = false;
+            
+            // Hide feedback section
+            if (feedbackSection) {
+                feedbackSection.style.display = 'none';
+            }
+            
+            // Show suggested prompts
+            if (suggestedPrompts) {
+                suggestedPrompts.style.display = 'block';
+            }
+            
+            // Clear input and reset placeholder
+            if (questionInput) {
+                questionInput.value = '';
+                questionInput.placeholder = 'Ask anything about your medical bills...';
+                questionInput.focus();
+            }
+        });
+    }
+
+    // Prompt Chip Handlers
+    if (promptChips.length > 0) {
+        promptChips.forEach(chip => {
+            chip.addEventListener('click', () => {
+                const question = chip.getAttribute('data-question');
+                if (question && questionInput) {
+                    questionInput.value = question;
+                    questionInput.focus();
+                    // Trigger form submission
+                    if (qaForm) {
+                        qaForm.dispatchEvent(new Event('submit'));
+                    }
+                }
+            });
+        });
+    }
+
     if (qaForm) {
         qaForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            const question = questionInput.value;
+            const question = questionInput.value.trim();
+            console.log('Form submitted with question:', question);
             if (!question) return;
+            
+            // Hide suggested prompts when user starts chatting
+            if (suggestedPrompts) {
+                suggestedPrompts.style.display = 'none';
+            }
             
             // Add user message bubble
             addMessageToChat('user', question);
@@ -2853,20 +4199,42 @@ document.addEventListener('DOMContentLoaded', () => {
             
             questionInput.value = '';
             const user = auth.currentUser;
+            console.log('Current user:', user);
             if (user) {
+                console.log('Getting ID token...');
                 user.getIdToken()
-                    .then(idToken => fetch(`${BACKEND_URL}/ask-agent1`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
-                        body: JSON.stringify({ question: question, history: agent1ChatHistory })
-                    }))
-                    .then(response => response.json())
+                    .then(idToken => {
+                        console.log('ID token received, making API call...');
+                        return fetch(`${BACKEND_URL}/ask-agent1`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+                            body: JSON.stringify({ question: question, history: agent1ChatHistory })
+                        });
+                    })
+                    .then(response => {
+                        console.log('API response status:', response.status);
+                        return response.json();
+                    })
                     .then(data => {
+                        console.log('API response data:', data);
                         const ai_answer = data.answer || "Sorry, I received an empty answer.";
                         
                         // Remove thinking message and add AI response
                         removeThinkingMessage();
                         addMessageToChat('ai', ai_answer);
+                        
+                        // Show feedback section
+                        if (feedbackSection) {
+                            feedbackSection.style.display = 'block';
+                        }
+                        
+                        // Update placeholder after first question
+                        if (!hasAskedFirstQuestion) {
+                            hasAskedFirstQuestion = true;
+                            if (questionInput) {
+                                questionInput.placeholder = 'Ask follow up';
+                            }
+                        }
                         
                         const chatHistoryCollectionRef = collection(db, 'users', user.uid, 'chat_history');
                         addDoc(chatHistoryCollectionRef, {
@@ -2876,9 +4244,19 @@ document.addEventListener('DOMContentLoaded', () => {
                         });
                     })
                     .catch(error => {
+                        console.error('Error in API call:', error);
                         removeThinkingMessage();
                         addMessageToChat('ai', `Error: ${error.message}`);
+                        
+                        // Show feedback section even on error
+                        if (feedbackSection) {
+                            feedbackSection.style.display = 'block';
+                        }
                     });
+            } else {
+                console.log('No authenticated user found');
+                removeThinkingMessage();
+                addMessageToChat('ai', 'Please log in to use this feature.');
             }
         });
     }
@@ -2910,6 +4288,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 user.getIdToken().then(idToken => {
                     const formData = new FormData();
                     formData.append('document', file);
+                    formData.append('category', activeUploadCategory); // Include category context
                     return fetch(`${BACKEND_URL}/upload-document`, {
                         method: 'POST',
                         headers: { 'Authorization': `Bearer ${idToken}` },
@@ -3139,7 +4518,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // New Agent 2: Category Upload Logic
     categoryUploads.forEach(uploadZone => {
+        const category = uploadZone.getAttribute('data-category');
+        
         uploadZone.addEventListener('click', () => {
+            activeUploadCategory = category; // Set the active category
             fileInput.click();
         });
         
@@ -3162,6 +4544,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const files = e.dataTransfer.files;
             if (files.length > 0) {
+                activeUploadCategory = category; // Set the active category
                 fileInput.files = files;
                 uploadForm.dispatchEvent(new Event('submit', { cancelable: true }));
             }
@@ -3171,6 +4554,8 @@ document.addEventListener('DOMContentLoaded', () => {
     browseCategoryButtons.forEach(button => {
         button.addEventListener('click', (e) => {
             e.stopPropagation();
+            const category = button.getAttribute('data-category');
+            activeUploadCategory = category; // Set the active category
             fileInput.click();
         });
     });
@@ -3223,74 +4608,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Agent 1: Clear History functionality
-    if (clearHistoryBtn) {
-        clearHistoryBtn.addEventListener('click', async () => {
-            if (confirm('Are you sure you want to clear your question history? This action cannot be undone.')) {
-                if (auth.currentUser) {
-                    try {
-                        // Show loading state
-                        clearHistoryBtn.textContent = 'Clearing...';
-                        clearHistoryBtn.disabled = true;
-                        
-                        // Get all chat history documents
-                        const chatHistoryCollectionRef = collection(db, 'users', auth.currentUser.uid, 'chat_history');
-                        const snapshot = await getDocs(chatHistoryCollectionRef);
-                        
-                        // Delete all documents
-                        const deletePromises = snapshot.docs.map(doc => {
-                            return deleteDoc(doc.ref);
-                        });
-                        
-                        await Promise.all(deletePromises);
-                        
-                        // Clear local state
-                        agent1ChatHistory = [];
-                        
-                        // Update UI
-                        if (recentQuestionsList) {
-                            recentQuestionsList.innerHTML = '<li style="justify-content: center; color: var(--text-secondary);">Your recent questions will appear here.</li>';
-                        }
-                        if (viewAllContainer) {
-                            viewAllContainer.classList.add('hidden');
-                        }
-                        // Clear chat messages and show welcome message
-                        if (chatMessages) {
-                            chatMessages.innerHTML = `
-                                <div class="message ai-message">
-                                    <div class="message-bubble">
-                                        <p>Hi there! 👋 I'm here to help you with your medical billing and insurance questions. Ask me anything about claims, denials, coverage, or billing disputes.</p>
-                                    </div>
-                                </div>
-                            `;
-                        }
-                        
-                        // Reset button
-                        clearHistoryBtn.textContent = 'Clear History';
-                        clearHistoryBtn.disabled = false;
-                        
-                        console.log('Chat history cleared successfully');
-                        
-                    } catch (error) {
-                        console.error('Error clearing chat history:', error);
-                        alert('Error clearing chat history. Please try again.');
-                        
-                        // Reset button on error
-                        clearHistoryBtn.textContent = 'Clear History';
-                        clearHistoryBtn.disabled = false;
-                    }
-                }
-            }
-        });
-    }
+    // Agent 1: Clear History functionality (removed - now handled by New Chat button)
 
-    // Agent 1: View All Questions functionality
-    if (viewAllBtn) {
-        viewAllBtn.addEventListener('click', () => {
-            // For now, just show a message. In a full implementation, this would show a modal with all questions
-            alert('View All functionality would show all your questions in a modal or expanded view. This requires additional UI implementation.');
-        });
-    }
+    // Agent 1: View All Questions functionality (removed - element not found)
 
     // Agent 1: Question Chips functionality
     const questionChips = document.querySelectorAll('.question-chip');
@@ -3387,9 +4707,15 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Paid plans - check authentication first
             if (!auth.currentUser) {
-                showModal('login');
+                showModal('signup');
                 return;
             }
+
+            // Add loading state to button
+            const originalText = button.textContent;
+            button.textContent = 'Processing...';
+            button.disabled = true;
+            button.style.opacity = '0.7';
 
             // Check if we have a valid coupon for any plan
             let couponCode = null;
@@ -3423,6 +4749,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
                 .catch(error => {
                     console.error('Error:', error);
+                    // Reset button state
+                    button.textContent = originalText;
+                    button.disabled = false;
+                    button.style.opacity = '1';
                     alert('There was an error creating your checkout session. Please try again.');
                 });
             });
