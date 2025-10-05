@@ -1597,8 +1597,8 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(session => {
                 // Track checkout initiation
                 trackBusinessMetric('checkout_initiated', 1, { 
-                    price_id: priceId,
-                    price_type: priceId.includes('monthly') ? 'monthly' : 'yearly'
+                    price_id: plan,
+                    price_type: plan
                 });
                 
                 // Remove loading message before redirect

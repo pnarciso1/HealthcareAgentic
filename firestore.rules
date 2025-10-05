@@ -41,13 +41,19 @@ service cloud.firestore {
         // Allow updating Google-specific fields
         (request.resource.data.displayName is string || request.resource.data.displayName == null) &&
         (request.resource.data.photoURL is string || request.resource.data.photoURL == null) &&
-        (request.resource.data.provider is string || request.resource.data.provider == null);
+        (request.resource.data.provider is string || request.resource.data.provider == null) &&
+        // Allow Stripe-related fields for subscription management
+        (request.resource.data.stripeCustomerId is string || request.resource.data.stripeCustomerId == null) &&
+        (request.resource.data.subscriptionTier is string || request.resource.data.subscriptionTier == null) &&
+        (request.resource.data.stripeSubscriptionId is string || request.resource.data.stripeSubscriptionId == null);
       
       allow read: if request.auth != null && request.auth.uid == userId;
     }
     
     // Validate analyses data structure
     match /users/{userId}/analyses/{analysisId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      
       allow create: if request.auth != null && 
         request.auth.uid == userId &&
         request.resource.data.keys().hasAll(['original_filename', 'status']) &&
@@ -61,6 +67,8 @@ service cloud.firestore {
     
     // Validate chat history data structure
     match /users/{userId}/chat_history/{chatId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      
       allow create: if request.auth != null && 
         request.auth.uid == userId &&
         request.resource.data.keys().hasAll(['question', 'answer']) &&
