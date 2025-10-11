@@ -768,7 +768,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const signupForm = document.getElementById('signup-form');
     const loginForm = document.getElementById('login-form');
     const resetPasswordForm = document.getElementById('reset-password-form');
-    const logoutButton = document.getElementById('logout-button');
+    // Logout button removed - now handled by action bar
     const signupMessage = document.getElementById('signup-message');
     const loginMessage = document.getElementById('login-message');
     const resetMessage = document.getElementById('reset-message');
@@ -1015,6 +1015,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const pageToShow = document.getElementById(pageId);
         if (pageToShow) {
             pageToShow.classList.remove('hidden');
+            
+            // Update Team Tabs active state
+            updateTeamTabsActiveState(pageId);
             
             // Initialize specific pages
             if (pageId === 'agent-3-page') {
@@ -4062,31 +4065,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (logoutButton) {
-        logoutButton.addEventListener('click', () => {
-            signOut(auth).catch(error => console.error("Logout error:", error));
-        });
-    }
+    // Logout functionality moved to action bar
 
-    // User menu functionality
-    const userMenuToggle = document.getElementById('user-menu-toggle');
-    const userMenuDropdown = document.getElementById('user-menu-dropdown');
-    
-    if (userMenuToggle && userMenuDropdown) {
-        userMenuToggle.addEventListener('click', function(e) {
-            e.stopPropagation();
-            userMenuToggle.classList.toggle('active');
-            userMenuDropdown.classList.toggle('show');
-        });
-        
-        // Close dropdown when clicking outside
-        document.addEventListener('click', function(e) {
-            if (!userMenuToggle.contains(e.target) && !userMenuDropdown.contains(e.target)) {
-                userMenuToggle.classList.remove('active');
-                userMenuDropdown.classList.remove('show');
-            }
-        });
-    }
+    // User menu functionality removed - now handled by action bar
     
     // Modal event listeners
     if (closeModal) {
@@ -5290,4 +5271,232 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('❌ Agent 3 page element not found');
         }
     }
+
+    // --- TEAM TABS FUNCTIONALITY ---
+    
+    // Update Team Tabs active state
+    function updateTeamTabsActiveState(pageId) {
+        const teamTabs = document.querySelectorAll('.team-tab');
+        teamTabs.forEach(tab => {
+            const tabPageId = tab.getAttribute('data-page');
+            const isActive = tabPageId === pageId;
+            
+            tab.classList.toggle('active', isActive);
+            tab.setAttribute('aria-selected', isActive.toString());
+            tab.setAttribute('tabindex', isActive ? '0' : '-1');
+        });
+    }
+    
+    // Handle Team Tab clicks
+    function handleTeamTabClick(event) {
+        const tab = event.currentTarget;
+        const pageId = tab.getAttribute('data-page');
+        const agentName = tab.getAttribute('data-agent');
+        
+        // Check if this is a future agent
+        if (pageId === 'future-agent') {
+            // Track future agent interest
+            trackUserBehavior('future_agent_clicked', {
+                agent: agentName,
+                subscription_tier: currentUserSubscriptionTier
+            });
+            
+            // Show coming soon message
+            showFutureAgentModal(agentName);
+            return;
+        }
+        
+        // Check if agent is locked (premium agents for free users)
+        const isLocked = pageId !== 'agent-1-page' && currentUserSubscriptionTier === 'free';
+        
+        if (isLocked) {
+            // Track upgrade prompt
+            trackUserBehavior('upgrade_prompt', { 
+                feature: pageId,
+                subscription_tier: currentUserSubscriptionTier,
+                source: 'team_tabs'
+            });
+            showUpgradePrompt();
+            return;
+        }
+        
+        // Track tab switch
+        trackUserBehavior('team_tab_switched', {
+            toAgent: agentName,
+            toPage: pageId,
+            subscription_tier: currentUserSubscriptionTier
+        });
+        
+        // Switch to the selected agent page
+        showAppPage(pageId);
+    }
+    
+    // Handle Team Tabs keyboard navigation
+    function handleTeamTabsKeyboard(event) {
+        const tabs = Array.from(document.querySelectorAll('.team-tab'));
+        const currentTab = event.currentTarget;
+        const currentIndex = tabs.indexOf(currentTab);
+        
+        let nextIndex = currentIndex;
+        
+        switch (event.key) {
+            case 'ArrowLeft':
+                event.preventDefault();
+                nextIndex = currentIndex > 0 ? currentIndex - 1 : tabs.length - 1;
+                break;
+            case 'ArrowRight':
+                event.preventDefault();
+                nextIndex = currentIndex < tabs.length - 1 ? currentIndex + 1 : 0;
+                break;
+            case 'Enter':
+            case ' ':
+                event.preventDefault();
+                handleTeamTabClick(event);
+                return;
+            default:
+                return;
+        }
+        
+        // Update focus
+        tabs[nextIndex].focus();
+    }
+    
+    // Initialize Team Tabs
+    function initializeTeamTabs() {
+        const teamTabs = document.querySelectorAll('.team-tab');
+        
+        teamTabs.forEach(tab => {
+            // Click handler
+            tab.addEventListener('click', handleTeamTabClick);
+            
+            // Keyboard navigation
+            tab.addEventListener('keydown', handleTeamTabsKeyboard);
+            
+            // Track initial view
+            if (!window.teamTabsViewed) {
+                trackUserBehavior('team_tabs_viewed', {
+                    subscription_tier: currentUserSubscriptionTier
+                });
+                window.teamTabsViewed = true;
+            }
+        });
+        
+        // Action Bar buttons
+        const actionContactBtns = document.querySelectorAll('#action-contact-human');
+        actionContactBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                trackUserBehavior('contact_human_clicked', {
+                    source: 'action_bar',
+                    subscription_tier: currentUserSubscriptionTier
+                });
+                showContactHumanModal();
+            });
+        });
+        
+        const actionLogoutBtns = document.querySelectorAll('#action-logout');
+        actionLogoutBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                trackUserBehavior('logout_clicked', {
+                    source: 'action_bar',
+                    subscription_tier: currentUserSubscriptionTier
+                });
+                // Handle logout directly
+                signOut(auth).catch(error => console.error("Logout error:", error));
+            });
+        });
+    }
+    
+    // Show Future Agent Modal
+    function showFutureAgentModal(agentName) {
+        const agentInfo = {
+            'lena': {
+                name: 'Lena',
+                role: 'Care Scheduling Assistant',
+                description: 'Streamline the chaotic process of finding and scheduling appointments.',
+                benefits: [
+                    'Locate in-network providers for specific specialties',
+                    'Automate appointment scheduling',
+                    'Sync with your calendar and send reminders',
+                    'Provide estimated out-of-pocket costs'
+                ]
+            },
+            'nico': {
+                name: 'Nico',
+                role: 'Urgent Care Navigator',
+                description: 'Guide users through unexpected medical situations or billing surprises.',
+                benefits: [
+                    'Find nearest in-network urgent care or ER',
+                    'Provide coverage guidance before arriving',
+                    'Review and verify bills for errors',
+                    'Help with post-visit insurance claims'
+                ]
+            }
+        };
+        
+        const info = agentInfo[agentName];
+        if (!info) return;
+        
+        // Create modal HTML
+        const modalHTML = `
+            <div class="future-agent-modal">
+                <div class="modal-overlay"></div>
+                <div class="modal-content">
+                    <button class="close-modal">&times;</button>
+                    <div class="modal-header">
+                        <div class="future-agent-icon">${agentName === 'lena' ? '⚡' : '🚨'}</div>
+                        <h2>${info.name} - ${info.role}</h2>
+                        <p class="coming-soon">Coming Soon</p>
+                    </div>
+                    <div class="modal-body">
+                        <p class="agent-description">${info.description}</p>
+                        <h3>What ${info.name} will do for you:</h3>
+                        <ul class="benefits-list">
+                            ${info.benefits.map(benefit => `<li>${benefit}</li>`).join('')}
+                        </ul>
+                        <div class="modal-actions">
+                            <button class="btn-primary" onclick="closeFutureAgentModal()">Got it</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Add modal to page
+        const modalElement = document.createElement('div');
+        modalElement.innerHTML = modalHTML;
+        modalElement.classList.add('future-agent-modal-overlay');
+        document.body.appendChild(modalElement);
+        
+        // Add close functionality
+        const closeBtn = modalElement.querySelector('.close-modal');
+        const overlay = modalElement.querySelector('.modal-overlay');
+        
+        closeBtn.addEventListener('click', closeFutureAgentModal);
+        overlay.addEventListener('click', closeFutureAgentModal);
+        
+        // Close on escape key
+        const escapeHandler = (e) => {
+            if (e.key === 'Escape') {
+                closeFutureAgentModal();
+                document.removeEventListener('keydown', escapeHandler);
+            }
+        };
+        document.addEventListener('keydown', escapeHandler);
+    }
+    
+    // Close Future Agent Modal
+    function closeFutureAgentModal() {
+        const modal = document.querySelector('.future-agent-modal-overlay');
+        if (modal) {
+            modal.remove();
+        }
+    }
+    
+    // Make function globally available
+    window.closeFutureAgentModal = closeFutureAgentModal;
+    
+    // Initialize Team Tabs when DOM is ready
+    initializeTeamTabs();
 });

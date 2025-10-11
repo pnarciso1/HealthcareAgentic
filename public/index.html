@@ -37,6 +37,29 @@
             <h1>Finally, Peace of Mind for Your Medical Bills</h1>
             <p class="landing-subheader">Our AI-powered team — guided by real billing and insurance experts — helps you find answers, fix errors, and win back what's fair.</p>
             
+            <!-- The Problem Section -->
+            <section class="about-section">
+                <h2>The Problem We're Solving</h2>
+                <p class="problem-intro">Healthcare isn't just a clinical battle — it's a financial one.</p>
+                
+                <div class="problem-stats">
+                    <div class="stat-card">
+                        <div class="stat-number">60%</div>
+                        <div class="stat-label">of medical bills contain errors</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">86%</div>
+                        <div class="stat-label">of healthcare costs are from chronic conditions</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">Thousands</div>
+                        <div class="stat-label">of dollars lost yearly to overbilling and denied coverage</div>
+                    </div>
+                </div>
+                
+                <p class="problem-conclusion">MyCareClaim exists to change that.</p>
+            </section>
+            
             <!-- Meet Your Support Team Section -->
             <div class="support-team-intro">
                 <h2>Meet Your Support Team</h2>
@@ -868,17 +891,8 @@
                 <span>MyCareClaim</span>
             </div>
             <nav class="app-nav">
-                <a href="#" id="nav-agents" class="nav-link active">My AI Team</a>
+                <a href="#" id="nav-agents" class="nav-link active">Your AI Care Hub</a>
             </nav>
-            <div class="user-menu">
-                <button class="user-menu-toggle" id="user-menu-toggle">
-                    <span class="user-avatar">👤</span>
-                    <span class="user-menu-arrow">▼</span>
-                </button>
-                <div class="user-menu-dropdown" id="user-menu-dropdown">
-                    <button class="menu-item logout-item" id="logout-button">Logout</button>
-                </div>
-            </div>
         </header>
 
         <!-- PAGE: AGENT SELECTION -->
@@ -887,6 +901,71 @@
                 <h1>Choose Your Agent</h1>
                 <p>Select an AI agent to get started.</p>
             </div>
+            
+            <!-- Team Tabs Navigation -->
+            <div class="team-tabs-container">
+                <div class="team-tabs-bar" role="tablist" aria-label="AI Team Navigation">
+                    <button class="team-tab active" data-agent="ava" data-page="agent-1-page" role="tab" aria-selected="true" tabindex="0">
+                        <img src="img/agents/Ava.png" alt="Ava - Quick Answers" class="tab-avatar">
+                        <div class="tab-content">
+                            <div class="tab-name">Ava</div>
+                            <div class="tab-role">Quick Answers</div>
+                        </div>
+                    </button>
+                    <button class="team-tab" data-agent="sam" data-page="agent-2-page" role="tab" aria-selected="false" tabindex="-1">
+                        <img src="img/agents/Sam.png" alt="Sam - Bill & Claim Review" class="tab-avatar">
+                        <div class="tab-content">
+                            <div class="tab-name">Sam</div>
+                            <div class="tab-role">Bill & Claim Review</div>
+                        </div>
+                    </button>
+                    <button class="team-tab" data-agent="riley" data-page="agent-3-page" role="tab" aria-selected="false" tabindex="-1">
+                        <img src="img/agents/Riley.png" alt="Riley - Dispute Incorrect Bills" class="tab-avatar">
+                        <div class="tab-content">
+                            <div class="tab-name">Riley</div>
+                            <div class="tab-role">Dispute Incorrect Bills</div>
+                        </div>
+                    </button>
+                    <button class="team-tab" data-agent="john" data-page="agent-4-page" role="tab" aria-selected="false" tabindex="-1">
+                        <img src="img/agents/John.png" alt="John - Appeal Insurance Denials" class="tab-avatar">
+                        <div class="tab-content">
+                            <div class="tab-name">John</div>
+                            <div class="tab-role">Insurance Appeals</div>
+                        </div>
+                    </button>
+                    <button class="team-tab future-agent" data-agent="lena" data-page="future-agent" role="tab" aria-selected="false" tabindex="-1" title="Lena - Your Care Scheduling Assistant. Helps locate in-network providers and automates appointment scheduling.">
+                        <div class="future-avatar">⚡</div>
+                        <div class="tab-content">
+                            <div class="tab-name">Lena</div>
+                            <div class="tab-role">Care Scheduling</div>
+                            <div class="future-badge">Future</div>
+                        </div>
+                    </button>
+                    <button class="team-tab future-agent" data-agent="nico" data-page="future-agent" role="tab" aria-selected="false" tabindex="-1" title="Nico - Your Urgent Care Navigator. Guides users through unexpected medical situations and billing surprises.">
+                        <div class="future-avatar">🚨</div>
+                        <div class="tab-content">
+                            <div class="tab-name">Nico</div>
+                            <div class="tab-role">Urgent Care</div>
+                            <div class="future-badge">Future</div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Action Bar -->
+            <div class="action-bar-container">
+                <div class="action-bar">
+                    <button class="action-btn contact-human-btn" id="action-contact-human">
+                        <span class="action-icon">👤</span>
+                        <span class="action-text">Contact Human</span>
+                    </button>
+                    <button class="action-btn logout-btn" id="action-logout">
+                        <span class="action-icon">🚪</span>
+                        <span class="action-text">Logout</span>
+                    </button>
+                </div>
+            </div>
+            
             <div class="agent-selection-container">
                 <div class="agent-selection-card" data-page="agent-1-page">
                     <div class="agent-badge free">Free</div>
@@ -972,6 +1051,70 @@
 
         <!-- PAGE: AGENT 1 - RESEARCH & Q&A -->
         <main id="agent-1-page" class="page hidden">
+            <!-- Team Tabs Navigation -->
+            <div class="team-tabs-container">
+                <div class="team-tabs-bar" role="tablist" aria-label="AI Team Navigation">
+                    <button class="team-tab active" data-agent="ava" data-page="agent-1-page" role="tab" aria-selected="true" tabindex="0">
+                        <img src="img/agents/Ava.png" alt="Ava - Quick Answers" class="tab-avatar">
+                        <div class="tab-content">
+                            <div class="tab-name">Ava</div>
+                            <div class="tab-role">Quick Answers</div>
+                        </div>
+                    </button>
+                    <button class="team-tab" data-agent="sam" data-page="agent-2-page" role="tab" aria-selected="false" tabindex="-1">
+                        <img src="img/agents/Sam.png" alt="Sam - Bill & Claim Review" class="tab-avatar">
+                        <div class="tab-content">
+                            <div class="tab-name">Sam</div>
+                            <div class="tab-role">Bill & Claim Review</div>
+                        </div>
+                    </button>
+                    <button class="team-tab" data-agent="riley" data-page="agent-3-page" role="tab" aria-selected="false" tabindex="-1">
+                        <img src="img/agents/Riley.png" alt="Riley - Dispute Incorrect Bills" class="tab-avatar">
+                        <div class="tab-content">
+                            <div class="tab-name">Riley</div>
+                            <div class="tab-role">Dispute Incorrect Bills</div>
+                        </div>
+                    </button>
+                    <button class="team-tab" data-agent="john" data-page="agent-4-page" role="tab" aria-selected="false" tabindex="-1">
+                        <img src="img/agents/John.png" alt="John - Appeal Insurance Denials" class="tab-avatar">
+                        <div class="tab-content">
+                            <div class="tab-name">John</div>
+                            <div class="tab-role">Insurance Appeals</div>
+                        </div>
+                    </button>
+                    <button class="team-tab future-agent" data-agent="lena" data-page="future-agent" role="tab" aria-selected="false" tabindex="-1" title="Lena - Your Care Scheduling Assistant. Helps locate in-network providers and automates appointment scheduling.">
+                        <div class="future-avatar">⚡</div>
+                        <div class="tab-content">
+                            <div class="tab-name">Lena</div>
+                            <div class="tab-role">Care Scheduling</div>
+                            <div class="future-badge">Future</div>
+                        </div>
+                    </button>
+                    <button class="team-tab future-agent" data-agent="nico" data-page="future-agent" role="tab" aria-selected="false" tabindex="-1" title="Nico - Your Urgent Care Navigator. Guides users through unexpected medical situations and billing surprises.">
+                        <div class="future-avatar">🚨</div>
+                        <div class="tab-content">
+                            <div class="tab-name">Nico</div>
+                            <div class="tab-role">Urgent Care</div>
+                            <div class="future-badge">Future</div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Action Bar -->
+            <div class="action-bar-container">
+                <div class="action-bar">
+                    <button class="action-btn contact-human-btn" id="action-contact-human">
+                        <span class="action-icon">👤</span>
+                        <span class="action-text">Contact Human</span>
+                    </button>
+                    <button class="action-btn logout-btn" id="action-logout">
+                        <span class="action-icon">🚪</span>
+                        <span class="action-text">Logout</span>
+                    </button>
+                </div>
+            </div>
+            
             <div class="chat-interface">
                 <!-- Chat Header -->
                 <div class="chat-header">
@@ -1042,6 +1185,70 @@
 
         <!-- PAGE: AGENT 2 - BILL & CLAIM REVIEW -->
         <main id="agent-2-page" class="page hidden">
+            <!-- Team Tabs Navigation -->
+            <div class="team-tabs-container">
+                <div class="team-tabs-bar" role="tablist" aria-label="AI Team Navigation">
+                    <button class="team-tab" data-agent="ava" data-page="agent-1-page" role="tab" aria-selected="false" tabindex="-1">
+                        <img src="img/agents/Ava.png" alt="Ava - Quick Answers" class="tab-avatar">
+                        <div class="tab-content">
+                            <div class="tab-name">Ava</div>
+                            <div class="tab-role">Quick Answers</div>
+                        </div>
+                    </button>
+                    <button class="team-tab active" data-agent="sam" data-page="agent-2-page" role="tab" aria-selected="true" tabindex="0">
+                        <img src="img/agents/Sam.png" alt="Sam - Bill & Claim Review" class="tab-avatar">
+                        <div class="tab-content">
+                            <div class="tab-name">Sam</div>
+                            <div class="tab-role">Bill & Claim Review</div>
+                        </div>
+                    </button>
+                    <button class="team-tab" data-agent="riley" data-page="agent-3-page" role="tab" aria-selected="false" tabindex="-1">
+                        <img src="img/agents/Riley.png" alt="Riley - Dispute Incorrect Bills" class="tab-avatar">
+                        <div class="tab-content">
+                            <div class="tab-name">Riley</div>
+                            <div class="tab-role">Dispute Incorrect Bills</div>
+                        </div>
+                    </button>
+                    <button class="team-tab" data-agent="john" data-page="agent-4-page" role="tab" aria-selected="false" tabindex="-1">
+                        <img src="img/agents/John.png" alt="John - Appeal Insurance Denials" class="tab-avatar">
+                        <div class="tab-content">
+                            <div class="tab-name">John</div>
+                            <div class="tab-role">Insurance Appeals</div>
+                        </div>
+                    </button>
+                    <button class="team-tab future-agent" data-agent="lena" data-page="future-agent" role="tab" aria-selected="false" tabindex="-1" title="Lena - Your Care Scheduling Assistant. Helps locate in-network providers and automates appointment scheduling.">
+                        <div class="future-avatar">⚡</div>
+                        <div class="tab-content">
+                            <div class="tab-name">Lena</div>
+                            <div class="tab-role">Care Scheduling</div>
+                            <div class="future-badge">Future</div>
+                        </div>
+                    </button>
+                    <button class="team-tab future-agent" data-agent="nico" data-page="future-agent" role="tab" aria-selected="false" tabindex="-1" title="Nico - Your Urgent Care Navigator. Guides users through unexpected medical situations and billing surprises.">
+                        <div class="future-avatar">🚨</div>
+                        <div class="tab-content">
+                            <div class="tab-name">Nico</div>
+                            <div class="tab-role">Urgent Care</div>
+                            <div class="future-badge">Future</div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Action Bar -->
+            <div class="action-bar-container">
+                <div class="action-bar">
+                    <button class="action-btn contact-human-btn" id="action-contact-human">
+                        <span class="action-icon">👤</span>
+                        <span class="action-text">Contact Human</span>
+                    </button>
+                    <button class="action-btn logout-btn" id="action-logout">
+                        <span class="action-icon">🚪</span>
+                        <span class="action-text">Logout</span>
+                    </button>
+                </div>
+            </div>
+            
             <div class="page-header">
                 <h1>📊 Bill & Claim Review</h1>
                 <p>Turn a pile of bills into a clear picture of what you owe. Organize your bills, claims, and insurance plans into one place.</p>
@@ -1262,6 +1469,70 @@
 
         <!-- PAGE: AGENT 3 - DISPUTE INCORRECT BILLS -->
         <main id="agent-3-page" class="page hidden">
+            <!-- Team Tabs Navigation -->
+            <div class="team-tabs-container">
+                <div class="team-tabs-bar" role="tablist" aria-label="AI Team Navigation">
+                    <button class="team-tab" data-agent="ava" data-page="agent-1-page" role="tab" aria-selected="false" tabindex="-1">
+                        <img src="img/agents/Ava.png" alt="Ava - Quick Answers" class="tab-avatar">
+                        <div class="tab-content">
+                            <div class="tab-name">Ava</div>
+                            <div class="tab-role">Quick Answers</div>
+                        </div>
+                    </button>
+                    <button class="team-tab" data-agent="sam" data-page="agent-2-page" role="tab" aria-selected="false" tabindex="-1">
+                        <img src="img/agents/Sam.png" alt="Sam - Bill & Claim Review" class="tab-avatar">
+                        <div class="tab-content">
+                            <div class="tab-name">Sam</div>
+                            <div class="tab-role">Bill & Claim Review</div>
+                        </div>
+                    </button>
+                    <button class="team-tab active" data-agent="riley" data-page="agent-3-page" role="tab" aria-selected="true" tabindex="0">
+                        <img src="img/agents/Riley.png" alt="Riley - Dispute Incorrect Bills" class="tab-avatar">
+                        <div class="tab-content">
+                            <div class="tab-name">Riley</div>
+                            <div class="tab-role">Dispute Incorrect Bills</div>
+                        </div>
+                    </button>
+                    <button class="team-tab" data-agent="john" data-page="agent-4-page" role="tab" aria-selected="false" tabindex="-1">
+                        <img src="img/agents/John.png" alt="John - Appeal Insurance Denials" class="tab-avatar">
+                        <div class="tab-content">
+                            <div class="tab-name">John</div>
+                            <div class="tab-role">Insurance Appeals</div>
+                        </div>
+                    </button>
+                    <button class="team-tab future-agent" data-agent="lena" data-page="future-agent" role="tab" aria-selected="false" tabindex="-1" title="Lena - Your Care Scheduling Assistant. Helps locate in-network providers and automates appointment scheduling.">
+                        <div class="future-avatar">⚡</div>
+                        <div class="tab-content">
+                            <div class="tab-name">Lena</div>
+                            <div class="tab-role">Care Scheduling</div>
+                            <div class="future-badge">Future</div>
+                        </div>
+                    </button>
+                    <button class="team-tab future-agent" data-agent="nico" data-page="future-agent" role="tab" aria-selected="false" tabindex="-1" title="Nico - Your Urgent Care Navigator. Guides users through unexpected medical situations and billing surprises.">
+                        <div class="future-avatar">🚨</div>
+                        <div class="tab-content">
+                            <div class="tab-name">Nico</div>
+                            <div class="tab-role">Urgent Care</div>
+                            <div class="future-badge">Future</div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Action Bar -->
+            <div class="action-bar-container">
+                <div class="action-bar">
+                    <button class="action-btn contact-human-btn" id="action-contact-human">
+                        <span class="action-icon">👤</span>
+                        <span class="action-text">Contact Human</span>
+                    </button>
+                    <button class="action-btn logout-btn" id="action-logout">
+                        <span class="action-icon">🚪</span>
+                        <span class="action-text">Logout</span>
+                    </button>
+                </div>
+            </div>
+            
             <div class="page-header">
                 <h1>🛡️ Dispute Incorrect Bills</h1>
                 <p>Don't pay for mistakes you don't owe. Fight billing errors with professional dispute letters and automated tracking.</p>
@@ -1552,6 +1823,70 @@
 
         <!-- PAGE: AGENT 4 - APPEAL INSURANCE DENIALS -->
         <main id="agent-4-page" class="page hidden" style="position: relative;">
+            <!-- Team Tabs Navigation -->
+            <div class="team-tabs-container">
+                <div class="team-tabs-bar" role="tablist" aria-label="AI Team Navigation">
+                    <button class="team-tab" data-agent="ava" data-page="agent-1-page" role="tab" aria-selected="false" tabindex="-1">
+                        <img src="img/agents/Ava.png" alt="Ava - Quick Answers" class="tab-avatar">
+                        <div class="tab-content">
+                            <div class="tab-name">Ava</div>
+                            <div class="tab-role">Quick Answers</div>
+                        </div>
+                    </button>
+                    <button class="team-tab" data-agent="sam" data-page="agent-2-page" role="tab" aria-selected="false" tabindex="-1">
+                        <img src="img/agents/Sam.png" alt="Sam - Bill & Claim Review" class="tab-avatar">
+                        <div class="tab-content">
+                            <div class="tab-name">Sam</div>
+                            <div class="tab-role">Bill & Claim Review</div>
+                        </div>
+                    </button>
+                    <button class="team-tab" data-agent="riley" data-page="agent-3-page" role="tab" aria-selected="false" tabindex="-1">
+                        <img src="img/agents/Riley.png" alt="Riley - Dispute Incorrect Bills" class="tab-avatar">
+                        <div class="tab-content">
+                            <div class="tab-name">Riley</div>
+                            <div class="tab-role">Dispute Incorrect Bills</div>
+                        </div>
+                    </button>
+                    <button class="team-tab active" data-agent="john" data-page="agent-4-page" role="tab" aria-selected="true" tabindex="0">
+                        <img src="img/agents/John.png" alt="John - Appeal Insurance Denials" class="tab-avatar">
+                        <div class="tab-content">
+                            <div class="tab-name">John</div>
+                            <div class="tab-role">Insurance Appeals</div>
+                        </div>
+                    </button>
+                    <button class="team-tab future-agent" data-agent="lena" data-page="future-agent" role="tab" aria-selected="false" tabindex="-1" title="Lena - Your Care Scheduling Assistant. Helps locate in-network providers and automates appointment scheduling.">
+                        <div class="future-avatar">⚡</div>
+                        <div class="tab-content">
+                            <div class="tab-name">Lena</div>
+                            <div class="tab-role">Care Scheduling</div>
+                            <div class="future-badge">Future</div>
+                        </div>
+                    </button>
+                    <button class="team-tab future-agent" data-agent="nico" data-page="future-agent" role="tab" aria-selected="false" tabindex="-1" title="Nico - Your Urgent Care Navigator. Guides users through unexpected medical situations and billing surprises.">
+                        <div class="future-avatar">🚨</div>
+                        <div class="tab-content">
+                            <div class="tab-name">Nico</div>
+                            <div class="tab-role">Urgent Care</div>
+                            <div class="future-badge">Future</div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Action Bar -->
+            <div class="action-bar-container">
+                <div class="action-bar">
+                    <button class="action-btn contact-human-btn" id="action-contact-human">
+                        <span class="action-icon">👤</span>
+                        <span class="action-text">Contact Human</span>
+                    </button>
+                    <button class="action-btn logout-btn" id="action-logout">
+                        <span class="action-icon">🚪</span>
+                        <span class="action-text">Logout</span>
+                    </button>
+                </div>
+            </div>
+            
             <div class="coming-soon-overlay">
                 <h2>Coming Soon</h2>
                 <p>This agent is currently under development. Check back later for updates!</p>

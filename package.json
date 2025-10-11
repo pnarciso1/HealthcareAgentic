@@ -1,7 +1,7 @@
 {
   "name": "healthcare-agentic",
-  "version": "1.0.0",
-  "description": "AI-powered healthcare billing and insurance assistance platform",
+  "version": "8.0.0",
+  "description": "AI-powered healthcare billing and insurance assistance platform with unified Team Tabs navigation",
   "scripts": {
     "generate-articles": "python generate_articles_advanced.py",
     "generate-articles-simple": "python generate_articles.py",

@@ -6,12 +6,31 @@ HealthcareAgentic is a comprehensive healthcare cost management and dispute reso
 
 ## Features
 
-- **Agent 1**: Healthcare cost analysis and optimization
-- **Agent 2**: Medical bill and claim review with AI analysis
-- **Agent 3**: Dispute incorrect bills with professional letter generation and interactive tutorial system
-- **Agent 4**: Appeal insurance denials (coming soon)
+### Active AI Agents
+- **Ava (Agent 1)**: Quick Answers - Instant clarity on healthcare questions and billing terms
+- **Sam (Agent 2)**: Bill & Claim Review - Medical bill analysis with AI-powered error detection
+- **Riley (Agent 3)**: Dispute Incorrect Bills - Professional dispute letter generation and tracking
+- **John (Agent 4)**: Appeal Insurance Denials - Insurance appeal packet creation and management
+
+### Future AI Agents (Coming Soon)
+- **Lena**: Care Scheduling Assistant - Streamline appointment finding and scheduling
+- **Nico**: Urgent Care Navigator - Guide through unexpected medical situations and billing surprises
+
+### Navigation System
+- **Team Tabs**: Unified navigation across all pages with one-click agent switching
+- **Action Bar**: Dedicated space for user actions (Contact Human, Logout)
+- **Responsive Design**: Optimized for desktop, tablet, and mobile devices
+- **Accessibility**: Full keyboard navigation and ARIA support
 
 ## Recent Updates
+
+### Version 8.0 (January 2025)
+- **Team Tabs Navigation**: Unified navigation system across all pages with agent switching
+- **Dedicated Action Bar**: Clean separation of user actions (Contact Human, Logout) from agent navigation
+- **Future Agents Preview**: Added Lena (Care Scheduling) and Nico (Urgent Care) as coming soon
+- **Consistent UI/UX**: Streamlined interface with consistent navigation patterns
+- **Enhanced Accessibility**: Full keyboard navigation and ARIA support for Team Tabs
+- **Analytics Integration**: Comprehensive tracking for tab switches and user interactions
 
 ### Version 7.7 (October 2025)
 - **Quick Answers Widget**: Fully functional AI-powered homepage widget with proper markdown formatting
@@ -29,6 +48,7 @@ HealthcareAgentic is a comprehensive healthcare cost management and dispute reso
 
 ## Documentation
 
+- [Team Tabs Navigation](TEAM_TABS_NAVIGATION.md) - Complete navigation system documentation
 - [Platform Documentation](PLATFORM_DOCUMENTATION.md) - Complete feature overview
 - [Quick Answers Widget](QUICK_ANSWERS_WIDGET_IMPLEMENTATION.md) - Homepage widget implementation details
 - [Technical Features](TECHNICAL_FEATURES.md) - Implementation details
@@ -38,10 +58,12 @@ HealthcareAgentic is a comprehensive healthcare cost management and dispute reso
 
 ## Quick Start
 
-1. **Upload Document**: Use Agent 2 to analyze medical bills
-2. **Review Analysis**: Check for red flags and billing errors
-3. **Generate Dispute**: Use Agent 3 to create professional dispute letters
-4. **Track Progress**: Monitor dispute status and outcomes
+1. **Choose Your Agent**: Select from the Team Tabs navigation (Ava, Sam, Riley, John)
+2. **Upload Document**: Use Sam (Agent 2) to analyze medical bills
+3. **Review Analysis**: Check for red flags and billing errors in the analysis dashboard
+4. **Generate Dispute**: Switch to Riley (Agent 3) to create professional dispute letters
+5. **Track Progress**: Monitor dispute status and outcomes across all agents
+6. **Get Help**: Use the Action Bar to contact human support or logout
 
 ## Support
 
