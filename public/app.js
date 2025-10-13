@@ -640,39 +640,55 @@ function showLoginForm() {
 // --- GOOGLE SIGN-IN FUNCTIONS ---
 async function signInWithGoogle() {
     try {
+        // Try popup first (better UX)
+        console.log('🔄 Attempting Google Sign-in with popup...');
         const result = await signInWithPopup(auth, googleProvider);
-        const user = result.user;
+        console.log('✅ Google Sign-in successful with popup');
         
-        // Check if this is a new user
-        const userDocRef = doc(db, 'users', user.uid);
-        const userDoc = await getDoc(userDocRef);
-        
-        if (!userDoc.exists()) {
-            // Create user document for new Google sign-in users - using minimal required fields
-            console.log('💾 Creating new Google user document...');
-            await setDoc(userDocRef, {
-                email: user.email,
-                createdAt: serverTimestamp(),
-                provider: 'google',
-                displayName: user.displayName || null,
-                photoURL: user.photoURL || null
-            });
-            console.log('✅ Google user document created successfully');
-        } else {
-            // Update existing user with Google info
-            console.log('💾 Updating existing Google user document...');
-            await setDoc(userDocRef, {
-                displayName: user.displayName || null,
-                photoURL: user.photoURL || null,
-                provider: 'google'
-            }, { merge: true });
-            console.log('✅ Google user document updated successfully');
+        // Handle user document creation for popup sign-in
+        if (result.user) {
+            try {
+                const userDocRef = doc(db, 'users', result.user.uid);
+                const userDoc = await getDoc(userDocRef);
+                
+                if (!userDoc.exists()) {
+                    console.log('💾 Creating new Google user document from popup...');
+                    await setDoc(userDocRef, {
+                        email: result.user.email,
+                        createdAt: serverTimestamp(),
+                        provider: 'google',
+                        displayName: result.user.displayName || null,
+                        photoURL: result.user.photoURL || null,
+                        subscriptionTier: 'free'
+                    });
+                    console.log('✅ New Google user document created from popup');
+                }
+            } catch (firestoreError) {
+                console.error('❌ Error accessing Firestore during popup sign-in:', firestoreError);
+                // Continue anyway - the user is still authenticated
+            }
         }
         
         return result;
     } catch (error) {
-        console.error('Google sign-in error:', error);
-        throw error;
+        console.log('⚠️ Popup failed, trying redirect method...', error.code);
+        
+        // If popup fails, fall back to redirect
+        if (error.code === 'auth/popup-closed-by-user' || 
+            error.code === 'auth/popup-blocked' ||
+            error.code === 'auth/cancelled-popup-request') {
+            try {
+                console.log('🔄 Using redirect method for Google Sign-in...');
+                await signInWithRedirect(auth, googleProvider);
+                return; // Redirect will handle the rest
+            } catch (redirectError) {
+                console.error('❌ Both popup and redirect failed:', redirectError);
+                throw redirectError;
+            }
+        } else {
+            console.error('❌ Google sign-in error:', error);
+            throw error;
+        }
     }
 }
 
@@ -682,7 +698,7 @@ function handleGoogleSignInError(error) {
     if (error.code === 'auth/popup-closed-by-user') {
         errorMessage = 'Sign-in was cancelled. Please try again.';
     } else if (error.code === 'auth/popup-blocked') {
-        errorMessage = 'Sign-in popup was blocked. Please allow popups and try again.';
+        errorMessage = 'Popup was blocked. Using redirect method instead...';
     } else if (error.code === 'auth/network-request-failed') {
         errorMessage = 'Network error. Please check your connection and try again.';
     } else if (error.code === 'auth/too-many-requests') {
@@ -694,10 +710,119 @@ function handleGoogleSignInError(error) {
     return errorMessage;
 }
 
+// --- Payment Status Messages ---
+
+function showPaymentCancelledMessage() {
+    const cancelledMessage = document.createElement('div');
+    cancelledMessage.className = 'payment-cancelled-message';
+    cancelledMessage.innerHTML = `
+        <div class="payment-message-content">
+            <div class="payment-message-icon">❌</div>
+            <h3>Payment Cancelled</h3>
+            <p>Your payment was cancelled. No charges have been made.</p>
+            <div class="payment-message-actions">
+                <button class="btn-primary" onclick="window.location.href='#pricing'">Try Again</button>
+                <button class="btn-secondary" onclick="this.parentElement.parentElement.parentElement.remove()">Dismiss</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(cancelledMessage);
+    
+    // Auto-remove after 10 seconds
+    setTimeout(() => {
+        if (cancelledMessage.parentNode) {
+            cancelledMessage.remove();
+        }
+    }, 10000);
+}
+
 // --- MAIN SCRIPT LOGIC ---
 
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('📄 DOM Content Loaded - checking for Quick Answers widget...');
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log('🚀 DOM Content Loaded - Initializing application...');
+
+    // --- Handle Google Sign-in Redirect Results ---
+    try {
+        const result = await getRedirectResult(auth);
+        if (result) {
+            console.log('🔄 Processing Google sign-in redirect result...');
+            const user = result.user;
+            
+            try {
+                // Check if this is a new user
+                const userDocRef = doc(db, 'users', user.uid);
+                const userDoc = await getDoc(userDocRef);
+                
+                if (!userDoc.exists()) {
+                    // Create user document for new Google sign-in users
+                    console.log('💾 Creating new Google user document from redirect...');
+                    await setDoc(userDocRef, {
+                        email: user.email,
+                        createdAt: serverTimestamp(),
+                        provider: 'google',
+                        displayName: user.displayName || null,
+                        photoURL: user.photoURL || null,
+                        subscriptionTier: 'free'
+                    });
+                    console.log('✅ New Google user document created');
+                }
+                
+                console.log('✅ Google sign-in redirect completed successfully');
+            } catch (firestoreError) {
+                console.error('❌ Error accessing Firestore during redirect:', firestoreError);
+                // Continue anyway - the user is still authenticated
+                console.log('⚠️ Continuing with authentication despite Firestore error');
+            }
+        }
+    } catch (error) {
+        console.error('❌ Error processing Google sign-in redirect:', error);
+    }
+
+    // --- Payment Success Detection ---
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentStatus = urlParams.get('payment');
+    
+    if (paymentStatus === 'success') {
+        console.log('💳 Payment success detected in URL parameters');
+        
+        // Track payment success
+        trackUserBehavior('payment_success_detected', {
+            source: 'url_parameters',
+            timestamp: new Date().toISOString(),
+            user_logged_in: !!auth.currentUser
+        });
+        
+        // Show processing message with loading indicator
+        showSubscriptionProcessingMessage();
+        
+        // Clear URL parameters immediately to avoid confusion
+        const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
+        
+        console.log('✅ Payment success processed - URL cleaned, starting subscription verification');
+        
+        // Force immediate subscription check after a short delay to allow webhook processing
+        setTimeout(async () => {
+            console.log('🔍 Starting immediate subscription verification...');
+            await verifySubscriptionAfterPayment();
+        }, 2000);
+    } else if (paymentStatus === 'cancelled') {
+        console.log('❌ Payment cancelled detected in URL parameters');
+        
+        // Track payment cancellation
+        trackUserBehavior('payment_cancelled', {
+            source: 'url_parameters',
+            timestamp: new Date().toISOString()
+        });
+        
+        // Clear URL parameters
+        const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
+        
+        // Show cancellation message
+        showPaymentCancelledMessage();
+    }
 
     // Initialize Quick Answers Widget
     const widgetElement = document.getElementById('quick-answers-widget');
@@ -866,6 +991,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let agent1ChatHistory = [];
     let unsubscribeAnalyses = null;
     let unsubscribeChatHistory = null;
+    let unsubscribeUser = null; // Real-time listener for user subscription changes
+    let unsubscribeSubscription = null; // Real-time listener for subscription changes
     let currentUserSubscriptionTier = 'free';
     let activeUploadCategory = 'bills'; // Track which category is being used for upload
     let hasAskedFirstQuestion = false; // Track if user has asked their first question
@@ -1024,9 +1151,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('📄 Agent 3 page shown, initializing...');
                 initializeAgent3();
             } else if (pageId === 'agent-2-page') {
-                if (auth.currentUser) {
-                    listenForAnalysisResults(auth.currentUser.uid);
-                }
+                // Removed problematic real-time listener
             }
         }
     };
@@ -2006,15 +2131,67 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             const pageId = card.getAttribute('data-page');
-            const isLocked = pageId !== 'agent-1-page' && currentUserSubscriptionTier === 'free';
+            // Simple access control - only allow premium agents for paying users
+            const isLocked = pageId !== 'agent-1-page' && 
+                            currentUserSubscriptionTier !== 'complete_care';
+            
+            console.log('🎯 Card clicked - Premium Access Debug:', {
+                pageId: pageId,
+                subscriptionTier: currentUserSubscriptionTier,
+                isLocked: isLocked,
+                isPremiumAgent: pageId !== 'agent-1-page',
+                paymentSuccess: window.paymentSuccess,
+                timestamp: new Date().toISOString(),
+                userAuthenticated: !!auth.currentUser,
+                userId: auth.currentUser?.uid
+            });
             
             if (isLocked) {
+                // Check if payment is currently being processed
+                if (window.paymentProcessing) {
+                    console.log('⏳ User tried to access premium agent during payment processing (card click)');
+                    
+                    // Show a specific message for users whose payment is being processed
+                    const processingMessage = document.createElement('div');
+                    processingMessage.className = 'payment-processing-message';
+                    processingMessage.innerHTML = `
+                        <div class="payment-message-content">
+                            <div class="payment-message-icon">⏳</div>
+                            <h3>Payment Being Processed</h3>
+                            <p>Your premium access is being activated. Please wait a moment and try again, or refresh the page.</p>
+                            <div class="payment-message-actions">
+                                <button class="btn-secondary" onclick="this.parentElement.parentElement.parentElement.remove()">Dismiss</button>
+                                <button class="btn-primary" onclick="window.location.reload()">Refresh Page</button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    document.body.appendChild(processingMessage);
+                    
+                    // Auto-remove after 10 seconds
+                    setTimeout(() => {
+                        if (processingMessage.parentNode) {
+                            processingMessage.remove();
+                        }
+                    }, 10000);
+                    
+                    // Track this specific scenario
+                    trackUserBehavior('premium_access_during_processing', { 
+                        feature: pageId,
+                        subscription_tier: currentUserSubscriptionTier,
+                        source: 'agent_card'
+                    });
+                    return;
+                }
+                
+                console.log('🔒 Card is locked, showing upgrade prompt');
                 trackUserBehavior('upgrade_prompt', { 
                     feature: pageId,
                     subscription_tier: currentUserSubscriptionTier
                 });
                 showUpgradePrompt();
             } else {
+                console.log('✅ Card is unlocked, navigating to agent page');
                 // Track feature usage
                 trackFeatureUsage('agent_selection', { 
                     agent: pageId,
@@ -2031,11 +2208,60 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.stopPropagation(); // Prevent card click
                 
                 const pageId = card.getAttribute('data-page');
-                const isLocked = pageId !== 'agent-1-page' && currentUserSubscriptionTier === 'free';
+                // Simple access control - only allow premium agents for paying users
+                const isLocked = pageId !== 'agent-1-page' && 
+                                currentUserSubscriptionTier !== 'complete_care';
+                
+                console.log('🎯 Get Started button clicked:', {
+                    pageId: pageId,
+                    subscriptionTier: currentUserSubscriptionTier,
+                    isLocked: isLocked,
+                    buttonDisabled: selectBtn.disabled,
+                    paymentSuccess: window.paymentSuccess
+                });
                 
                 if (isLocked) {
+                    // Check if payment is currently being processed
+                    if (window.paymentProcessing) {
+                        console.log('⏳ User tried to access premium agent during payment processing (get started button)');
+                        
+                        // Show a specific message for users whose payment is being processed
+                        const processingMessage = document.createElement('div');
+                        processingMessage.className = 'payment-processing-message';
+                        processingMessage.innerHTML = `
+                            <div class="payment-message-content">
+                                <div class="payment-message-icon">⏳</div>
+                                <h3>Payment Being Processed</h3>
+                                <p>Your premium access is being activated. Please wait a moment and try again, or refresh the page.</p>
+                                <div class="payment-message-actions">
+                                    <button class="btn-secondary" onclick="this.parentElement.parentElement.parentElement.remove()">Dismiss</button>
+                                    <button class="btn-primary" onclick="window.location.reload()">Refresh Page</button>
+                                </div>
+                            </div>
+                        `;
+                        
+                        document.body.appendChild(processingMessage);
+                        
+                        // Auto-remove after 10 seconds
+                        setTimeout(() => {
+                            if (processingMessage.parentNode) {
+                                processingMessage.remove();
+                            }
+                        }, 10000);
+                        
+                        // Track this specific scenario
+                        trackUserBehavior('premium_access_during_processing', { 
+                            feature: pageId,
+                            subscription_tier: currentUserSubscriptionTier,
+                            source: 'get_started_button'
+                        });
+                        return;
+                    }
+                    
+                    console.log('🔒 Button is locked, showing upgrade prompt');
                     showUpgradePrompt();
                 } else {
+                    console.log('✅ Button is unlocked, navigating to agent page');
                     showAppPage(pageId);
                 }
             });
@@ -3097,35 +3323,54 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             
+            console.log('👤 User authenticated, setting up real-time listeners:', user.uid);
+            
             // Update Quick Answers widget counter for logged in users
             if (quickAnswersWidget) {
                 quickAnswersWidget.updateCounterDisplay();
             }
             
-            const userDocRef = doc(db, 'users', user.uid);
-            getDoc(userDocRef).then(docSnap => {
-                if (docSnap.exists()) {
-                    const newSubscriptionTier = docSnap.data().subscriptionTier || 'free';
-                    const wasUpgraded = currentUserSubscriptionTier === 'free' && newSubscriptionTier === 'complete_care';
-                    currentUserSubscriptionTier = newSubscriptionTier;
-                    
-                    if (wasUpgraded) {
-                        // Track successful upgrade
-                        trackBusinessMetric('subscription_upgraded', 1, { 
-                            from_tier: 'free',
-                            to_tier: newSubscriptionTier
-                        });
-                        showUpgradeSuccessMessage();
-                    }
-                }
-                updateUIAfterLogin();
-            });
+            // Set up subscription check for this user
+            checkUserSubscription(user.uid);
+            
+            // Set up real-time subscription listener
+            setupSubscriptionListener(user.uid);
+            
+            // Set up data loading listeners for user's historical data
+            listenForChatHistory(user.uid);
+            listenForAnalysisResults(user.uid);
+            
+            // Initial UI update (will be updated again by real-time listener if needed)
+            updateUIAfterLogin();
+            
+            // Update premium agent card states on initial load
+            updatePremiumAgentCardStates();
+            
         } else {
+            console.log('👋 User logged out, cleaning up listeners');
+            
             authSection.classList.remove('hidden');
             appContainer.classList.add('hidden');
             showLandingPage('main');
-            if (unsubscribeAnalyses) unsubscribeAnalyses();
-            if (unsubscribeChatHistory) unsubscribeChatHistory();
+            
+            // Clean up all listeners
+            if (unsubscribeUser) {
+                unsubscribeUser();
+                unsubscribeUser = null;
+            }
+            if (unsubscribeAnalyses) {
+                unsubscribeAnalyses();
+                unsubscribeAnalyses = null;
+            }
+            if (unsubscribeChatHistory) {
+                unsubscribeChatHistory();
+                unsubscribeChatHistory = null;
+            }
+            if (unsubscribeSubscription) {
+                unsubscribeSubscription();
+                unsubscribeSubscription = null;
+            }
+            
             agent1ChatHistory = [];
             currentUserSubscriptionTier = 'free';
             
@@ -3136,7 +3381,246 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    const showUpgradeSuccessMessage = () => {
+
+
+    // --- Payment Status Messages ---
+
+
+
+
+    // --- Subscription Processing Messages ---
+    function showSubscriptionProcessingMessage() {
+        console.log('🎨 Showing subscription processing message');
+        
+        const processingMessage = document.createElement('div');
+        processingMessage.className = 'subscription-processing-message';
+        processingMessage.innerHTML = `
+            <div class="processing-content">
+                <div class="processing-icon">⏳</div>
+                <h3>Processing Your Upgrade</h3>
+                <p>Please wait while we verify your subscription...</p>
+                <div class="processing-spinner"></div>
+            </div>
+        `;
+        
+        // Style the processing message
+        processingMessage.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        `;
+        
+        const content = processingMessage.querySelector('.processing-content');
+        content.style.cssText = `
+            text-align: center;
+            padding: 40px;
+            background: #1a1a2e;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            max-width: 400px;
+        `;
+        
+        const spinner = processingMessage.querySelector('.processing-spinner');
+        spinner.style.cssText = `
+            width: 40px;
+            height: 40px;
+            border: 4px solid #333;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        `;
+        
+        // Add spinner animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        document.body.appendChild(processingMessage);
+        
+        // Store reference for later removal
+        window.subscriptionProcessingMessage = processingMessage;
+        
+        console.log('✅ Subscription processing message displayed');
+    }
+    
+    function showSubscriptionVerifiedMessage() {
+        console.log('🎨 Showing subscription verified message');
+        
+        // Remove processing message if it exists
+        if (window.subscriptionProcessingMessage) {
+            document.body.removeChild(window.subscriptionProcessingMessage);
+            window.subscriptionProcessingMessage = null;
+        }
+        
+        const verifiedMessage = document.createElement('div');
+        verifiedMessage.className = 'subscription-verified-message';
+        verifiedMessage.innerHTML = `
+            <div class="verified-content">
+                <div class="verified-icon">🎉</div>
+                <h3>Welcome to Premium!</h3>
+                <p>Your subscription has been verified. You now have access to all premium features!</p>
+                <button class="verified-button" onclick="this.parentElement.parentElement.remove()">Get Started</button>
+            </div>
+        `;
+        
+        // Style the verified message
+        verifiedMessage.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        `;
+        
+        const content = verifiedMessage.querySelector('.verified-content');
+        content.style.cssText = `
+            text-align: center;
+            padding: 40px;
+            background: #1a1a2e;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            max-width: 400px;
+        `;
+        
+        const button = verifiedMessage.querySelector('.verified-button');
+        button.style.cssText = `
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 20px;
+        `;
+        
+        document.body.appendChild(verifiedMessage);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (document.body.contains(verifiedMessage)) {
+                document.body.removeChild(verifiedMessage);
+            }
+        }, 5000);
+        
+        console.log('✅ Subscription verified message displayed');
+    }
+
+    async function verifySubscriptionAfterPayment() {
+        console.log('🔍 verifySubscriptionAfterPayment: Starting verification process');
+        
+        try {
+            // Check if user is authenticated
+            if (!auth.currentUser) {
+                console.error('❌ verifySubscriptionAfterPayment: User not authenticated');
+                return;
+            }
+            
+            const uid = auth.currentUser.uid;
+            console.log('🔍 verifySubscriptionAfterPayment: User authenticated:', uid);
+            
+            // Force multiple subscription checks with increasing delays
+            const maxAttempts = 8;
+            let attempts = 0;
+            
+            const checkSubscription = async () => {
+                attempts++;
+                console.log(`🔍 verifySubscriptionAfterPayment: Attempt ${attempts}/${maxAttempts}`);
+                
+                try {
+                    const userDocRef = doc(db, 'users', uid);
+                    const userDoc = await getDoc(userDocRef);
+                    
+                    if (userDoc.exists()) {
+                        const userData = userDoc.data();
+                        const subscriptionTier = userData.subscriptionTier || 'free';
+                        
+                        console.log('📊 verifySubscriptionAfterPayment: Current subscription tier:', subscriptionTier);
+                        
+                        if (subscriptionTier === 'complete_care') {
+                            console.log('🎉 verifySubscriptionAfterPayment: Premium subscription confirmed!');
+                            
+                            // Update current subscription tier
+                            currentUserSubscriptionTier = 'complete_care';
+                            
+                            // Update UI
+                            updatePremiumAgentCardStates();
+                            
+                            // Show success message
+                            showSubscriptionVerifiedMessage();
+                            
+                            // Track successful upgrade
+                            trackUserBehavior('subscription_verified', {
+                                subscription_tier: subscriptionTier,
+                                attempts: attempts,
+                                timestamp: new Date().toISOString()
+                            });
+                            
+                            console.log('✅ verifySubscriptionAfterPayment: Premium access granted successfully');
+                            return true; // Success
+                        } else {
+                            console.log(`⏳ verifySubscriptionAfterPayment: Still '${subscriptionTier}', waiting for webhook...`);
+                            
+                            if (attempts < maxAttempts) {
+                                // Wait longer between attempts (exponential backoff)
+                                const delay = Math.min(1000 * Math.pow(1.5, attempts), 5000);
+                                console.log(`⏳ verifySubscriptionAfterPayment: Waiting ${delay}ms before next attempt...`);
+                                setTimeout(checkSubscription, delay);
+                            } else {
+                                console.error('❌ verifySubscriptionAfterPayment: Max attempts reached, subscription not updated');
+                                showSubscriptionProcessingMessage(); // Keep showing processing
+                                return false;
+                            }
+                        }
+                    } else {
+                        console.error('❌ verifySubscriptionAfterPayment: User document does not exist');
+                        return false;
+                    }
+                } catch (error) {
+                    console.error('❌ verifySubscriptionAfterPayment: Error checking subscription:', error);
+                    
+                    if (attempts < maxAttempts) {
+                        const delay = 2000;
+                        console.log(`⏳ verifySubscriptionAfterPayment: Retrying in ${delay}ms after error...`);
+                        setTimeout(checkSubscription, delay);
+                    } else {
+                        console.error('❌ verifySubscriptionAfterPayment: Max attempts reached after errors');
+                        return false;
+                    }
+                }
+            };
+            
+            // Start the verification process
+            await checkSubscription();
+            
+        } catch (error) {
+            console.error('❌ verifySubscriptionAfterPayment: Critical error:', error);
+        }
+    }
+
+    function showUpgradeSuccessMessage() {
         const successMessage = document.createElement('div');
         successMessage.className = 'upgrade-success-message';
         successMessage.innerHTML = `
@@ -3160,7 +3644,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.body.removeChild(successMessage);
             }
         }, 5000);
-    };
+    }
 
     const updateUIAfterLogin = () => {
         // Track successful authentication
@@ -3174,29 +3658,185 @@ document.addEventListener('DOMContentLoaded', () => {
         showAppPage('agent-selection-page');
         hideModal();
         
-        agentSelectionCards.forEach(card => {
-            const page = card.getAttribute('data-page');
-            const isLocked = page !== 'agent-1-page' && currentUserSubscriptionTier === 'free';
-            card.classList.toggle('locked', isLocked);
-            
-            if (isLocked) {
-                card.querySelector('p').textContent = '🔒 Upgrade to Complete Care to unlock this agent';
-                card.style.opacity = '0.6';
-                card.style.cursor = 'not-allowed';
-            } else {
-                card.querySelector('p').textContent = card.dataset.originalText;
-                card.style.opacity = '1';
-                card.style.cursor = 'pointer';
-            }
-        });
+        // Update premium agent card states
+        updatePremiumAgentCardStates();
 
-        listenForAnalysisResults(auth.currentUser.uid);
-        listenForChatHistory(auth.currentUser.uid);
+        // Removed problematic real-time listeners
     };
 
     agentSelectionCards.forEach(card => {
         card.dataset.originalText = card.querySelector('p').textContent;
     });
+
+    // --- Premium Agent Card State Management ---
+    function updatePremiumAgentCardStates() {
+        console.log('🎯 Updating premium agent card states for subscription tier:', currentUserSubscriptionTier);
+        
+        // Target all premium agent cards
+        const premiumCards = document.querySelectorAll('.agent-selection-card[data-page="agent-2-page"], .agent-selection-card[data-page="agent-3-page"], .agent-selection-card[data-page="agent-4-page"]');
+        
+        premiumCards.forEach(card => {
+            const pageId = card.getAttribute('data-page');
+            const premiumBadge = card.querySelector('.agent-badge.premium');
+            const getStartedBtn = card.querySelector('.agent-select-btn');
+            
+            console.log(`🔍 Processing card ${pageId}:`, {
+                hasPremiumBadge: !!premiumBadge,
+                hasGetStartedBtn: !!getStartedBtn,
+                subscriptionTier: currentUserSubscriptionTier
+            });
+            
+            if (currentUserSubscriptionTier === 'complete_care') {
+                // UNLOCK: Hide premium badge (visual only)
+                console.log(`✅ Unlocking ${pageId} - user has premium access`);
+                
+                if (premiumBadge) {
+                    premiumBadge.style.display = 'none';
+                    console.log(`✅ Hidden premium badge for ${pageId}`);
+                }
+                
+                // Reset any visual locking styles
+                card.style.opacity = '1';
+                card.classList.remove('locked');
+                
+            } else {
+                // LOCK: Show premium badge (visual only)
+                console.log(`🔒 Locking ${pageId} - user needs premium access`);
+                
+                if (premiumBadge) {
+                    premiumBadge.style.display = 'block';
+                    console.log(`🔒 Showing premium badge for ${pageId}`);
+                }
+                
+                // Add visual locking styles
+                card.style.opacity = '0.7';
+                card.classList.add('locked');
+            }
+        });
+        
+        console.log('✅ Premium agent card visual states updated');
+    }
+
+    // --- Simple Subscription Check ---
+async function checkUserSubscription(uid) {
+    try {
+        console.log('🔍 Checking user subscription for:', uid);
+        const userDocRef = doc(db, 'users', uid);
+        const userDoc = await getDoc(userDocRef);
+        
+        if (userDoc.exists()) {
+            const userData = userDoc.data();
+            const subscriptionTier = userData.subscriptionTier || 'free';
+            
+            console.log('📊 User subscription tier:', subscriptionTier);
+            
+            // Update current subscription tier
+            currentUserSubscriptionTier = subscriptionTier;
+            
+            // Update UI
+            updatePremiumAgentCardStates();
+            
+            return subscriptionTier;
+        } else {
+            console.log('⚠️ User document does not exist - creating new user document');
+            
+            // Create user document if it doesn't exist
+            try {
+                await setDoc(userDocRef, {
+                    email: auth.currentUser?.email || '',
+                    createdAt: serverTimestamp(),
+                    subscriptionTier: 'free'
+                });
+                console.log('✅ New user document created');
+                
+                currentUserSubscriptionTier = 'free';
+                updatePremiumAgentCardStates();
+                return 'free';
+            } catch (createError) {
+                console.error('❌ Error creating user document:', createError);
+                currentUserSubscriptionTier = 'free';
+                updatePremiumAgentCardStates();
+                return 'free';
+            }
+        }
+    } catch (error) {
+        console.error('❌ Error checking user subscription:', error);
+        
+        // Always default to free on any error
+        console.log('⚠️ Defaulting to free tier due to error:', error.code);
+        currentUserSubscriptionTier = 'free';
+        updatePremiumAgentCardStates();
+        
+        // Show user-friendly error message for permission issues
+        if (error.code === 'permission-denied') {
+            console.error('🚫 Permission denied - user cannot access subscription data');
+        }
+        
+        return 'free';
+    }
+}
+
+// --- Subscription Listener ---
+function setupSubscriptionListener(uid) {
+    try {
+        console.log('👂 Setting up subscription listener for:', uid);
+        const userDocRef = doc(db, 'users', uid);
+        
+        // Listen for real-time changes to user document
+        unsubscribeSubscription = onSnapshot(userDocRef, (doc) => {
+            console.log('📡 Subscription listener triggered for user:', uid);
+            
+            if (doc.exists()) {
+                const userData = doc.data();
+                const newSubscriptionTier = userData.subscriptionTier || 'free';
+                
+                console.log('📊 Subscription listener data:', {
+                    uid: uid,
+                    currentTier: currentUserSubscriptionTier,
+                    newTier: newSubscriptionTier,
+                    userData: userData,
+                    timestamp: new Date().toISOString()
+                });
+                
+                if (newSubscriptionTier !== currentUserSubscriptionTier) {
+                    console.log('🔄 Subscription tier changed:', currentUserSubscriptionTier, '→', newSubscriptionTier);
+                    currentUserSubscriptionTier = newSubscriptionTier;
+                    
+                    console.log('🎨 Updating premium agent card states...');
+                    updatePremiumAgentCardStates();
+                    
+                    // Show success message if user just upgraded
+                    if (newSubscriptionTier === 'complete_care') {
+                        console.log('🎉 User subscription upgraded to complete_care');
+                        console.log('✅ Premium access should now be granted');
+                    }
+                } else {
+                    console.log('📊 Subscription tier unchanged:', newSubscriptionTier);
+                }
+            } else {
+                console.log('⚠️ Subscription listener: User document does not exist');
+            }
+        }, (error) => {
+            console.error('❌ Error in subscription listener:', error);
+            console.error('❌ Subscription listener error details:', {
+                code: error.code,
+                message: error.message,
+                uid: uid,
+                timestamp: new Date().toISOString()
+            });
+        });
+        
+        console.log('✅ Subscription listener set up successfully');
+    } catch (error) {
+        console.error('❌ Error setting up subscription listener:', error);
+        console.error('❌ Setup error details:', {
+            code: error.code,
+            message: error.message,
+            uid: uid,
+            timestamp: new Date().toISOString()
+        });
+    }
+}
 
     // --- Firestore Listeners ---
     function listenForChatHistory(uid) {
@@ -5306,10 +5946,48 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        // Check if agent is locked (premium agents for free users)
-        const isLocked = pageId !== 'agent-1-page' && currentUserSubscriptionTier === 'free';
+        // Simple access control - only allow premium agents for paying users
+        const isLocked = pageId !== 'agent-1-page' && 
+                        currentUserSubscriptionTier !== 'complete_care';
         
         if (isLocked) {
+            // Check if payment is currently being processed
+            if (window.paymentProcessing) {
+                console.log('⏳ User tried to access premium agent during payment processing');
+                
+                // Show a specific message for users whose payment is being processed
+                const processingMessage = document.createElement('div');
+                processingMessage.className = 'payment-processing-message';
+                processingMessage.innerHTML = `
+                    <div class="payment-message-content">
+                        <div class="payment-message-icon">⏳</div>
+                        <h3>Payment Being Processed</h3>
+                        <p>Your premium access is being activated. Please wait a moment and try again, or refresh the page.</p>
+                        <div class="payment-message-actions">
+                            <button class="btn-secondary" onclick="this.parentElement.parentElement.parentElement.remove()">Dismiss</button>
+                            <button class="btn-primary" onclick="window.location.reload()">Refresh Page</button>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(processingMessage);
+                
+                // Auto-remove after 10 seconds
+                setTimeout(() => {
+                    if (processingMessage.parentNode) {
+                        processingMessage.remove();
+                    }
+                }, 10000);
+                
+                // Track this specific scenario
+                trackUserBehavior('premium_access_during_processing', { 
+                    feature: pageId,
+                    subscription_tier: currentUserSubscriptionTier,
+                    source: 'team_tabs'
+                });
+                return;
+            }
+            
             // Track upgrade prompt
             trackUserBehavior('upgrade_prompt', { 
                 feature: pageId,
