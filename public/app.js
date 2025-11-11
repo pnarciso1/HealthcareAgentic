@@ -69,6 +69,400 @@ googleProvider.addScope('profile');
         // Backend URL configuration
         const BACKEND_URL = 'https://healthcareagentic-backend-974408923536.us-central1.run.app'; 
 
+        const DISPUTE_STATUS_FLOW = [
+            { key: 'draft', label: 'Draft', description: 'Letter saved, not yet submitted' },
+            { key: 'submitted', label: 'Submitted', description: 'Dispute sent to provider' },
+            { key: 'in_review', label: 'In Review', description: 'Provider is reviewing your dispute' },
+            { key: 'awaiting_response', label: 'Awaiting Response', description: 'Waiting for provider reply' },
+            { key: 'escalated', label: 'Escalated', description: 'Dispute escalated for additional review' },
+            { key: 'appealed', label: 'Appealed', description: 'Additional appeal submitted' },
+            { key: 'resolved_adjusted', label: 'Resolved — Adjusted', description: 'Bill adjusted in your favor' },
+            { key: 'resolved_denied', label: 'Resolved — Denied', description: 'Provider denied adjustment' },
+            { key: 'closed', label: 'Closed', description: 'Dispute closed with no further action' }
+        ];
+
+        const DISPUTE_STATUS_LABELS = DISPUTE_STATUS_FLOW.reduce((acc, item) => {
+            acc[item.key] = item.label;
+            return acc;
+        }, {});
+
+        const DISPUTE_STATUS_COLORS = {
+            draft: 'status-neutral',
+            submitted: 'status-info',
+            in_review: 'status-info',
+            awaiting_response: 'status-warning',
+            escalated: 'status-warning',
+            appealed: 'status-warning',
+            resolved_adjusted: 'status-success',
+            resolved_denied: 'status-danger',
+            closed: 'status-neutral'
+        };
+
+        const ACTIVE_DISPUTE_STATUSES = ['submitted', 'in_review', 'awaiting_response', 'escalated', 'appealed'];
+        const RESOLVED_DISPUTE_STATUSES = ['resolved_adjusted', 'resolved_denied', 'closed'];
+        const FOLLOW_UP_THRESHOLD_DAYS = 5;
+
+        const followUpModal = document.getElementById('follow-up-modal');
+        const followUpTitle = document.getElementById('follow-up-title');
+        const followUpContent = document.getElementById('follow-up-content');
+        const followUpActions = document.getElementById('follow-up-actions');
+        let currentFollowUpDispute = null;
+        let currentFollowUpLetter = null;
+        if (followUpModal) {
+            followUpModal.addEventListener('click', (e) => {
+                if (e.target === followUpModal) {
+                    window.closeFollowUpModal();
+                }
+            });
+        }
+
+        function parseTimestamp(value) {
+            if (!value) return null;
+            try {
+                if (value.toDate && typeof value.toDate === 'function') {
+                    return value.toDate();
+                }
+                if (value.seconds) {
+                    return new Date(value.seconds * 1000);
+                }
+                if (value._seconds) {
+                    return new Date(value._seconds * 1000);
+                }
+                if (typeof value === 'string') {
+                    const parsed = new Date(value);
+                    return isNaN(parsed.getTime()) ? null : parsed;
+                }
+                if (typeof value === 'number') {
+                    return new Date(value);
+                }
+            } catch (error) {
+                console.error('❌ Failed to parse timestamp:', value, error);
+            }
+            return null;
+        }
+
+        function formatDateTime(date) {
+            if (!date) return '—';
+            return date.toLocaleString(undefined, {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit'
+            });
+        }
+
+        function formatRelativeTime(date) {
+            if (!date) return '';
+            const diffMs = Date.now() - date.getTime();
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            if (diffDays <= 0) {
+                return 'Today';
+            }
+            if (diffDays === 1) {
+                return '1 day ago';
+            }
+            return `${diffDays} days ago`;
+        }
+
+        function getStatusConfig(status) {
+            return DISPUTE_STATUS_FLOW.find(item => item.key === status) || { key: status, label: status || 'Unknown', description: '' };
+        }
+
+        function renderStatusChip(status) {
+            if (!status) {
+                return `<span class="status-chip">${'Unknown'}</span>`;
+            }
+            const config = getStatusConfig(status);
+            const colorClass = DISPUTE_STATUS_COLORS[status] || 'status-neutral';
+            return `<span class="status-chip ${colorClass}">${config.label}</span>`;
+        }
+
+        function renderStatusTimeline(dispute) {
+            const currentStatus = dispute.status;
+            const currentIndex = DISPUTE_STATUS_FLOW.findIndex(item => item.key === currentStatus);
+            return `
+                <div class="dispute-timeline">
+                    ${DISPUTE_STATUS_FLOW.map((item, index) => {
+                        const state = index < currentIndex ? 'completed' : index === currentIndex ? 'active' : 'upcoming';
+                        return `
+                            <div class="timeline-step ${state}">
+                                <div class="step-indicator"></div>
+                                <div class="step-content">
+                                    <div class="step-title">${item.label}</div>
+                                    <div class="step-description">${item.description || ''}</div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        function renderActivityLog(dispute) {
+            const activity = dispute.activity || [];
+            if (!activity.length) {
+                return '<p class="placeholder">No activity yet. Updates will appear here.</p>';
+            }
+            return `
+                <ul class="activity-log">
+                    ${activity.map(entry => {
+                        const createdAt = parseTimestamp(entry.created_at_iso || entry.created_at);
+                        const typeLabel = entry.type === 'status_change' ? 'Status Update' :
+                                          entry.type === 'follow_up' ? 'Follow-Up' : 'Note';
+                        return `
+                            <li class="activity-item">
+                                <div class="activity-meta">
+                                    <span class="activity-type">${typeLabel}</span>
+                                    <span class="activity-time">${formatDateTime(createdAt)} • ${formatRelativeTime(createdAt)}</span>
+                                </div>
+                                <div class="activity-message">${entry.message || ''}</div>
+                            </li>
+                        `;
+                    }).join('')}
+                </ul>
+            `;
+        }
+
+        function shouldPromptFollowUp(dispute) {
+            if (!dispute || dispute.status !== 'awaiting_response') {
+                return false;
+            }
+            const awaitingSince = dispute.awaitingResponseSince || dispute.awaiting_response_since || parseTimestamp(dispute.awaiting_response_since_iso);
+            if (!awaitingSince) {
+                return false;
+            }
+            const diffDays = Math.floor((Date.now() - awaitingSince.getTime()) / (1000 * 60 * 60 * 24));
+            if (diffDays < FOLLOW_UP_THRESHOLD_DAYS) {
+                return false;
+            }
+            const lastFollowUp = dispute.lastFollowUpAt || dispute.last_follow_up_at || parseTimestamp(dispute.last_follow_up_at_iso);
+            if (!lastFollowUp) {
+                return true;
+            }
+            const daysSinceFollowUp = Math.floor((Date.now() - lastFollowUp.getTime()) / (1000 * 60 * 60 * 24));
+            return daysSinceFollowUp >= FOLLOW_UP_THRESHOLD_DAYS;
+        }
+
+        function renderFollowUpPrompt(dispute) {
+            if (!shouldPromptFollowUp(dispute)) {
+                return '';
+            }
+            return `
+                <div class="follow-up-card">
+                    <div class="follow-up-icon">⏰</div>
+                    <div class="follow-up-content">
+                        <h4>Waiting on a response?</h4>
+                        <p>It's been a few days since you marked this as awaiting response. Would you like to send a polite follow-up?</p>
+                    </div>
+                    <div class="follow-up-actions">
+                        <button class="btn-primary" onclick="generateFollowUp('${dispute.id}')">Generate Follow-Up</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function normalizeDispute(dispute) {
+            const normalized = { ...dispute };
+            normalized.createdAt = parseTimestamp(dispute.created_at_iso || dispute.created_at);
+            normalized.updatedAt = parseTimestamp(dispute.updated_at_iso || dispute.updated_at);
+            normalized.submittedAt = parseTimestamp(dispute.submitted_at_iso || dispute.submitted_at);
+            normalized.awaitingResponseSince = parseTimestamp(dispute.awaiting_response_since_iso || dispute.awaiting_response_since);
+            normalized.resolvedAt = parseTimestamp(dispute.resolved_at_iso || dispute.resolved_at);
+            normalized.lastFollowUpAt = parseTimestamp(dispute.last_follow_up_at_iso || dispute.last_follow_up_at);
+            normalized.statusLabel = DISPUTE_STATUS_LABELS[dispute.status] || (dispute.status || 'Unknown');
+            normalized.statusColor = DISPUTE_STATUS_COLORS[dispute.status] || 'status-neutral';
+            normalized.activity = (dispute.activity || []).map(entry => ({
+                ...entry,
+                createdAt: parseTimestamp(entry.created_at_iso || entry.created_at)
+            }));
+            normalized.followUpEligible = shouldPromptFollowUp(normalized);
+            return normalized;
+        }
+
+        async function updateDisputeOnServer(disputeId, payload, successMessage = 'Dispute updated successfully!') {
+            try {
+                const user = auth.currentUser;
+                if (!user) {
+                    showModal('login');
+                    return;
+                }
+
+                const idToken = await user.getIdToken();
+                const response = await fetch(`${BACKEND_URL}/api/dispute/update-dispute`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${idToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        disputeId,
+                        ...payload
+                    })
+                });
+
+                if (response.ok) {
+                    if (successMessage) {
+                        alert(successMessage);
+                    }
+                    await loadDisputeDashboard();
+                    const updated = userDisputes.find(d => d.id === disputeId);
+                    if (updated) {
+                        showDisputeDetail(updated);
+                    }
+                } else {
+                    const errorData = await response.json().catch(() => ({}));
+                    alert(errorData.error || 'Failed to update dispute. Please try again.');
+                }
+            } catch (error) {
+                console.error('❌ Error updating dispute:', error);
+                alert('Network error. Please check your connection and try again.');
+            }
+        }
+
+        window.updateDisputeStatus = async function(disputeId) {
+            const statusSelect = document.getElementById('dispute-status-select');
+            if (!statusSelect) {
+                return;
+            }
+            const newStatus = statusSelect.value;
+            const note = document.getElementById('dispute-status-note')?.value.trim();
+            const payload = { status: newStatus };
+            if (note) {
+                payload.statusMessage = note;
+            }
+            await updateDisputeOnServer(disputeId, payload, 'Status updated!');
+        };
+
+        window.addDisputeActivity = async function(disputeId) {
+            const noteInput = document.getElementById('activity-note-input');
+            if (!noteInput) {
+                return;
+            }
+            const note = noteInput.value.trim();
+            if (!note) {
+                alert('Please enter a note before saving.');
+                return;
+            }
+            noteInput.value = '';
+            await updateDisputeOnServer(disputeId, {
+                activityMessage: note,
+                activityType: 'note'
+            }, 'Note added!');
+        };
+
+        window.saveDisputeMeta = async function(disputeId) {
+            const providerInput = document.getElementById('provider-contact-input');
+            const resolutionInput = document.getElementById('resolution-summary-input');
+            await updateDisputeOnServer(disputeId, {
+                providerContact: providerInput ? providerInput.value.trim() : '',
+                resolutionSummary: resolutionInput ? resolutionInput.value.trim() : ''
+            }, 'Details saved!');
+        };
+
+        async function generateFollowUp(disputeId) {
+            const dispute = userDisputes.find(d => d.id === disputeId);
+            if (!dispute) {
+                alert('Dispute not found. Please refresh and try again.');
+                return;
+            }
+            try {
+                const user = auth.currentUser;
+                if (!user) {
+                    showModal('login');
+                    return;
+                }
+                const idToken = await user.getIdToken();
+                const response = await fetch(`${BACKEND_URL}/api/dispute/generate-follow-up`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${idToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ disputeId })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    currentFollowUpDispute = dispute;
+                    currentFollowUpLetter = data.letter;
+                    showFollowUpLetterModal(dispute, data);
+                } else {
+                    const errorData = await response.json().catch(() => ({}));
+                    alert(errorData.error || 'Failed to generate follow-up letter.');
+                }
+            } catch (error) {
+                console.error('❌ Error generating follow-up letter:', error);
+                alert('Network error. Please check your connection and try again.');
+            }
+        }
+
+        function showFollowUpLetterModal(dispute, letterResponse) {
+            if (!followUpModal || !followUpTitle || !followUpContent || !followUpActions) {
+                return;
+            }
+            followUpTitle.textContent = letterResponse.title || 'Follow-Up Letter';
+            followUpContent.innerHTML = currentFollowUpLetter ? currentFollowUpLetter.replace(/\n/g, '<br>') : '<p>No follow-up letter available.</p>';
+            followUpActions.innerHTML = `
+                <button class="btn-secondary" onclick="copyFollowUpLetter()">Copy Letter</button>
+                <button class="btn-secondary" onclick="downloadFollowUpLetter()">Download</button>
+                <button class="btn-primary" onclick="sendFollowUpLetter()">Mark Follow-Up Sent</button>
+            `;
+            followUpModal.classList.remove('hidden');
+        }
+
+        window.closeFollowUpModal = function() {
+            if (followUpModal) {
+                followUpModal.classList.add('hidden');
+            }
+            currentFollowUpDispute = null;
+            currentFollowUpLetter = null;
+        };
+
+        window.copyFollowUpLetter = async function() {
+            if (!currentFollowUpLetter) {
+                return;
+            }
+            try {
+                await navigator.clipboard.writeText(currentFollowUpLetter);
+                alert('Follow-up letter copied to clipboard.');
+            } catch (error) {
+                console.error('❌ Failed to copy follow-up letter:', error);
+                alert('Unable to copy the letter. Please copy it manually.');
+            }
+        };
+
+        window.downloadFollowUpLetter = function() {
+            if (!currentFollowUpLetter) {
+                return;
+            }
+            const blob = new Blob([currentFollowUpLetter], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = `follow_up_letter_${currentFollowUpDispute?.id || 'dispute'}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        };
+
+        window.sendFollowUpLetter = async function() {
+            if (!currentFollowUpDispute) {
+                return;
+            }
+            const note = `Follow-up letter generated on ${formatDateTime(new Date())}.`;
+            await updateDisputeOnServer(currentFollowUpDispute.id, {
+                followUp: true,
+                activityMessage: note,
+                activityType: 'follow_up'
+            }, 'Follow-up logged!');
+            closeFollowUpModal();
+        };
+
+        window.generateFollowUp = generateFollowUp;
+
 // --- SECURITY CONFIGURATION ---
 const SECURITY_CONFIG = {
     MAX_LOGIN_ATTEMPTS: 5,
@@ -2364,7 +2758,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (response.ok) {
                 const data = await response.json();
                 console.log('✅ Disputes data received:', data);
-                userDisputes = data.disputes || [];
+                userDisputes = (data.disputes || []).map(normalizeDispute);
                 console.log('📋 User disputes loaded:', userDisputes);
                 updateDisputeDashboard();
             } else {
@@ -2387,8 +2781,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // Update statistics
         const totalDisputes = userDisputes.length;
-        const activeDisputes = userDisputes.filter(d => d.status === 'draft' || d.status === 'submitted' || d.status === 'in_progress').length;
-        const resolvedDisputes = userDisputes.filter(d => d.status === 'resolved').length;
+        const activeDisputes = userDisputes.filter(d => ACTIVE_DISPUTE_STATUSES.includes(d.status)).length;
+        const resolvedDisputes = userDisputes.filter(d => RESOLVED_DISPUTE_STATUSES.includes(d.status)).length;
         const totalAmountDisputed = userDisputes.reduce((sum, d) => sum + (d.amount_disputed || 0), 0);
         
         console.log('📈 Statistics:', { totalDisputes, activeDisputes, resolvedDisputes, totalAmountDisputed });
@@ -2443,7 +2837,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <div class="dispute-item">
                         <div class="dispute-info">
                             <h4>${dispute.error_type?.replace('_', ' ').toUpperCase() || 'UNKNOWN ERROR'}</h4>
-                            <p>Status: ${dispute.status || 'Unknown'}</p>
+                            <p>${renderStatusChip(dispute.status)}</p>
                             <p>Created: ${createdDate}</p>
                             <p>Amount: $${dispute.amount_disputed?.toFixed(2) || '0.00'}</p>
                         </div>
@@ -3061,7 +3455,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <div class="dispute-item">
                     <div class="dispute-info">
                         <h4>${dispute.error_type?.replace('_', ' ').toUpperCase() || 'UNKNOWN ERROR'}</h4>
-                        <p>Status: ${dispute.status || 'Unknown'}</p>
+                        <p>${renderStatusChip(dispute.status)}</p>
                         <p>Created: ${createdDate}</p>
                         <p>Amount: $${dispute.amount_disputed?.toFixed(2) || '0.00'}</p>
                     </div>
@@ -3121,44 +3515,89 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Update modal title
         disputeDetailTitle.textContent = `${dispute.error_type?.replace('_', ' ').toUpperCase() || 'UNKNOWN ERROR'} Dispute`;
         
-        // Update modal content
+        const statusOptions = DISPUTE_STATUS_FLOW.map(item => `
+            <option value="${item.key}" ${item.key === dispute.status ? 'selected' : ''}>${item.label}</option>
+        `).join('');
+
+        const followUpPrompt = renderFollowUpPrompt(dispute);
+
         disputeDetailContent.innerHTML = `
-            <div class="dispute-detail-info">
-                <div class="detail-section">
-                    <h4>Dispute Information</h4>
-                    <div class="detail-grid">
-                        <div class="detail-item">
-                            <label>Error Type:</label>
-                            <span>${dispute.error_type?.replace('_', ' ').toUpperCase() || 'Unknown'}</span>
+            <div class="dispute-detail-layout">
+                <div class="dispute-detail-main">
+                    <section class="detail-section">
+                        <h4>Dispute Overview</h4>
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <label>Error Type</label>
+                                <span>${dispute.error_type?.replace('_', ' ').toUpperCase() || 'Unknown'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Status</label>
+                                ${renderStatusChip(dispute.status)}
+                            </div>
+                            <div class="detail-item">
+                                <label>Created</label>
+                                <span>${createdDate}</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Amount Disputed</label>
+                                <span>$${dispute.amount_disputed?.toFixed(2) || '0.00'}</span>
+                            </div>
                         </div>
-                        <div class="detail-item">
-                            <label>Status:</label>
-                            <span class="status-badge ${dispute.status}">${dispute.status || 'Unknown'}</span>
+                    </section>
+
+                    ${followUpPrompt}
+
+                    <section class="detail-section">
+                        <h4>Status Timeline</h4>
+                        ${renderStatusTimeline(dispute)}
+                    </section>
+
+                    <section class="detail-section">
+                        <h4>Provider Details</h4>
+                        <div class="detail-grid vertical">
+                            <label for="provider-contact-input">Provider Contact</label>
+                            <input id="provider-contact-input" type="text" placeholder="billing@provider.com or phone number" value="${dispute.provider_contact || ''}">
+                            <label for="resolution-summary-input">Resolution Notes</label>
+                            <textarea id="resolution-summary-input" rows="3" placeholder="Add notes about the outcome or next steps">${dispute.resolution_summary || ''}</textarea>
+                            <button class="btn-secondary" onclick="saveDisputeMeta('${dispute.id}')">Save Details</button>
                         </div>
-                        <div class="detail-item">
-                            <label>Created:</label>
-                            <span>${createdDate}</span>
+                    </section>
+
+                    <section class="detail-section">
+                        <h4>Update Status</h4>
+                        <div class="status-update-controls">
+                            <label for="dispute-status-select">Set status</label>
+                            <select id="dispute-status-select">
+                                ${statusOptions}
+                            </select>
+                            <textarea id="dispute-status-note" rows="2" placeholder="Add an optional note about this status change"></textarea>
+                            <button class="btn-primary" onclick="updateDisputeStatus('${dispute.id}')">Update Status</button>
                         </div>
-                        <div class="detail-item">
-                            <label>Amount Disputed:</label>
-                            <span>$${dispute.amount_disputed?.toFixed(2) || '0.00'}</span>
+                    </section>
+
+                    <section class="detail-section">
+                        <h4>Dispute Letter</h4>
+                        <div class="dispute-letter-content">
+                            ${dispute.dispute_letter ? dispute.dispute_letter.replace(/\n/g, '<br>') : '<p class="placeholder">No dispute letter available.</p>'}
                         </div>
-                    </div>
+                    </section>
+
+                    <section class="detail-section">
+                        <h4>Actions</h4>
+                        <div class="detail-actions">
+                            <button class="btn-secondary" onclick="editDispute('${dispute.id}')">✏️ Edit Dispute</button>
+                            <button class="btn-secondary" onclick="downloadDisputeLetter('${dispute.id}')">📥 Download Letter</button>
+                            <button class="btn-primary" onclick="generateFollowUp('${dispute.id}')">📬 Generate Follow-Up</button>
+                        </div>
+                    </section>
                 </div>
-                
-                <div class="detail-section">
-                    <h4>Dispute Letter</h4>
-                    <div class="dispute-letter-content">
-                        ${dispute.dispute_letter ? dispute.dispute_letter.replace(/\n/g, '<br>') : '<p class="placeholder">No dispute letter available.</p>'}
-                    </div>
-                </div>
-                
-                <div class="detail-section">
-                    <h4>Actions</h4>
-                    <div class="detail-actions">
-                        <button class="btn-secondary" onclick="editDispute('${dispute.id}')">✏️ Edit Dispute</button>
-                        <button class="btn-secondary" onclick="downloadDisputeLetter('${dispute.id}')">📥 Download Letter</button>
-                        <button class="btn-primary" onclick="submitDisputeUpdate('${dispute.id}')">📤 Submit Update</button>
+                <div class="dispute-detail-side">
+                    <h4>Activity Log</h4>
+                    ${renderActivityLog(dispute)}
+                    <div class="activity-form">
+                        <textarea id="activity-note-input" rows="2" placeholder="Add an internal note"></textarea>
+                        <button class="btn-secondary" onclick="addDisputeActivity('${dispute.id}')">Add Note</button>
                     </div>
                 </div>
             </div>
@@ -3358,8 +3797,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Submit dispute update
     window.submitDisputeUpdate = function(disputeId) {
-        // TODO: Implement dispute update functionality
-        alert('Dispute update functionality coming soon!');
+        generateFollowUp(disputeId);
     };
     
     // Cancel edit and return to view mode

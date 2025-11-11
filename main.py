@@ -8,7 +8,25 @@ from flask_cors import CORS
 from werkzeug.utils import secure_filename
 
 from google.cloud import firestore
-from google.cloud.firestore import SERVER_TIMESTAMP
+from google.cloud.firestore import SERVER_TIMESTAMP, DELETE_FIELD
+# --- DISPUTE STATUS CONFIGURATION ---
+DISPUTE_STATUSES = [
+    'draft',
+    'submitted',
+    'in_review',
+    'awaiting_response',
+    'resolved_adjusted',
+    'resolved_denied',
+    'closed',
+    'escalated',
+    'appealed'
+]
+
+RESOLVED_STATUSES = [
+    'resolved_adjusted',
+    'resolved_denied',
+    'closed'
+]
 from google.cloud import storage
 from google.oauth2 import id_token
 from google.auth.transport import requests
@@ -507,8 +525,67 @@ Sincerely,
 {patient_name}
 {contact_info}
         '''
+    },
+    'follow_up': {
+        'title': 'Follow-Up on Pending Billing Dispute',
+        'template': '''
+{current_date}
+
+To Whom It May Concern,
+
+I am following up on my dispute regarding the bill dated {bill_date} for services from {provider_name}. I initially submitted this dispute on {submitted_date} and have not yet received a response.
+
+**Dispute Reference**: {dispute_reference}
+**Patient Responsibility in Dispute**: {patient_responsibility}
+**Issues Identified**:
+{evidence_summary}
+
+Please confirm receipt of my dispute and provide an update on its status. If additional documentation is required, let me know so I can supply it promptly.
+
+I appreciate your assistance and look forward to your response within 7 days so we can resolve this matter quickly.
+
+Sincerely,
+{patient_name}
+{contact_info}
+        '''
     }
 }
+
+
+def timestamp_to_iso(value):
+    try:
+        if value is None:
+            return None
+        if hasattr(value, "isoformat"):
+            return value.isoformat()
+        return str(value)
+    except Exception:
+        return None
+
+
+def get_dispute_ref(uid, dispute_id):
+    return db.collection('users').document(uid).collection('disputes').document(dispute_id)
+
+
+def log_dispute_activity(uid, dispute_id, activity):
+    try:
+        entry = {
+            'type': activity.get('type', 'note'),
+            'message': activity.get('message', ''),
+            'actor': activity.get('actor', 'system'),
+            'created_at': SERVER_TIMESTAMP
+        }
+        status = activity.get('status')
+        if status:
+            entry['status'] = status
+        metadata = activity.get('metadata')
+        if metadata:
+            entry['metadata'] = metadata
+
+        get_dispute_ref(uid, dispute_id).collection('activity').add(entry)
+    except Exception as activity_error:
+        print(f"--- ERROR logging dispute activity for {dispute_id}: {activity_error}")
+
 
 # --- DISPUTE ENGINE FUNCTIONS ---
 def detect_billing_errors(document_data):
@@ -677,7 +754,7 @@ def generate_dispute_letter(error_type, document_data, error_details):
     print(f"✅ Template found for {template_key}")
     
     # Extract data for template variables
-    financial_data = document_data.get('financial_data', {})
+    financial_data = document_data.get('financial_data', {}) or {}
     original_filename = document_data.get('original_filename', 'Unknown Document')
     extracted_text = document_data.get('extracted_text', '')
     analysis_results = document_data.get('analysis_results', '')
@@ -724,6 +801,8 @@ def generate_dispute_letter(error_type, document_data, error_details):
     duplicate_amount = calculate_duplicate_amount(error_type, error_details, total_charged)
     
     # Prepare template variables with more accurate data
+    analytics_summary = build_analytics_summary(error_details, document_data)
+
     variables = {
         'provider_name': provider_name,
         'bill_date': bill_date,
@@ -731,7 +810,7 @@ def generate_dispute_letter(error_type, document_data, error_details):
         'disputed_amount': format_currency(total_charged),
         'original_amount': format_currency(total_charged),
         'expected_rate': expected_rate,
-        'evidence_summary': error_details.get('evidence', 'Document analysis reveals billing discrepancies'),
+        'evidence_summary': analytics_summary or error_details.get('evidence', 'Document analysis reveals billing discrepancies'),
         'patient_name': '[YOUR NAME]',  # User will need to fill this in
         'contact_info': '[YOUR CONTACT INFORMATION]',  # User will need to fill this in
         'duplicate_items': error_details.get('evidence', 'Duplicate charges identified in billing'),
@@ -755,6 +834,118 @@ def generate_dispute_letter(error_type, document_data, error_details):
     
     print(f"✅ Letter generated successfully, length: {len(letter)}")
     return letter
+
+
+def build_analytics_summary(error_details, document_data):
+    """
+    Create a detailed list of issues using detected errors, financial data, and analysis results.
+    """
+    try:
+        issues = []
+
+        description = error_details.get('description')
+        evidence = error_details.get('evidence')
+
+        if description:
+            issues.append(f"- {description}")
+
+        if evidence and evidence != description:
+            issues.append(f"  Evidence: {evidence}")
+
+        financial_data = document_data.get('financial_data') or {}
+        red_flags = financial_data.get('red_flags') or []
+        for flag in red_flags:
+            if isinstance(flag, dict):
+                detail = flag.get('detail') or flag.get('description')
+                code = flag.get('code')
+                line = flag.get('line')
+                amount = flag.get('amount')
+                parts = []
+                if line:
+                    parts.append(f"Line {line}")
+                if code:
+                    parts.append(str(code))
+                if detail:
+                    parts.append(detail)
+                if amount:
+                    parts.append(f"Amount: {format_currency(amount)}")
+                if parts:
+                    issues.append("- " + " — ".join(parts))
+            elif isinstance(flag, str):
+                issues.append(f"- {flag}")
+
+        analysis_results = document_data.get('analysis_results')
+        if isinstance(analysis_results, dict):
+            for value in analysis_results.values():
+                if isinstance(value, dict):
+                    if value.get('flagged'):
+                        detail = value.get('detail') or value.get('note')
+                        if detail:
+                            issues.append(f"- {detail}")
+
+        seen = set()
+        unique_issues = []
+        for issue in issues:
+            if issue not in seen:
+                unique_issues.append(issue)
+                seen.add(issue)
+
+        return "\n".join(unique_issues) if unique_issues else None
+    except Exception as summary_error:
+        print(f"⚠️ Failed to build analytics summary: {summary_error}")
+        return None
+
+
+def build_follow_up_letter(dispute_id, dispute_data, document_data, activities):
+    try:
+        template = DISPUTE_TEMPLATES['follow_up']['template']
+
+        financial_data = document_data.get('financial_data', {}) if document_data else {}
+        provider_name = financial_data.get('provider') or dispute_data.get('provider_contact') or 'Billing Department'
+        bill_date = financial_data.get('date_of_service') or dispute_data.get('bill_date') or 'Recent Date'
+        submitted_at = dispute_data.get('submitted_at')
+        submitted_date = ''
+        if submitted_at and hasattr(submitted_at, 'strftime'):
+            submitted_date = submitted_at.strftime('%B %d, %Y')
+        elif isinstance(submitted_at, str):
+            try:
+                submitted_date = datetime.fromisoformat(submitted_at).strftime('%B %d, %Y')
+            except Exception:
+                submitted_date = submitted_at
+
+        issue_lines = []
+        evidence = dispute_data.get('evidence')
+        if evidence:
+            issue_lines.append(f"- {evidence}")
+
+        if activities:
+            for activity in activities:
+                message = activity.get('message')
+                if message:
+                    issue_lines.append(f"- {message}")
+
+        if not issue_lines:
+            issue_lines.append('- Refer to the original dispute submission for detailed issues.')
+
+        context = {
+            'current_date': datetime.utcnow().strftime('%B %d, %Y'),
+            'bill_date': bill_date,
+            'provider_name': provider_name,
+            'submitted_date': submitted_date or 'the original submission date',
+            'dispute_reference': dispute_id,
+            'patient_responsibility': format_currency(dispute_data.get('amount_disputed', 0)),
+            'evidence_summary': "\n".join(issue_lines),
+            'patient_name': '[YOUR NAME]',
+            'contact_info': '[YOUR CONTACT INFORMATION]'
+        }
+
+        letter = template
+        for key, value in context.items():
+            letter = letter.replace(f'{{{key}}}', str(value))
+        return letter
+    except Exception as follow_up_error:
+        print(f"⚠️ Failed to build follow-up letter: {follow_up_error}")
+        return None
 
 def extract_provider_name(extracted_text, filename):
     """Extract provider name from document text or filename"""
@@ -1883,6 +2074,67 @@ def generate_dispute_letter_endpoint():
         print(f"--- ERROR traceback: {traceback.format_exc()}")
         return jsonify({'error': 'Failed to generate dispute letter'}), 500
 
+
+@app.route('/api/dispute/generate-follow-up', methods=['POST'])
+def generate_follow_up_letter_endpoint():
+    """Generate a follow-up letter for a dispute"""
+    print("=== FOLLOW-UP LETTER GENERATION ENDPOINT CALLED ===")
+
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return jsonify({'error': 'Authorization header is missing or invalid'}), 401
+
+    token = auth_header.split('Bearer ')[1]
+    decoded_token = verify_firebase_token(token)
+    if not decoded_token:
+        return jsonify({'error': 'Invalid or expired authentication token'}), 401
+
+    uid = decoded_token.get('user_id') or decoded_token.get('uid')
+    if not uid:
+        return jsonify({'error': 'User ID not found in token'}), 400
+
+    data = request.get_json()
+    dispute_id = data.get('disputeId')
+
+    if not dispute_id:
+        return jsonify({'error': 'Dispute ID is required'}), 400
+
+    try:
+        dispute_ref = get_dispute_ref(uid, dispute_id)
+        dispute_doc = dispute_ref.get()
+
+        if not dispute_doc.exists:
+            return jsonify({'error': 'Dispute not found'}), 404
+
+        dispute_data = dispute_doc.to_dict()
+
+        document_id = dispute_data.get('document_id')
+        document_data = {}
+        if document_id:
+            doc_ref = db.collection('users').document(uid).collection('analyses').document(document_id)
+            doc_snapshot = doc_ref.get()
+            if doc_snapshot.exists:
+                document_data = doc_snapshot.to_dict()
+
+        activity_docs = dispute_ref.collection('activity').order_by('created_at', direction=firestore.Query.DESCENDING).limit(5).get()
+        activities = [activity_doc.to_dict() for activity_doc in activity_docs]
+
+        follow_up_letter = build_follow_up_letter(dispute_id, dispute_data, document_data, activities)
+        if not follow_up_letter:
+            return jsonify({'error': 'Failed to generate follow-up letter'}), 500
+
+        return jsonify({
+            'dispute_id': dispute_id,
+            'letter': follow_up_letter,
+            'title': DISPUTE_TEMPLATES['follow_up']['title']
+        })
+
+    except Exception as e:
+        print(f"--- ERROR during follow-up letter generation: {e}")
+        import traceback
+        print(f"--- ERROR traceback: {traceback.format_exc()}")
+        return jsonify({'error': 'Failed to generate follow-up letter'}), 500
+
 @app.route('/api/dispute/submit-dispute', methods=['POST'])
 def submit_dispute():
     """Submit a dispute and store it in Firestore"""
@@ -1918,26 +2170,43 @@ def submit_dispute():
         return jsonify({'error': message}), status_code
 
     try:
-        # Store dispute in Firestore
+        disputes_collection = db.collection('users').document(uid).collection('disputes')
+        dispute_doc_ref = disputes_collection.document()
+        dispute_id = dispute_doc_ref.id
+
         dispute_record = {
             'document_id': document_id,
             'error_type': error_type,
             'dispute_letter': dispute_letter,
             'evidence': evidence,
             'amount_disputed': amount_disputed,
-            'status': 'draft',
+            'status': 'submitted',
+            'provider_contact': data.get('providerContact', ''),
+            'notes': data.get('notes', ''),
+            'resolution_summary': '',
             'created_at': SERVER_TIMESTAMP,
             'updated_at': SERVER_TIMESTAMP,
+            'submitted_at': SERVER_TIMESTAMP,
+            'status_changed_at': SERVER_TIMESTAMP,
+            'awaiting_response_since': None,
+            'resolved_at': None,
+            'last_follow_up_at': None,
             'user_id': uid,
             'case_id': case_id
         }
-        
-        dispute_ref = db.collection('users').document(uid).collection('disputes').add(dispute_record)
-        dispute_id = dispute_ref[1].id
-        
+
+        dispute_doc_ref.set(dispute_record)
+
+        log_dispute_activity(uid, dispute_id, {
+            'type': 'status_change',
+            'status': 'submitted',
+            'actor': 'system',
+            'message': 'Dispute created and marked as submitted.'
+        })
+
         return jsonify({
             'dispute_id': dispute_id,
-            'status': 'draft',
+            'status': 'submitted',
             'message': 'Dispute created successfully'
         })
         
@@ -1966,16 +2235,31 @@ def get_user_disputes():
         return jsonify({'error': 'User ID not found in token'}), 400
 
     try:
-        # Get all disputes for the user
         disputes_ref = db.collection('users').document(uid).collection('disputes')
         disputes_snapshot = disputes_ref.order_by('created_at', direction=firestore.Query.DESCENDING).get()
-        
+
         disputes = []
         for doc in disputes_snapshot:
             dispute_data = doc.to_dict()
             dispute_data['id'] = doc.id
+            dispute_data['created_at_iso'] = timestamp_to_iso(dispute_data.get('created_at'))
+            dispute_data['updated_at_iso'] = timestamp_to_iso(dispute_data.get('updated_at'))
+            dispute_data['submitted_at_iso'] = timestamp_to_iso(dispute_data.get('submitted_at'))
+            dispute_data['awaiting_response_since_iso'] = timestamp_to_iso(dispute_data.get('awaiting_response_since'))
+            dispute_data['resolved_at_iso'] = timestamp_to_iso(dispute_data.get('resolved_at'))
+            dispute_data['last_follow_up_at_iso'] = timestamp_to_iso(dispute_data.get('last_follow_up_at'))
+
+            activity_docs = doc.reference.collection('activity').order_by('created_at').limit(50).get()
+            activity = []
+            for activity_doc in activity_docs:
+                activity_data = activity_doc.to_dict()
+                activity_data['id'] = activity_doc.id
+                activity_data['created_at_iso'] = timestamp_to_iso(activity_data.get('created_at'))
+                activity.append(activity_data)
+
+            dispute_data['activity'] = activity
             disputes.append(dispute_data)
-        
+
         return jsonify({
             'disputes': disputes,
             'total_disputes': len(disputes)
@@ -2011,52 +2295,110 @@ def update_dispute():
     status = data.get('status')
     evidence = data.get('evidence')
     amount_disputed = data.get('amountDisputed')
+    provider_contact = data.get('providerContact')
+    resolution_summary = data.get('resolutionSummary')
+    notes = data.get('notes')
+    activity_message = data.get('activityMessage')
+    activity_type = data.get('activityType', 'note')
+    activity_actor = data.get('actor', 'user')
+    follow_up = data.get('followUp', False)
+    status_message = data.get('statusMessage')
     
     if not dispute_id:
         return jsonify({'error': 'Dispute ID is required'}), 400
 
     try:
         # Get the dispute document reference
-        dispute_ref = db.collection('users').document(uid).collection('disputes').document(dispute_id)
+        dispute_ref = get_dispute_ref(uid, dispute_id)
         dispute_doc = dispute_ref.get()
-        
+
         if not dispute_doc.exists:
             return jsonify({'error': 'Dispute not found'}), 404
-        
-        # Prepare update data (only include fields that are provided)
+
+        existing_dispute = dispute_doc.to_dict() or {}
+        previous_status = existing_dispute.get('status')
+
         update_data = {
             'updated_at': SERVER_TIMESTAMP
         }
-        
+
         if dispute_letter is not None:
             update_data['dispute_letter'] = dispute_letter
-        
+
+        if provider_contact is not None:
+            update_data['provider_contact'] = provider_contact
+
+        if resolution_summary is not None:
+            update_data['resolution_summary'] = resolution_summary
+
+        if notes is not None:
+            update_data['notes'] = notes
+
+        status_changed = False
         if status is not None:
-            # Validate status values
-            valid_statuses = ['draft', 'submitted', 'in_progress', 'resolved', 'cancelled']
-            if status not in valid_statuses:
-                return jsonify({'error': f'Invalid status. Must be one of: {", ".join(valid_statuses)}'}), 400
-            update_data['status'] = status
-        
+            if status not in DISPUTE_STATUSES:
+                return jsonify({'error': f'Invalid status. Must be one of: {", ".join(DISPUTE_STATUSES)}'}), 400
+
+            if status != previous_status:
+                status_changed = True
+                update_data['status'] = status
+                update_data['status_changed_at'] = SERVER_TIMESTAMP
+
+                if status == 'submitted':
+                    update_data['submitted_at'] = SERVER_TIMESTAMP
+
+                if status == 'awaiting_response':
+                    update_data['awaiting_response_since'] = SERVER_TIMESTAMP
+                elif previous_status == 'awaiting_response':
+                    update_data['awaiting_response_since'] = DELETE_FIELD
+
+                if status in RESOLVED_STATUSES:
+                    update_data['resolved_at'] = SERVER_TIMESTAMP
+
         if evidence is not None:
             update_data['evidence'] = evidence
-        
+
         if amount_disputed is not None:
             try:
                 update_data['amount_disputed'] = float(amount_disputed)
             except (ValueError, TypeError):
                 return jsonify({'error': 'Amount disputed must be a valid number'}), 400
-        
-        # Update the dispute
+
+        if follow_up:
+            update_data['last_follow_up_at'] = SERVER_TIMESTAMP
+
         dispute_ref.update(update_data)
-        
-        # Get the updated dispute data
+
+        if status_changed:
+            log_dispute_activity(uid, dispute_id, {
+                'type': 'status_change',
+                'status': status,
+                'actor': activity_actor,
+                'message': status_message or f"Status updated from {previous_status or 'unknown'} to {status}."
+            })
+
+        if activity_message:
+            log_dispute_activity(uid, dispute_id, {
+                'type': activity_type,
+                'status': status if status else previous_status,
+                'actor': activity_actor,
+                'message': activity_message
+            })
+
+        if follow_up:
+            log_dispute_activity(uid, dispute_id, {
+                'type': 'follow_up',
+                'status': status if status else previous_status,
+                'actor': activity_actor,
+                'message': activity_message or 'Follow-up sent to provider.'
+            })
+
         updated_dispute = dispute_ref.get()
         dispute_data = updated_dispute.to_dict()
         dispute_data['id'] = updated_dispute.id
-        
+
         print(f"--- Dispute {dispute_id} updated successfully ---")
-        
+
         return jsonify({
             'dispute_id': dispute_id,
             'status': dispute_data.get('status', 'unknown'),
