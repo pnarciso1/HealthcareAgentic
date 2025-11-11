@@ -305,7 +305,9 @@ googleProvider.addScope('profile');
                     if (successMessage) {
                         alert(successMessage);
                     }
-                    await loadDisputeDashboard();
+                    if (typeof loadDisputeDashboard === 'function') {
+                        await loadDisputeDashboard();
+                    }
                     const updated = userDisputes.find(d => d.id === disputeId);
                     if (updated) {
                         showDisputeDetail(updated);
