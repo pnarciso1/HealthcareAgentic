@@ -43,6 +43,9 @@ PRICE_IDS = {
     'yearly': os.getenv('STRIPE_YEARLY_PRICE_ID')
 }
 
+CASE_PRICE_ID = os.getenv('STRIPE_CASE_PRICE_ID')
+CASE_SUPPORTED_TYPES = {'dispute', 'appeal'}
+
 # Debug logging for environment variables
 print("=== ENVIRONMENT VARIABLES DEBUG ===")
 print(f"STRIPE_MONTHLY_PRICE_ID: {os.getenv('STRIPE_MONTHLY_PRICE_ID')}")
@@ -50,6 +53,7 @@ print(f"STRIPE_YEARLY_PRICE_ID: {os.getenv('STRIPE_YEARLY_PRICE_ID')}")
 print(f"STRIPE_SECRET_KEY: {os.getenv('STRIPE_SECRET_KEY', 'NOT_SET')[:20]}...")
 print(f"FRONTEND_DOMAIN: {os.getenv('FRONTEND_DOMAIN', 'NOT_SET')}")
 print(f"GCP_PROJECT_ID: {os.getenv('GCP_PROJECT_ID', 'NOT_SET')}")
+print(f"STRIPE_CASE_PRICE_ID: {CASE_PRICE_ID}")
 print("=== END ENVIRONMENT DEBUG ===")
 
 # --- STRIPE PROMOTION CONFIGURATION ---
@@ -204,6 +208,76 @@ def increment_coupon_usage(coupon_code):
         coupon_code (str): The coupon code to increment
     """
     print(f"Coupon {coupon_code} usage tracked automatically by Stripe")
+
+
+def get_or_create_stripe_customer(uid, email):
+    """
+    Retrieve an existing Stripe customer for the user or create a new one.
+    Returns the Stripe customer ID and the Firestore user document reference.
+    """
+    user_ref = db.collection('users').document(uid)
+    user_doc = user_ref.get()
+
+    stripe_customer_id = None
+    if user_doc.exists:
+        user_data = user_doc.to_dict()
+        existing_customer_id = user_data.get('stripeCustomerId')
+        if existing_customer_id:
+            print(f"Found existing Stripe customer: {existing_customer_id}")
+            if existing_customer_id.startswith('cus_'):
+                try:
+                    stripe.Customer.retrieve(existing_customer_id)
+                    stripe_customer_id = existing_customer_id
+                    print(f"Using existing Stripe customer: {stripe_customer_id}")
+                except stripe.error.InvalidRequestError as e:
+                    if "No such customer" in str(e):
+                        print("Test customer ID found, clearing it and creating new live customer...")
+                        user_ref.update({'stripeCustomerId': None})
+                    else:
+                        raise e
+            else:
+                stripe_customer_id = existing_customer_id
+                print(f"Using existing Stripe customer: {stripe_customer_id}")
+
+    if not stripe_customer_id:
+        print("Creating new Stripe customer...")
+        customer = stripe.Customer.create(
+            email=email,
+            metadata={'firebase_uid': uid}
+        )
+        stripe_customer_id = customer.id
+        print(f"Created new Stripe customer: {stripe_customer_id}")
+        user_ref.set({'stripeCustomerId': stripe_customer_id}, merge=True)
+
+    return stripe_customer_id, user_ref
+
+
+def validate_case_access(uid, case_id, expected_type, document_id=None):
+    """
+    Validate that a case exists, is paid, and matches the expected type/document.
+    Returns (case_data, error_response) where error_response is a tuple (message, status_code) or None.
+    """
+    if not case_id:
+        return None, ('Case ID is required to access this feature', 400)
+
+    case_ref = db.collection('users').document(uid).collection('cases').document(case_id)
+    case_doc = case_ref.get()
+
+    if not case_doc.exists:
+        return None, ('Case not found. Please start a new case for this bill.', 404)
+
+    case_data = case_doc.to_dict()
+
+    if case_data.get('paymentStatus') != 'paid':
+        return None, ('Payment required to continue working on this bill.', 402)
+
+    if expected_type and case_data.get('agentType') != expected_type:
+        return None, ('This case is not valid for the selected agent.', 400)
+
+    if document_id and case_data.get('documentId') not in (None, document_id):
+        return None, ('This case is associated with a different document.', 400)
+
+    return case_data, None
 
 # --- AUTHENTICATION HELPER ---
 def verify_firebase_token(token):
@@ -407,6 +481,32 @@ Sincerely,
 {patient_name}
 {contact_info}
         '''
+    },
+    'billing_error': {
+        'title': 'Dispute for Billing Errors',
+        'template': '''
+Dear {provider_name},
+
+I am writing to dispute several billing issues on my medical bill dated {bill_date}. After a detailed review, I identified inconsistencies that do not align with the services received or the amounts that should be due.
+
+**Billed Amount**: ${billed_amount}
+**Insurance Paid**: ${insurance_paid}
+**Patient Responsibility Shown**: ${patient_responsibility}
+**Issues Identified**: {evidence_summary}
+
+Based on the information above, I respectfully request:
+1. A full itemization of the charges in question
+2. An explanation of how the amount shown as patient responsibility was calculated
+3. Any supporting documentation or coding details used to justify these amounts
+
+Please review these billing concerns and adjust my bill accordingly. If the charges are upheld, provide a written explanation with supporting documentation.
+
+I expect a response within 30 days. If the matter is not resolved, I will escalate the dispute to the appropriate regulatory agencies.
+
+Sincerely,
+{patient_name}
+{contact_info}
+        '''
     }
 }
 
@@ -565,12 +665,16 @@ def generate_dispute_letter(error_type, document_data, error_details):
     print(f"Error type: {error_type}")
     print(f"Document data keys: {list(document_data.keys()) if isinstance(document_data, dict) else 'Not a dict'}")
     
-    if error_type not in DISPUTE_TEMPLATES:
-        print(f"❌ Error type {error_type} not found in templates")
+    template_key = error_type if error_type in DISPUTE_TEMPLATES else 'billing_error'
+    if template_key not in DISPUTE_TEMPLATES:
+        print(f"❌ Error type {error_type} not found in templates and no fallback available")
         return None
     
-    template = DISPUTE_TEMPLATES[error_type]['template']
-    print(f"✅ Template found for {error_type}")
+    if template_key != error_type:
+        print(f"⚠️ Using fallback dispute template for error type {error_type}")
+    
+    template = DISPUTE_TEMPLATES[template_key]['template']
+    print(f"✅ Template found for {template_key}")
     
     # Extract data for template variables
     financial_data = document_data.get('financial_data', {})
@@ -908,44 +1012,8 @@ def create_checkout_session():
         return jsonify({'error': 'Service configuration error. Please contact support.'}), 500
 
     try:
-        print("Attempting to access Firestore...")
-        user_ref = db.collection('users').document(uid)
-        user_doc = user_ref.get()
-        print(f"Firestore access successful. Document exists: {user_doc.exists}")
-        
-        stripe_customer_id = None
-        if user_doc.exists and 'stripeCustomerId' in user_doc.to_dict():
-            existing_customer_id = user_doc.to_dict()['stripeCustomerId']
-            print(f"Found existing Stripe customer: {existing_customer_id}")
-            
-            # Check if this is a test customer ID (starts with 'cus_')
-            if existing_customer_id.startswith('cus_'):
-                try:
-                    # Try to retrieve the customer to see if it exists in live mode
-                    customer = stripe.Customer.retrieve(existing_customer_id)
-                    stripe_customer_id = existing_customer_id
-                    print(f"Using existing Stripe customer: {stripe_customer_id}")
-                except stripe.error.InvalidRequestError as e:
-                    if "No such customer" in str(e):
-                        print("Test customer ID found, clearing it and creating new live customer...")
-                        user_ref.update({'stripeCustomerId': None})
-                        stripe_customer_id = None
-                    else:
-                        raise e
-            else:
-                stripe_customer_id = existing_customer_id
-                print(f"Using existing Stripe customer: {stripe_customer_id}")
-        
-        if not stripe_customer_id:
-            print("Creating new Stripe customer...")
-            customer = stripe.Customer.create(
-                email=email, 
-                metadata={'firebase_uid': uid}
-            )
-            stripe_customer_id = customer.id
-            print(f"Created new Stripe customer: {stripe_customer_id}")
-            user_ref.set({'stripeCustomerId': stripe_customer_id}, merge=True)
-            print("Updated Firestore with customer ID")
+        print("Attempting to access or create Stripe customer...")
+        stripe_customer_id, user_ref = get_or_create_stripe_customer(uid, email)
 
         # Validate and apply coupon if provided
         discount_info = None
@@ -1003,6 +1071,132 @@ def create_checkout_session():
             error_msg = "Unable to create checkout session. Please try again."
             
         return jsonify({'error': error_msg}), 500
+
+@app.route('/api/cases/create', methods=['POST'])
+def create_case_payment():
+    print("=== CASE CHECKOUT DEBUG START ===")
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        print("ERROR: Authorization header missing or invalid for case creation")
+        return jsonify({'error': 'Authorization header is missing or invalid'}), 401
+
+    token = auth_header.split('Bearer ')[1]
+    decoded_token = verify_firebase_token(token)
+    if not decoded_token:
+        print("ERROR: Token verification failed for case creation")
+        return jsonify({'error': 'Invalid or expired authentication token'}), 401
+
+    uid = decoded_token.get('user_id') or decoded_token.get('uid')
+    email = decoded_token.get('email', '')
+
+    data = request.get_json() or {}
+    agent_type = (data.get('agentType') or '').lower()
+    document_id = data.get('documentId')
+
+    print(f"Case creation requested by {uid} for agent '{agent_type}' and document '{document_id}'")
+
+    if agent_type not in CASE_SUPPORTED_TYPES:
+        print(f"ERROR: Unsupported agent type for case creation: {agent_type}")
+        return jsonify({'error': 'Unsupported agent type for case billing.'}), 400
+
+    if not CASE_PRICE_ID:
+        print("ERROR: STRIPE_CASE_PRICE_ID is not configured")
+        return jsonify({'error': 'Case billing is not configured. Please contact support.'}), 500
+
+    case_ref = None
+    case_id = None
+    try:
+        stripe_customer_id, user_ref = get_or_create_stripe_customer(uid, email)
+
+        cases_collection = user_ref.collection('cases')
+        case_ref = cases_collection.document()
+        case_id = case_ref.id
+
+        case_data = {
+            'agentType': agent_type,
+            'documentId': document_id,
+            'paymentStatus': 'pending',
+            'status': 'pending_payment',
+            'priceId': CASE_PRICE_ID,
+            'currency': 'usd',
+            'amountDue': 10.00,
+            'created_at': SERVER_TIMESTAMP,
+            'updated_at': SERVER_TIMESTAMP
+        }
+
+        case_ref.set(case_data)
+        print(f"Case document {case_id} created with pending payment status")
+
+        session_params = {
+            'customer': stripe_customer_id,
+            'line_items': [{'price': CASE_PRICE_ID, 'quantity': 1}],
+            'mode': 'payment',
+            'success_url': f"{YOUR_DOMAIN}?casePayment=success&caseId={case_id}",
+            'cancel_url': f"{YOUR_DOMAIN}?casePayment=cancelled&caseId={case_id}",
+            'metadata': {
+                'firebase_uid': uid,
+                'case_id': case_id,
+                'case_type': agent_type,
+                'document_id': document_id or ''
+            }
+        }
+
+        checkout_session = stripe.checkout.Session.create(**session_params)
+        case_ref.update({
+            'checkoutSessionId': checkout_session.id,
+            'updated_at': SERVER_TIMESTAMP
+        })
+
+        print(f"Checkout session {checkout_session.id} created for case {case_id}")
+        print("=== CASE CHECKOUT DEBUG END ===")
+        return jsonify({
+            'sessionId': checkout_session.id,
+            'caseId': case_id
+        })
+
+    except Exception as e:
+        print(f"ERROR during case checkout: {e}")
+        import traceback
+        print(f"Full traceback: {traceback.format_exc()}")
+        try:
+            if case_ref:
+                case_ref.delete()
+                print(f"Rolled back case document {case_id} after checkout failure")
+        except Exception as rollback_error:
+            print(f"ERROR rolling back case document: {rollback_error}")
+        return jsonify({'error': 'Unable to start case billing. Please try again.'}), 500
+
+@app.route('/api/cases/cancel', methods=['POST'])
+def cancel_case():
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return jsonify({'error': 'Authorization header is missing or invalid'}), 401
+
+    token = auth_header.split('Bearer ')[1]
+    decoded_token = verify_firebase_token(token)
+    if not decoded_token:
+        return jsonify({'error': 'Invalid or expired authentication token'}), 401
+
+    uid = decoded_token.get('user_id') or decoded_token.get('uid')
+    data = request.get_json() or {}
+    case_id = data.get('caseId')
+
+    if not case_id:
+        return jsonify({'error': 'Case ID is required'}), 400
+
+    case_ref = db.collection('users').document(uid).collection('cases').document(case_id)
+    case_doc = case_ref.get()
+
+    if not case_doc.exists:
+        return jsonify({'error': 'Case not found'}), 404
+
+    case_ref.update({
+        'status': 'cancelled',
+        'paymentStatus': 'cancelled',
+        'updated_at': SERVER_TIMESTAMP
+    })
+
+    return jsonify({'caseId': case_id, 'status': 'cancelled'})
 
 @app.route('/validate-coupon', methods=['POST'])
 def validate_coupon():
@@ -1071,11 +1265,15 @@ def stripe_webhook():
 
     if event['type'] == 'checkout.session.completed':
         session = event['data']['object']
-        firebase_uid = session.get('metadata', {}).get('firebase_uid')
-        coupon_code = session.get('metadata', {}).get('coupon_code')
-        print(f"Processing checkout.session.completed for user: {firebase_uid}")
-        
-        if firebase_uid:
+        metadata = session.get('metadata', {}) or {}
+        firebase_uid = metadata.get('firebase_uid')
+        mode = session.get('mode')
+        print(f"Processing checkout.session.completed for user: {firebase_uid}, mode: {mode}")
+
+        if not firebase_uid:
+            print("WARNING: No firebase_uid found in session metadata")
+        elif mode == 'subscription':
+            coupon_code = metadata.get('coupon_code')
             try:
                 user_ref = db.collection('users').document(firebase_uid)
                 user_ref.update({
@@ -1089,8 +1287,24 @@ def stripe_webhook():
                     print(f"Coupon {coupon_code} usage incremented for user {firebase_uid}")
             except Exception as e:
                 print(f"ERROR updating user subscription: {e}")
-        else:
-            print("WARNING: No firebase_uid found in session metadata")
+        elif mode == 'payment':
+            case_id = metadata.get('case_id')
+            if not case_id:
+                print("WARNING: Case payment completed but no case_id in metadata")
+            else:
+                try:
+                    case_ref = db.collection('users').document(firebase_uid).collection('cases').document(case_id)
+                    case_ref.update({
+                        'paymentStatus': 'paid',
+                        'status': 'active',
+                        'paid_at': SERVER_TIMESTAMP,
+                        'amountPaid': (session.get('amount_total', 0) or 0) / 100.0,
+                        'currency': session.get('currency', 'usd'),
+                        'updated_at': SERVER_TIMESTAMP
+                    })
+                    print(f"Case {case_id} marked as paid for user {firebase_uid}")
+                except Exception as e:
+                    print(f"ERROR updating case payment status: {e}")
 
     print("=== STRIPE WEBHOOK DEBUG END ===")
     return 'Success', 200
@@ -1524,9 +1738,15 @@ def analyze_document_for_disputes():
 
     data = request.get_json()
     document_id = data.get('documentId')
+    case_id = data.get('caseId')
     
     if not document_id:
         return jsonify({'error': 'Document ID is required'}), 400
+
+    case_data, case_error = validate_case_access(uid, case_id, 'dispute', document_id)
+    if case_error:
+        message, status_code = case_error
+        return jsonify({'error': message}), status_code
 
     try:
         # Retrieve document from Firestore
@@ -1581,7 +1801,7 @@ def analyze_document_for_disputes():
                     'evidence': error['evidence'],
                     'amount': error.get('amount', 0),
                     'dispute_letter': dispute_letter,
-                    'template_title': DISPUTE_TEMPLATES[error['type']]['title']
+                'template_title': DISPUTE_TEMPLATES.get(error['type'], DISPUTE_TEMPLATES.get('billing_error', {})).get('title', 'Dispute Letter')
                 })
         
         print(f"=== DEBUG: Dispute recommendations ===")
@@ -1623,9 +1843,15 @@ def generate_dispute_letter_endpoint():
     document_id = data.get('documentId')
     error_type = data.get('errorType')
     custom_evidence = data.get('evidence', '')
+    case_id = data.get('caseId')
     
     if not document_id or not error_type:
         return jsonify({'error': 'Document ID and error type are required'}), 400
+
+    case_data, case_error = validate_case_access(uid, case_id, 'dispute', document_id)
+    if case_error:
+        message, status_code = case_error
+        return jsonify({'error': message}), status_code
 
     try:
         # Retrieve document from Firestore
@@ -1648,7 +1874,7 @@ def generate_dispute_letter_endpoint():
             'document_id': document_id,
             'error_type': error_type,
             'dispute_letter': dispute_letter,
-            'template_title': DISPUTE_TEMPLATES.get(error_type, {}).get('title', 'Dispute Letter')
+            'template_title': DISPUTE_TEMPLATES.get(error_type, DISPUTE_TEMPLATES.get('billing_error', {})).get('title', 'Dispute Letter')
         })
         
     except Exception as e:
@@ -1681,9 +1907,15 @@ def submit_dispute():
     dispute_letter = data.get('disputeLetter')
     evidence = data.get('evidence', '')
     amount_disputed = data.get('amountDisputed', 0)
+    case_id = data.get('caseId')
     
     if not document_id or not error_type or not dispute_letter:
         return jsonify({'error': 'Document ID, error type, and dispute letter are required'}), 400
+
+    case_data, case_error = validate_case_access(uid, case_id, 'dispute', document_id)
+    if case_error:
+        message, status_code = case_error
+        return jsonify({'error': message}), status_code
 
     try:
         # Store dispute in Firestore
@@ -1696,7 +1928,8 @@ def submit_dispute():
             'status': 'draft',
             'created_at': SERVER_TIMESTAMP,
             'updated_at': SERVER_TIMESTAMP,
-            'user_id': uid
+            'user_id': uid,
+            'case_id': case_id
         }
         
         dispute_ref = db.collection('users').document(uid).collection('disputes').add(dispute_record)

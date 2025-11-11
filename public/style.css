@@ -1,3 +1,78 @@
+.pricing-copy {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.pricing-copy h2 {
+    font-size: 2rem;
+    margin-bottom: 0.75rem;
+}
+
+.pricing-copy p {
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.pricing-columns {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+    align-items: start;
+    text-align: center;
+}
+
+.pricing-column h3 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.bullet-block {
+    margin-bottom: 1.5rem;
+    text-align: left;
+    display: inline-block;
+    max-width: 420px;
+}
+
+.bullet-block h4 {
+    margin-bottom: 0.75rem;
+}
+
+.bullet-block ul {
+    padding-left: 1.25rem;
+    margin: 0;
+    text-align: left;
+}
+
+.love-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1.5rem 0;
+}
+
+.love-list li {
+    margin-bottom: 0.5rem;
+}
+
+.cta-card {
+    background: var(--background-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
+}
+
+.cta-card p {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.cta-card .btn-primary {
+    width: auto;
+    padding: 0.75rem 2rem;
+}
 /* --- GLOBAL STYLES --- */
 :root {
     --background-dark: #111827;
@@ -3676,12 +3751,19 @@ input:checked + .toggle-slider:before {
 }
 
 .analysis-status {
-    padding: 0.5rem 1rem;
+    padding: 0.6rem 2.5rem;
     background: var(--success-green);
     color: white;
     border-radius: 20px;
-    font-size: 0.875rem;
+    font-size: 0.95rem;
     font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    white-space: nowrap;
+    justify-content: center;
+    min-width: 260px;
+    margin-right: 2.5rem;
 }
 
 #agent2-chat {
@@ -5458,6 +5540,28 @@ button:disabled, input:disabled, textarea:disabled {
 .agent-badge.premium {
     background-color: var(--primary-blue);
     color: white;
+}
+
+.agent-badge.case {
+    background-color: var(--warning-yellow);
+    color: white;
+}
+
+/* Premium Agent Card Locked States */
+.agent-selection-card.locked {
+    opacity: 0.7;
+    /* pointer-events removed - click handling managed by JavaScript */
+}
+
+.agent-selection-card.locked .agent-select-btn {
+    opacity: 0.6;
+    cursor: not-allowed;
+    /* pointer-events removed - click handling managed by JavaScript */
+}
+
+.agent-selection-card:not(.locked) .agent-select-btn {
+    opacity: 1;
+    cursor: pointer;
 }
 
 /* Update agent cards to support badges */
@@ -8892,5 +8996,282 @@ button:disabled, input:disabled, textarea:disabled {
     
     .future-agent-modal .agent-description {
         font-size: 0.875rem;
+    }
+}
+
+/* Payment Status Messages */
+.payment-processing-message,
+.payment-cancelled-message,
+.payment-success-message,
+.payment-success-login-prompt,
+.firestore-error-message {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1001;
+}
+
+.payment-message-content {
+    background-color: var(--background-card);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    padding: 2rem;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.payment-message-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.payment-message-content h3 {
+    color: var(--text-primary);
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0 0 1rem 0;
+}
+
+.payment-message-content p {
+    color: var(--text-secondary);
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+}
+
+.payment-message-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.payment-message-actions .btn-primary,
+.payment-message-actions .btn-secondary {
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    border: none;
+}
+
+.payment-message-actions .btn-primary {
+    background-color: var(--primary-blue);
+    color: white;
+}
+
+.payment-message-actions .btn-primary:hover {
+    background-color: var(--primary-blue-hover);
+}
+
+.payment-message-actions .btn-secondary {
+    background-color: var(--secondary-gray);
+    color: var(--text-primary);
+}
+
+.payment-message-actions .btn-secondary:hover {
+    background-color: var(--secondary-gray-hover);
+}
+
+/* Payment Message Responsive */
+@media (max-width: 768px) {
+    .payment-message-content {
+        padding: 1.5rem;
+        margin: 1rem;
+    }
+    
+    .payment-message-icon {
+        font-size: 2.5rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .payment-message-content h3 {
+        font-size: 1.25rem;
+    }
+    
+    .payment-message-content p {
+        font-size: 0.875rem;
+    }
+    
+    .payment-message-actions {
+        flex-direction: column;
+    }
+    
+    .payment-message-actions .btn-primary,
+    .payment-message-actions .btn-secondary {
+        width: 100%;
+    }
+}
+
+/* --- FAQ SECTION STYLES --- */
+.faq-section {
+    background-color: var(--background-light);
+    padding: 4rem 0;
+    margin: 2rem 0;
+}
+
+.faq-section h2 {
+    text-align: center;
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 3rem;
+    color: var(--text-primary);
+}
+
+.faq-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.faq-item {
+    background-color: var(--background-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.faq-item:hover {
+    border-color: var(--primary-blue);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.15);
+}
+
+.faq-question {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background-color: transparent;
+    border: none;
+    width: 100%;
+    text-align: left;
+}
+
+.faq-question:hover {
+    background-color: rgba(79, 70, 229, 0.05);
+}
+
+.faq-question h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+    flex: 1;
+    padding-right: 1rem;
+}
+
+.faq-toggle {
+    font-size: 1.5rem;
+    font-weight: 300;
+    color: var(--primary-blue);
+    transition: transform 0.3s ease;
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.faq-item.active .faq-toggle {
+    transform: rotate(45deg);
+}
+
+.faq-answer {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+    background-color: rgba(79, 70, 229, 0.02);
+}
+
+.faq-item.active .faq-answer {
+    max-height: 1000px;
+    padding: 0 2rem 1.5rem 2rem;
+}
+
+.faq-answer p {
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin-bottom: 1rem;
+}
+
+.faq-answer p:last-child {
+    margin-bottom: 0;
+}
+
+.faq-answer strong {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.faq-answer ul {
+    margin: 1rem 0;
+    padding-left: 1.5rem;
+}
+
+.faq-answer li {
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+    line-height: 1.6;
+}
+
+.faq-answer li strong {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .faq-section {
+        padding: 2rem 0;
+        margin: 1rem 0;
+    }
+    
+    .faq-section h2 {
+        font-size: 2rem;
+        margin-bottom: 2rem;
+        padding: 0 1rem;
+    }
+    
+    .faq-container {
+        padding: 0 1rem;
+    }
+    
+    .faq-question {
+        padding: 1rem 1.5rem;
+    }
+    
+    .faq-question h3 {
+        font-size: 1.1rem;
+        padding-right: 0.5rem;
+    }
+    
+    .faq-toggle {
+        font-size: 1.25rem;
+    }
+    
+    .faq-item.active .faq-answer {
+        padding: 0 1.5rem 1rem 1.5rem;
+    }
+    
+    .faq-answer p {
+        font-size: 0.95rem;
+    }
+    
+    .faq-answer ul {
+        padding-left: 1rem;
     }
 }

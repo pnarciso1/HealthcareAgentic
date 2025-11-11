@@ -69,6 +69,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Case-based billing flow that creates Stripe checkout sessions and Firestore `cases` records for each disputed bill
+- Fallback dispute letter template for general billing errors (ensures letter generation for every detected issue)
+
+### Changed
+- Agent 2 (Bill & Claim Review) is now free for all users; Agents 3 and 4 charge a flat $10 per case
+- Pricing page copy now highlights the per-case model and transparent “start free” messaging
+- Agent selection badges updated to reflect new pricing (Agent 2 `Free`, Agents 3 & 4 `$10 per case`)
+
+### Fixed
+- Email/password signup/login now reloads user state and resends verification emails without recreating accounts
+- Dispute amount tracking now persists and displays correct totals on the dashboard
+- Post-Stripes case payment flow handles success callbacks without throwing reference errors
+
 ### Planned
 - Additional future agents (Marcus, Tara)
 - Enhanced agent status indicators

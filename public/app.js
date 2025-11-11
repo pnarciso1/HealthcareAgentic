@@ -23,6 +23,7 @@ import {
     getFirestore,
     collection,
     query,
+    where,
     orderBy,
     onSnapshot,
     addDoc,
@@ -742,6 +743,12 @@ function showPaymentCancelledMessage() {
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('🚀 DOM Content Loaded - Initializing application...');
 
+    // --- Dispute System State ---
+    let userDisputes = [];
+    let currentDisputeDocument = null;
+    let currentDisputeAnalysis = null;
+    let currentDisputeCaseId = null;
+
     // --- Handle Google Sign-in Redirect Results ---
     try {
         const result = await getRedirectResult(auth);
@@ -824,6 +831,44 @@ document.addEventListener('DOMContentLoaded', async () => {
         showPaymentCancelledMessage();
     }
 
+    const casePaymentStatus = urlParams.get('casePayment');
+    const caseIdFromUrl = urlParams.get('caseId');
+
+    if (casePaymentStatus === 'success' && caseIdFromUrl) {
+        console.log('💳 Case payment success detected in URL parameters');
+        trackUserBehavior('case_payment_success_detected', {
+            case_id: caseIdFromUrl,
+            timestamp: new Date().toISOString(),
+            user_logged_in: !!auth.currentUser
+        });
+
+        const pendingMeta = getPendingCaseMeta();
+        if (pendingMeta && pendingMeta.caseId === caseIdFromUrl) {
+            clearPendingCaseMeta();
+        }
+
+        if (auth.currentUser) {
+            await handleCasePaymentSuccess(caseIdFromUrl);
+        } else {
+            sessionStorage.setItem('casePaymentAwaitingAuth', caseIdFromUrl);
+        }
+
+        const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
+    } else if (casePaymentStatus === 'cancelled' && caseIdFromUrl) {
+        console.log('❌ Case payment cancelled detected in URL parameters');
+        trackUserBehavior('case_payment_cancelled', {
+            case_id: caseIdFromUrl,
+            timestamp: new Date().toISOString()
+        });
+
+        await handleCasePaymentCancelled(caseIdFromUrl);
+        alert('Payment cancelled. You can restart checkout when you are ready.');
+
+        const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
+    }
+
     // Initialize Quick Answers Widget
     const widgetElement = document.getElementById('quick-answers-widget');
     const inputElement = document.getElementById('quick-answers-input');
@@ -862,7 +907,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const navAboutUsLink = document.getElementById('nav-about-us');
     const navAgentsLink = document.getElementById('nav-agents');
     const agentSelectionCards = document.querySelectorAll('.agent-selection-card');
-    const upgradeButtons = document.querySelectorAll('.pricing-card button');
+    const upgradeButtons = document.querySelectorAll('[data-plan]');
     
     // Modal elements
     const loginNavButton = document.getElementById('login-nav-button');
@@ -2131,74 +2176,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             
             const pageId = card.getAttribute('data-page');
-            // Simple access control - only allow premium agents for paying users
-            const isLocked = pageId !== 'agent-1-page' && 
-                            currentUserSubscriptionTier !== 'complete_care';
+            const isPremiumAgent = pageId === 'agent-3-page' || pageId === 'agent-4-page';
             
-            console.log('🎯 Card clicked - Premium Access Debug:', {
+            console.log('🎯 Card clicked:', {
                 pageId: pageId,
                 subscriptionTier: currentUserSubscriptionTier,
-                isLocked: isLocked,
-                isPremiumAgent: pageId !== 'agent-1-page',
-                paymentSuccess: window.paymentSuccess,
+                isPremiumAgent: isPremiumAgent,
                 timestamp: new Date().toISOString(),
                 userAuthenticated: !!auth.currentUser,
                 userId: auth.currentUser?.uid
             });
             
-            if (isLocked) {
-                // Check if payment is currently being processed
-                if (window.paymentProcessing) {
-                    console.log('⏳ User tried to access premium agent during payment processing (card click)');
-                    
-                    // Show a specific message for users whose payment is being processed
-                    const processingMessage = document.createElement('div');
-                    processingMessage.className = 'payment-processing-message';
-                    processingMessage.innerHTML = `
-                        <div class="payment-message-content">
-                            <div class="payment-message-icon">⏳</div>
-                            <h3>Payment Being Processed</h3>
-                            <p>Your premium access is being activated. Please wait a moment and try again, or refresh the page.</p>
-                            <div class="payment-message-actions">
-                                <button class="btn-secondary" onclick="this.parentElement.parentElement.parentElement.remove()">Dismiss</button>
-                                <button class="btn-primary" onclick="window.location.reload()">Refresh Page</button>
-                            </div>
-                        </div>
-                    `;
-                    
-                    document.body.appendChild(processingMessage);
-                    
-                    // Auto-remove after 10 seconds
-                    setTimeout(() => {
-                        if (processingMessage.parentNode) {
-                            processingMessage.remove();
-                        }
-                    }, 10000);
-                    
-                    // Track this specific scenario
-                    trackUserBehavior('premium_access_during_processing', { 
-                        feature: pageId,
-                        subscription_tier: currentUserSubscriptionTier,
-                        source: 'agent_card'
-                    });
-                    return;
-                }
-                
-                console.log('🔒 Card is locked, showing upgrade prompt');
-                trackUserBehavior('upgrade_prompt', { 
-                    feature: pageId,
-                    subscription_tier: currentUserSubscriptionTier
-                });
-                showUpgradePrompt();
-            } else {
-                console.log('✅ Card is unlocked, navigating to agent page');
-                // Track feature usage
-                trackFeatureUsage('agent_selection', { 
-                    agent: pageId,
-                    subscription_tier: currentUserSubscriptionTier
-                });
-                showAppPage(pageId);
-            }
+            trackFeatureUsage('agent_selection', { 
+                agent: pageId,
+                subscription_tier: currentUserSubscriptionTier
+            });
+            showAppPage(pageId);
         });
         
         // Handle "Get Started" button clicks
@@ -2208,62 +2201,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 e.stopPropagation(); // Prevent card click
                 
                 const pageId = card.getAttribute('data-page');
-                // Simple access control - only allow premium agents for paying users
-                const isLocked = pageId !== 'agent-1-page' && 
-                                currentUserSubscriptionTier !== 'complete_care';
                 
                 console.log('🎯 Get Started button clicked:', {
                     pageId: pageId,
                     subscriptionTier: currentUserSubscriptionTier,
-                    isLocked: isLocked,
-                    buttonDisabled: selectBtn.disabled,
-                    paymentSuccess: window.paymentSuccess
+                    buttonDisabled: selectBtn.disabled
                 });
                 
-                if (isLocked) {
-                    // Check if payment is currently being processed
-                    if (window.paymentProcessing) {
-                        console.log('⏳ User tried to access premium agent during payment processing (get started button)');
-                        
-                        // Show a specific message for users whose payment is being processed
-                        const processingMessage = document.createElement('div');
-                        processingMessage.className = 'payment-processing-message';
-                        processingMessage.innerHTML = `
-                            <div class="payment-message-content">
-                                <div class="payment-message-icon">⏳</div>
-                                <h3>Payment Being Processed</h3>
-                                <p>Your premium access is being activated. Please wait a moment and try again, or refresh the page.</p>
-                                <div class="payment-message-actions">
-                                    <button class="btn-secondary" onclick="this.parentElement.parentElement.parentElement.remove()">Dismiss</button>
-                                    <button class="btn-primary" onclick="window.location.reload()">Refresh Page</button>
-                                </div>
-                            </div>
-                        `;
-                        
-                        document.body.appendChild(processingMessage);
-                        
-                        // Auto-remove after 10 seconds
-                        setTimeout(() => {
-                            if (processingMessage.parentNode) {
-                                processingMessage.remove();
-                            }
-                        }, 10000);
-                        
-                        // Track this specific scenario
-                        trackUserBehavior('premium_access_during_processing', { 
-                            feature: pageId,
-                            subscription_tier: currentUserSubscriptionTier,
-                            source: 'get_started_button'
-                        });
-                        return;
-                    }
-                    
-                    console.log('🔒 Button is locked, showing upgrade prompt');
-                    showUpgradePrompt();
-                } else {
-                    console.log('✅ Button is unlocked, navigating to agent page');
-                    showAppPage(pageId);
-                }
+                showAppPage(pageId);
             });
         }
     });
@@ -2289,11 +2234,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
     // --- AGENT 3 DISPUTE SYSTEM FUNCTIONS ---
-    
-    // Global variables for dispute system
-    let userDisputes = [];
-    let currentDisputeDocument = null;
-    let currentDisputeAnalysis = null;
     
     // Define showDisputeDashboard function FIRST, before it's called
     window.showDisputeDashboard = function() {
@@ -2520,6 +2460,183 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log('✅ Dispute dashboard updated successfully');
     }
     
+    // --- Case Billing Helpers ---
+
+    function setPendingCaseMeta(meta) {
+        try {
+            sessionStorage.setItem('pendingCaseMeta', JSON.stringify(meta));
+        } catch (error) {
+            console.error('❌ Error storing pending case metadata:', error);
+        }
+    }
+
+    function getPendingCaseMeta() {
+        try {
+            const raw = sessionStorage.getItem('pendingCaseMeta');
+            return raw ? JSON.parse(raw) : null;
+        } catch (error) {
+            console.error('❌ Error reading pending case metadata:', error);
+            return null;
+        }
+    }
+
+    function clearPendingCaseMeta() {
+        sessionStorage.removeItem('pendingCaseMeta');
+    }
+
+    async function findPaidCase(agentType, documentId) {
+        try {
+            const user = auth.currentUser;
+            if (!user) return null;
+
+            const casesRef = collection(db, 'users', user.uid, 'cases');
+            const casesQuery = documentId ? query(casesRef, where('documentId', '==', documentId)) : casesRef;
+            const snapshot = await getDocs(casesQuery);
+
+            let paidCase = null;
+            snapshot.forEach(docSnap => {
+                const data = docSnap.data();
+                if (data.agentType === agentType && data.paymentStatus === 'paid') {
+                    paidCase = { id: docSnap.id, ...data };
+                }
+            });
+
+            if (paidCase) {
+                console.log('✅ Found existing paid case:', { agentType, documentId, caseId: paidCase.id });
+            }
+
+            return paidCase;
+        } catch (error) {
+            console.error('❌ Error finding paid case:', error);
+            return null;
+        }
+    }
+
+    async function waitForCasePayment(caseId, maxAttempts = 8) {
+        const user = auth.currentUser;
+        if (!user) return null;
+
+        const caseRef = doc(db, 'users', user.uid, 'cases', caseId);
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+            const snapshot = await getDoc(caseRef);
+            if (snapshot.exists()) {
+                const data = snapshot.data();
+                if (data.paymentStatus === 'paid') {
+                    console.log('✅ Case payment confirmed via Firestore:', { caseId, attempt });
+                    return { id: snapshot.id, ...data };
+                }
+            }
+
+            const delay = Math.min(1000 * Math.pow(1.5, attempt), 5000);
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
+
+        console.warn('⚠️ Case payment confirmation timed out:', caseId);
+        return null;
+    }
+
+    async function createCaseCheckout(agentType, documentId) {
+        try {
+            const user = auth.currentUser;
+            if (!user) {
+                console.warn('⚠️ User must be logged in to start billing case');
+                showModal('login');
+                return null;
+            }
+
+            const idToken = await user.getIdToken();
+            const response = await fetch(`${BACKEND_URL}/api/cases/create`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${idToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ agentType, documentId })
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('❌ Error creating case checkout session:', response.status, errorText);
+                alert('We could not start the payment for this bill. Please try again.');
+                return null;
+            }
+
+            const data = await response.json();
+            console.log('🧾 Case checkout session created:', data);
+
+            setPendingCaseMeta({ caseId: data.caseId, agentType, documentId });
+
+            const { error } = await stripe.redirectToCheckout({ sessionId: data.sessionId });
+            if (error) {
+                console.error('❌ Stripe redirect error:', error);
+                alert('Payment could not be started. Please try again.');
+            }
+
+            return null;
+        } catch (error) {
+            console.error('❌ Unexpected error starting case billing:', error);
+            alert('Something went wrong when starting payment. Please try again.');
+            return null;
+        }
+    }
+
+    async function ensureCasePayment(agentType, documentId) {
+        const user = auth.currentUser;
+        if (!user) {
+            console.warn('⚠️ User must be logged in to continue');
+            showModal('login');
+            return null;
+        }
+
+        const existingCase = await findPaidCase(agentType, documentId);
+        if (existingCase) {
+            return existingCase;
+        }
+
+        console.log('💳 No paid case found. Initiating checkout...');
+        await createCaseCheckout(agentType, documentId);
+        return null;
+    }
+
+    async function handleCasePaymentSuccess(caseId) {
+        console.log('🎉 Handling case payment success:', caseId);
+        const paidCase = await waitForCasePayment(caseId);
+        if (paidCase) {
+            currentDisputeCaseId = caseId;
+            clearPendingCaseMeta();
+            alert('Payment confirmed! You can continue working on this bill.');
+            return paidCase;
+        }
+
+        alert('Payment received. It may take a moment to unlock your case. Please refresh shortly if needed.');
+        return null;
+    }
+
+    async function handleCasePaymentCancelled(caseId) {
+        console.log('⚠️ Handling case payment cancellation:', caseId);
+        const pendingMeta = getPendingCaseMeta();
+        if (pendingMeta && pendingMeta.caseId === caseId) {
+            clearPendingCaseMeta();
+        }
+
+        const user = auth.currentUser;
+        if (!user) return;
+
+        try {
+            const idToken = await user.getIdToken();
+            await fetch(`${BACKEND_URL}/api/cases/cancel`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${idToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ caseId })
+            });
+        } catch (error) {
+            console.error('❌ Error cancelling case on backend:', error);
+        }
+    }
+
     // Setup dispute event listeners
     function setupDisputeEventListeners() {
         // Quick action buttons
@@ -2585,7 +2702,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.error('❌ No authenticated user found');
                 return;
             }
-            
+
+            currentDisputeDocument = documentId;
+            const paidCase = await ensureCasePayment('dispute', documentId);
+            if (!paidCase) {
+                console.log('💳 Awaiting case payment before proceeding with analysis');
+                return;
+            }
+            currentDisputeCaseId = paidCase.id;
+
             console.log('👤 User authenticated, getting ID token...');
             const idToken = await user.getIdToken();
             
@@ -2596,7 +2721,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     'Authorization': `Bearer ${idToken}`,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ documentId })
+                body: JSON.stringify({ documentId, caseId: currentDisputeCaseId })
             });
             
             console.log('📥 Response status:', response.status);
@@ -2700,6 +2825,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.error('❌ No authenticated user found');
                 return;
             }
+
+            if (!currentDisputeCaseId && currentDisputeDocument) {
+                const paidCase = await ensureCasePayment('dispute', currentDisputeDocument);
+                if (!paidCase) {
+                    console.log('💳 Awaiting case payment before generating dispute letter');
+                    return;
+                }
+                currentDisputeCaseId = paidCase.id;
+            }
             
             console.log('👤 User authenticated, getting ID token...');
             const idToken = await user.getIdToken();
@@ -2713,7 +2847,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 },
                 body: JSON.stringify({ 
                     documentId: currentDisputeDocument,
-                    errorType: errorType
+                    errorType: errorType,
+                    caseId: currentDisputeCaseId
                 })
             });
             
@@ -2806,6 +2941,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.error('❌ No authenticated user found');
                 return;
             }
+
+            if (!currentDisputeCaseId && currentDisputeDocument) {
+                const paidCase = await ensureCasePayment('dispute', currentDisputeDocument);
+                if (!paidCase) {
+                    console.log('💳 Awaiting case payment before submitting dispute');
+                    return;
+                }
+                currentDisputeCaseId = paidCase.id;
+            }
             
             console.log('👤 User authenticated, getting ID token...');
             const idToken = await user.getIdToken();
@@ -2814,7 +2958,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 documentId: currentDisputeDocument,
                 errorType: errorType,
                 disputeLetter: currentDisputeAnalysis.dispute_recommendations.find(r => r.error_type === errorType)?.dispute_letter || '',
-                amountDisputed: currentDisputeAnalysis.detected_errors.find(e => e.type === errorType)?.amount || 0
+                amountDisputed: currentDisputeAnalysis.dispute_recommendations.find(r => r.error_type === errorType)?.amount || currentDisputeAnalysis.detected_errors.find(e => e.type === errorType)?.amount || 0,
+                caseId: currentDisputeCaseId
             };
             
             console.log('📋 Submitting dispute data:', disputeData);
@@ -3346,6 +3491,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Update premium agent card states on initial load
             updatePremiumAgentCardStates();
             
+            const pendingCaseForAuth = sessionStorage.getItem('casePaymentAwaitingAuth');
+            if (pendingCaseForAuth) {
+                handleCasePaymentSuccess(pendingCaseForAuth).catch(error => {
+                    console.error('❌ Error handling deferred case payment:', error);
+                });
+                sessionStorage.removeItem('casePaymentAwaitingAuth');
+            }
+            
         } else {
             console.log('👋 User logged out, cleaning up listeners');
             
@@ -3673,11 +3826,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log('🎯 Updating premium agent card states for subscription tier:', currentUserSubscriptionTier);
         
         // Target all premium agent cards
-        const premiumCards = document.querySelectorAll('.agent-selection-card[data-page="agent-2-page"], .agent-selection-card[data-page="agent-3-page"], .agent-selection-card[data-page="agent-4-page"]');
+        const premiumCards = document.querySelectorAll('.agent-selection-card[data-page="agent-3-page"], .agent-selection-card[data-page="agent-4-page"]');
+        const agent2Card = document.querySelector('.agent-selection-card[data-page="agent-2-page"]');
+
+        if (agent2Card) {
+            agent2Card.style.opacity = '1';
+            agent2Card.classList.remove('locked');
+            const agent2Badge = agent2Card.querySelector('.agent-badge');
+            if (agent2Badge) {
+                agent2Badge.style.display = 'block';
+            }
+        }
         
         premiumCards.forEach(card => {
             const pageId = card.getAttribute('data-page');
-            const premiumBadge = card.querySelector('.agent-badge.premium');
+            const premiumBadge = card.querySelector('.agent-badge');
             const getStartedBtn = card.querySelector('.agent-select-btn');
             
             console.log(`🔍 Processing card ${pageId}:`, {
@@ -3686,31 +3849,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 subscriptionTier: currentUserSubscriptionTier
             });
             
-            if (currentUserSubscriptionTier === 'complete_care') {
-                // UNLOCK: Hide premium badge (visual only)
-                console.log(`✅ Unlocking ${pageId} - user has premium access`);
-                
-                if (premiumBadge) {
-                    premiumBadge.style.display = 'none';
-                    console.log(`✅ Hidden premium badge for ${pageId}`);
-                }
-                
-                // Reset any visual locking styles
-                card.style.opacity = '1';
-                card.classList.remove('locked');
-                
-            } else {
-                // LOCK: Show premium badge (visual only)
-                console.log(`🔒 Locking ${pageId} - user needs premium access`);
-                
-                if (premiumBadge) {
-                    premiumBadge.style.display = 'block';
-                    console.log(`🔒 Showing premium badge for ${pageId}`);
-                }
-                
-                // Add visual locking styles
-                card.style.opacity = '0.7';
-                card.classList.add('locked');
+            if (premiumBadge) {
+                premiumBadge.style.display = 'block';
+                console.log(`ℹ️ Showing premium badge for ${pageId}`);
+            }
+
+            card.style.opacity = '1';
+            card.classList.remove('locked');
+            
+            if (getStartedBtn) {
+                getStartedBtn.disabled = false;
             }
         });
         
@@ -4603,57 +4751,42 @@ function setupSubscriptionListener(uid) {
             }
             
             signInWithEmailAndPassword(auth, email, password)
-                .then((userCredential) => {
+                .then(async (userCredential) => {
                     const user = userCredential.user;
-                    
-                    // Clear any failed login attempts on successful login
+
+                    // Refresh user to pick up any recent verification
+                    try {
+                        await user.reload();
+                    } catch (reloadError) {
+                        console.error('❌ Error reloading user:', reloadError);
+                    }
+
+                    // Clear failed login attempts on success
                     clearFailedLogins(email);
-                    
-                    // Check if email is verified
+
                     if (!user.emailVerified) {
-                        signOut(auth);
+                        try {
+                            await sendEmailVerification(user);
+                            alert('Verification email sent! Please check your inbox.');
+                        } catch (verificationError) {
+                            console.error('❌ Failed to resend verification email:', verificationError);
+                            alert('We could not resend the verification email. Please try again later.');
+                        }
+
+                        await signOut(auth);
                         loginMessage.innerHTML = `
                             <strong>Email not verified!</strong><br>
-                            Please check your email and click the verification link before logging in.<br>
-                            <a href="#" id="resend-verification-login">Resend verification email</a>
+                            Please check your email and click the verification link before logging in.
                         `;
                         loginMessage.style.color = 'orange';
-                        
-                        // Add resend verification functionality
-                        const resendLink = document.getElementById('resend-verification-login');
-                        if (resendLink) {
-                            resendLink.addEventListener('click', (e) => {
-                                e.preventDefault();
-                                createUserWithEmailAndPassword(auth, email, password)
-                                    .then(() => {
-                                        // User already exists, just send verification
-                                        return sendEmailVerification(user);
-                                    })
-                                    .catch(error => {
-                                        if (error.code === 'auth/email-already-in-use') {
-                                            // User exists, send verification
-                                            return sendEmailVerification(user);
-                                        }
-                                        throw error;
-                                    })
-                                    .then(() => {
-                                        alert('Verification email sent!');
-                                    })
-                                    .catch(error => {
-                                        alert('Failed to send verification email: ' + error.message);
-                                    });
-                            });
-                        }
                         return;
                     }
-                    
-                         // Track successful login
-                         trackAuthEvent('login', 'email');
-                         trackBusinessMetric('user_login', 1, { method: 'email' });
-                         
-                         // Login successful
-                         loginMessage.textContent = 'Login successful!';
-                         loginMessage.style.color = 'green';
+
+                    trackAuthEvent('login', 'email');
+                    trackBusinessMetric('user_login', 1, { method: 'email' });
+
+                    loginMessage.textContent = 'Login successful!';
+                    loginMessage.style.color = 'green';
                 })
                 .catch(error => {
                     // Record failed login attempt
@@ -5946,58 +6079,6 @@ function setupSubscriptionListener(uid) {
             return;
         }
         
-        // Simple access control - only allow premium agents for paying users
-        const isLocked = pageId !== 'agent-1-page' && 
-                        currentUserSubscriptionTier !== 'complete_care';
-        
-        if (isLocked) {
-            // Check if payment is currently being processed
-            if (window.paymentProcessing) {
-                console.log('⏳ User tried to access premium agent during payment processing');
-                
-                // Show a specific message for users whose payment is being processed
-                const processingMessage = document.createElement('div');
-                processingMessage.className = 'payment-processing-message';
-                processingMessage.innerHTML = `
-                    <div class="payment-message-content">
-                        <div class="payment-message-icon">⏳</div>
-                        <h3>Payment Being Processed</h3>
-                        <p>Your premium access is being activated. Please wait a moment and try again, or refresh the page.</p>
-                        <div class="payment-message-actions">
-                            <button class="btn-secondary" onclick="this.parentElement.parentElement.parentElement.remove()">Dismiss</button>
-                            <button class="btn-primary" onclick="window.location.reload()">Refresh Page</button>
-                        </div>
-                    </div>
-                `;
-                
-                document.body.appendChild(processingMessage);
-                
-                // Auto-remove after 10 seconds
-                setTimeout(() => {
-                    if (processingMessage.parentNode) {
-                        processingMessage.remove();
-                    }
-                }, 10000);
-                
-                // Track this specific scenario
-                trackUserBehavior('premium_access_during_processing', { 
-                    feature: pageId,
-                    subscription_tier: currentUserSubscriptionTier,
-                    source: 'team_tabs'
-                });
-                return;
-            }
-            
-            // Track upgrade prompt
-            trackUserBehavior('upgrade_prompt', { 
-                feature: pageId,
-                subscription_tier: currentUserSubscriptionTier,
-                source: 'team_tabs'
-            });
-            showUpgradePrompt();
-            return;
-        }
-        
         // Track tab switch
         trackUserBehavior('team_tab_switched', {
             toAgent: agentName,
@@ -6177,4 +6258,44 @@ function setupSubscriptionListener(uid) {
     
     // Initialize Team Tabs when DOM is ready
     initializeTeamTabs();
+    
+    // Initialize FAQ Accordion
+    initializeFAQAccordion();
 });
+
+// FAQ Accordion Functionality
+function initializeFAQAccordion() {
+    const faqItems = document.querySelectorAll('.faq-item');
+    
+    faqItems.forEach(item => {
+        const question = item.querySelector('.faq-question');
+        const answer = item.querySelector('.faq-answer');
+        const toggle = item.querySelector('.faq-toggle');
+        
+        question.addEventListener('click', () => {
+            const isActive = item.classList.contains('active');
+            
+            // Close all other FAQ items
+            faqItems.forEach(otherItem => {
+                if (otherItem !== item) {
+                    otherItem.classList.remove('active');
+                    const otherAnswer = otherItem.querySelector('.faq-answer');
+                    const otherToggle = otherItem.querySelector('.faq-toggle');
+                    otherAnswer.style.maxHeight = '0';
+                    otherToggle.textContent = '+';
+                }
+            });
+            
+            // Toggle current item
+            if (isActive) {
+                item.classList.remove('active');
+                answer.style.maxHeight = '0';
+                toggle.textContent = '+';
+            } else {
+                item.classList.add('active');
+                answer.style.maxHeight = answer.scrollHeight + 'px';
+                toggle.textContent = '−';
+            }
+        });
+    });
+}

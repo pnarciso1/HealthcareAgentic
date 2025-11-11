@@ -22,32 +22,12 @@ service cloud.firestore {
     // SECURITY VALIDATIONS
     // ========================================
     
-    // Validate user data structure - allow creation during signup (email/password and Google)
+    // User documents - simplified rules for core functionality
     match /users/{userId} {
-      allow create: if request.auth != null && 
-        request.auth.uid == userId &&
-        request.resource.data.keys().hasAll(['email', 'createdAt']) &&
-        request.resource.data.email is string &&
-        request.resource.data.createdAt is timestamp &&
-        // Allow optional Google-specific fields
-        (request.resource.data.displayName is string || request.resource.data.displayName == null) &&
-        (request.resource.data.photoURL is string || request.resource.data.photoURL == null) &&
-        (request.resource.data.provider is string || request.resource.data.provider == null);
-      
-      allow update: if request.auth != null && 
-        request.auth.uid == userId &&
-        request.resource.data.keys().hasAll(['email']) &&
-        request.resource.data.email is string &&
-        // Allow updating Google-specific fields
-        (request.resource.data.displayName is string || request.resource.data.displayName == null) &&
-        (request.resource.data.photoURL is string || request.resource.data.photoURL == null) &&
-        (request.resource.data.provider is string || request.resource.data.provider == null) &&
-        // Allow Stripe-related fields for subscription management
-        (request.resource.data.stripeCustomerId is string || request.resource.data.stripeCustomerId == null) &&
-        (request.resource.data.subscriptionTier is string || request.resource.data.subscriptionTier == null) &&
-        (request.resource.data.stripeSubscriptionId is string || request.resource.data.stripeSubscriptionId == null);
-      
+      allow create: if request.auth != null && request.auth.uid == userId;
       allow read: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null && request.auth.uid == userId;
+      allow delete: if false; // Never allow deletion of user documents
     }
     
     // Validate analyses data structure
@@ -88,39 +68,23 @@ service cloud.firestore {
         request.auth.uid == userId &&
         request.resource.data.status in ['draft', 'submitted', 'in_progress', 'resolved'];
     }
+
+    // Case billing records - allow users to read their own case information
+    match /users/{userId}/cases/{caseId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+    }
     
     // ========================================
     // DATA INTEGRITY RULES
     // ========================================
     
-    // Ensure document IDs cannot be manipulated
-    match /users/{userId}/analyses/{analysisId} {
-      allow read, write: if request.auth != null && 
-        request.auth.uid == userId &&
-        analysisId.matches('^[a-zA-Z0-9_-]+$'); // Only allow valid document IDs
-    }
-    
-    // Ensure dispute IDs cannot be manipulated
-    match /users/{userId}/disputes/{disputeId} {
-      allow read, write: if request.auth != null && 
-        request.auth.uid == userId &&
-        disputeId.matches('^[a-zA-Z0-9_-]+$'); // Only allow valid dispute IDs
-    }
+    // Note: Document ID validation is handled in the specific collection rules above
     
     // ========================================
     // AUDIT AND COMPLIANCE RULES
     // ========================================
     
-    // Ensure timestamps are always present and valid
-    match /users/{userId}/{collection}/{documentId} {
-      allow create: if request.auth != null && 
-        request.auth.uid == userId &&
-        request.resource.data.created_at is timestamp;
-      
-      allow update: if request.auth != null && 
-        request.auth.uid == userId &&
-        request.resource.data.updated_at is timestamp;
-    }
+    // Note: Timestamp validation is handled in the specific collection rules above
     
     // ========================================
     // EMERGENCY ACCESS CONTROL
@@ -136,6 +100,7 @@ service cloud.firestore {
     // ========================================
     
     // By default, deny all access to any document not explicitly allowed
+    // NOTE: This rule must come AFTER all specific rules to avoid conflicts
     match /{document=**} {
       allow read, write: if false;
     }

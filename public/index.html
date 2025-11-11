@@ -4,12 +4,104 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MyCareClaim - Clarity and Compassion for Every Medical Bill</title>
+    <meta name="description" content="Get answers to the 10 most common medical billing and insurance questions. Learn how to dispute bills, understand deductibles, appeal denials, and protect yourself from surprise charges.">
+    <meta name="keywords" content="medical billing questions, insurance FAQ, medical bill disputes, health insurance help, medical billing errors, insurance appeals, balance billing, medical debt help">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='url(%23gradient)'/><defs><linearGradient id='gradient' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' style='stop-color:%234F46E5'/><stop offset='100%' style='stop-color:%237C3AED'/></linearGradient></defs><text x='16' y='22' font-family='Arial, sans-serif' font-size='14' font-weight='bold' text-anchor='middle' fill='white'>MC</text></svg>">
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://js.stripe.com/v3/"></script>
+    
+    <!-- FAQ Structured Data for Google -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+            {
+                "@type": "Question",
+                "name": "Why did I receive a medical bill after my insurance already paid?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Your insurance processing a claim doesn't mean they paid everything. You likely still owe money due to your deductible, coinsurance, or copay. Your insurance negotiated the price down (that's the 'allowed amount'), then determined what portion you're responsible for based on your plan. If you haven't met your deductible yet, you might pay 100% of the allowed amount even though insurance 'processed' the claim. Compare your bill to your EOB (Explanation of Benefits). The 'patient responsibility' amount should match your bill. If it doesn't, call both your insurance and the provider."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "What should I do if my medical bill seems wrong or too high?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Trust your instincts—up to 80% of medical bills contain errors. First, request an itemized bill. Call billing and ask for a complete line-by-line breakdown with dates, CPT codes, and individual prices. Then look for duplicate charges, services you didn't receive, or incorrect quantities. Compare your bill to your EOB. If your bill is higher than the 'patient responsibility' shown on your insurance's Explanation of Benefits, something's wrong. Dispute specific charges in writing. Don't pay amounts you're actively disputing."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "Why did my insurance deny my claim, and how can I appeal it?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Common denial reasons include coding errors, missing prior authorization, services deemed 'not medically necessary,' or out-of-network providers. The good news? About 80% of appeals succeed. To appeal: Get the specific denial reason from your EOB. Gather supporting documents (medical records, doctor's letter explaining why the service was necessary). Write a brief appeal letter with your policy number, claim number, and why the denial is wrong. Submit it according to the instructions on your EOB. Follow up weekly and don't give up after the first denial."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "What's the difference between in-network and out-of-network billing?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "In-network providers have contracts with your insurance. They accept negotiated rates and can't charge you more than your plan's cost-sharing (copay, coinsurance, deductible). Out-of-network providers have no contract. They can charge full price and 'balance bill' you for the difference between their charge and what insurance pays. This can cost you thousands more. Always verify providers are in-network before receiving care—including anesthesiologists, radiologists, and labs involved in your treatment."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "How do deductibles, copays, and coinsurance actually work?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Deductible: The amount you pay each year before insurance starts covering costs. Resets annually (usually January 1st). Copay: A fixed dollar amount you pay for specific services (like $30 for a doctor visit or $10 for a prescription). You pay this regardless of the actual cost. Coinsurance: A percentage you pay after meeting your deductible (like 20%). If a procedure costs $5,000 and you have 20% coinsurance, you pay $1,000. Out-of-pocket maximum: The most you'll pay in a year. Once you hit this, insurance covers 100% of covered services."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "What is balance billing, and is it legal?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Balance billing is when a provider bills you for the difference between what they charge and what your insurance pays. It can result in massive surprise bills. Under the No Surprises Act (2022), balance billing is illegal for: Emergency care at out-of-network facilities, Out-of-network providers at in-network facilities (like anesthesiologists during surgery), Any situation where you didn't have a choice and didn't consent in writing 72 hours in advance. If you receive an improper balance bill: Contact your insurance immediately, file a complaint at cms.gov/nosurprises, and dispute the charges in writing."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "Can I set up a payment plan or get financial assistance for my bill?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Yes. Almost every hospital offers payment plans, and many have financial assistance programs that can reduce or eliminate your bill. Payment plans: Call billing and ask what options they offer. Many provide interest-free plans for 12-24 months with monthly payments as low as $25-50. Financial assistance/charity care: Non-profit hospitals often forgive bills for patients earning below 2-4x the federal poverty level. Ask billing: 'Do you have a financial assistance policy? How do I apply?' You'll need to provide income documentation, but you could get 50-100% of your bill forgiven."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "Why did I get a medical bill months after my appointment?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "This is frustratingly common. Bills can arrive 3-12 months after your appointment due to: Insurance processing delays: Claims take 30-60 days to process normally, longer if there are errors or denials that need resubmission. Out-of-network providers you didn't know about: Anesthesiologists, radiologists, or labs often bill separately and months later. Provider billing delays: Some offices batch bills monthly or quarterly instead of sending them promptly. Verify the bill is legitimate by checking with your insurance. If it arrives more than 12 months after service, check if it's past your state's 'timely filing' deadline."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "How do I know what my insurance will cover before getting care?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Request a 'good faith estimate' from your provider before receiving care. Under federal law, they must provide cost estimates including all providers involved (surgeon, anesthesia, facility, labs). Verify network status: Call your insurance and ask: 'Is [provider name and location] in-network for my plan?' Do this before every appointment. Check if prior authorization is needed: Ask your insurance if your procedure requires approval beforehand. Get a benefits verification: For major procedures, call your insurance and ask them to verify coverage for the specific CPT codes and providers."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "Who do I contact if my provider and insurance company disagree about a bill?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "When your provider and insurance can't agree, you shouldn't have to pay for their dispute. First steps: Call your insurance and get the specific reason for the denial or partial payment, Call the provider and ask them to work directly with insurance to resolve it, Request a three-way call with both parties on the line. Escalate if needed: File a complaint with your state's Department of Insurance, Contact the patient advocate at both your insurance company and the provider, Request an independent external review (a neutral third party will make a binding decision). Put it in writing: Send a letter to both parties stating you're disputing the bill and requesting they resolve it without further billing you."
+                }
+            }
+        ]
+    }
+    </script>
 </head>
 <body>
 
@@ -34,8 +126,8 @@
         </header>
 
         <main id="landing-page-content" class="page-content">
-            <h1>Finally, Peace of Mind for Your Medical Bills</h1>
-            <p class="landing-subheader">Our AI-powered team — guided by real billing and insurance experts — helps you find answers, fix errors, and win back what's fair.</p>
+            <h1>Your Medical Bills Are Draining Your Bank Account and Your Energy. We Fix Both.</h1>
+            <p class="landing-subheader">We pair insurance experts with AI to take care of everything: the stress, the errors, and getting your money back.</p>
             
             <!-- The Problem Section -->
             <section class="about-section">
@@ -57,7 +149,6 @@
                     </div>
                 </div>
                 
-                <p class="problem-conclusion">MyCareClaim exists to change that.</p>
             </section>
             
             <!-- Meet Your Support Team Section -->
@@ -82,7 +173,7 @@
                     <div class="card-icon">
                         <img src="img/agents/Sam.png" alt="Sam - Bill & Claim Review Agent" class="agent-avatar">
                     </div>
-                    <div class="agent-badge premium">Premium</div>
+                    <div class="agent-badge free">Free</div>
                     <h3>Bill & Claim Review</h3>
                     <h5 class="agent-persona">Sam, your Bill & Claim Review Expert</h5>
                     <h4>See the Truth Behind Your Bills</h4>
@@ -92,7 +183,7 @@
                     <div class="card-icon">
                         <img src="img/agents/Riley.png" alt="Riley - Dispute Incorrect Bills Agent" class="agent-avatar">
                     </div>
-                    <div class="agent-badge premium">Premium</div>
+                    <div class="agent-badge case">$10 per case</div>
                     <h3>Dispute Incorrect Bills</h3>
                     <h5 class="agent-persona">Riley, your Dispute Incorrect Bills Analyst</h5>
                     <h4>Stand Up to Wrong Charges</h4>
@@ -102,7 +193,7 @@
                     <div class="card-icon">
                         <img src="img/agents/John.png" alt="John - Appeal Insurance Denials Agent" class="agent-avatar">
                     </div>
-                    <div class="agent-badge premium">Premium</div>
+                    <div class="agent-badge case">$10 per case</div>
                     <h3>Appeal Insurance Denials</h3>
                     <h5 class="agent-persona">John, your Insurance Appeal Specialist</h5>
                     <h4>Win Back the Coverage You Deserve</h4>
@@ -118,7 +209,7 @@
                             <img src="img/agents/Ava.png" alt="Ava - Quick Answers Specialist" class="widget-agent-avatar">
                         </div>
                         <h2>Ask Ava (No signup)</h2>
-                        <p>Ask a healthcare bill question. Get 2 free answers.</p>
+                        <p>Ask a healthcare bill question.</p>
                     </div>
                     
                     <div class="widget-content">
@@ -134,6 +225,161 @@
                         <div class="widget-footer">
                             <div id="quick-answers-counter" class="usage-counter">
                                 You have 2 free answers left.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- FAQ Section -->
+            <div class="faq-section">
+                <div class="container">
+                    <h2>10 Most Commonly Asked Questions About Medical Bills and Insurance</h2>
+                    <div class="faq-container">
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <h3>Why did I receive a medical bill after my insurance already paid?</h3>
+                                <span class="faq-toggle">+</span>
+                            </div>
+                            <div class="faq-answer">
+                                <p>Your insurance processing a claim doesn't mean they paid everything. You likely still owe money due to your deductible, coinsurance, or copay.</p>
+                                <p><strong>Here's what happened:</strong> Your insurance negotiated the price down (that's the "allowed amount"), then determined what portion you're responsible for based on your plan. If you haven't met your deductible yet, you might pay 100% of the allowed amount even though insurance "processed" the claim.</p>
+                                <p><strong>What to do:</strong> Compare your bill to your EOB (Explanation of Benefits). The "patient responsibility" amount should match your bill. If it doesn't, call both your insurance and the provider.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <h3>What should I do if my medical bill seems wrong or too high?</h3>
+                                <span class="faq-toggle">+</span>
+                            </div>
+                            <div class="faq-answer">
+                                <p>Trust your instincts—up to 80% of medical bills contain errors.</p>
+                                <p><strong>First, request an itemized bill.</strong> Call billing and ask for a complete line-by-line breakdown with dates, CPT codes, and individual prices. Then look for duplicate charges, services you didn't receive, or incorrect quantities.</p>
+                                <p><strong>Compare your bill to your EOB.</strong> If your bill is higher than the "patient responsibility" shown on your insurance's Explanation of Benefits, something's wrong.</p>
+                                <p><strong>Dispute specific charges in writing.</strong> Don't pay amounts you're actively disputing. List the exact charges you're questioning with dates and reasons, and send this to the billing office.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <h3>Why did my insurance deny my claim, and how can I appeal it?</h3>
+                                <span class="faq-toggle">+</span>
+                            </div>
+                            <div class="faq-answer">
+                                <p>Common denial reasons include coding errors, missing prior authorization, services deemed "not medically necessary," or out-of-network providers. The good news? About 80% of appeals succeed.</p>
+                                <p><strong>To appeal:</strong> Get the specific denial reason from your EOB. Gather supporting documents (medical records, doctor's letter explaining why the service was necessary). Write a brief appeal letter with your policy number, claim number, and why the denial is wrong. Submit it according to the instructions on your EOB.</p>
+                                <p><strong>Follow up weekly</strong> and don't give up after the first denial. Most insurance offers multiple appeal levels, including an external review by an independent third party.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <h3>What's the difference between in-network and out-of-network billing?</h3>
+                                <span class="faq-toggle">+</span>
+                            </div>
+                            <div class="faq-answer">
+                                <p><strong>In-network providers</strong> have contracts with your insurance. They accept negotiated rates and can't charge you more than your plan's cost-sharing (copay, coinsurance, deductible).</p>
+                                <p><strong>Out-of-network providers</strong> have no contract. They can charge full price and "balance bill" you for the difference between their charge and what insurance pays. This can cost you thousands more.</p>
+                                <p><strong>Example:</strong> An in-network MRI might cost you $180 (your 20% coinsurance of the $900 negotiated rate). The same MRI out-of-network could cost you $2,000 because the provider charges $2,500 and your insurance only covers a portion.</p>
+                                <p><strong>Always verify providers are in-network</strong> before receiving care—including anesthesiologists, radiologists, and labs involved in your treatment.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <h3>How do deductibles, copays, and coinsurance actually work?</h3>
+                                <span class="faq-toggle">+</span>
+                            </div>
+                            <div class="faq-answer">
+                                <p><strong>Deductible:</strong> The amount you pay each year before insurance starts covering costs. Resets annually (usually January 1st).</p>
+                                <p><strong>Copay:</strong> A fixed dollar amount you pay for specific services (like $30 for a doctor visit or $10 for a prescription). You pay this regardless of the actual cost.</p>
+                                <p><strong>Coinsurance:</strong> A percentage you pay after meeting your deductible (like 20%). If a procedure costs $5,000 and you have 20% coinsurance, you pay $1,000.</p>
+                                <p><strong>Out-of-pocket maximum:</strong> The most you'll pay in a year. Once you hit this, insurance covers 100% of covered services.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <h3>What is balance billing, and is it legal?</h3>
+                                <span class="faq-toggle">+</span>
+                            </div>
+                            <div class="faq-answer">
+                                <p>Balance billing is when a provider bills you for the difference between what they charge and what your insurance pays. It can result in massive surprise bills.</p>
+                                <p><strong>Under the No Surprises Act (2022), balance billing is illegal for:</strong></p>
+                                <ul>
+                                    <li>Emergency care at out-of-network facilities</li>
+                                    <li>Out-of-network providers at in-network facilities (like anesthesiologists during surgery)</li>
+                                    <li>Any situation where you didn't have a choice and didn't consent in writing 72 hours in advance</li>
+                                </ul>
+                                <p><strong>If you receive an improper balance bill:</strong> Contact your insurance immediately, file a complaint at cms.gov/nosurprises, and dispute the charges in writing. Don't pay it—paying can waive your right to dispute.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <h3>Can I set up a payment plan or get financial assistance for my bill?</h3>
+                                <span class="faq-toggle">+</span>
+                            </div>
+                            <div class="faq-answer">
+                                <p>Yes. Almost every hospital offers payment plans, and many have financial assistance programs that can reduce or eliminate your bill.</p>
+                                <p><strong>Payment plans:</strong> Call billing and ask what options they offer. Many provide interest-free plans for 12-24 months with monthly payments as low as $25-50. If the payment is too high, negotiate a lower monthly amount.</p>
+                                <p><strong>Financial assistance/charity care:</strong> Non-profit hospitals often forgive bills for patients earning below 2-4x the federal poverty level. Ask billing: "Do you have a financial assistance policy? How do I apply?" You'll need to provide income documentation, but you could get 50-100% of your bill forgiven.</p>
+                                <p><strong>Don't be embarrassed to ask</strong>—these programs exist to help, and millions use them.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <h3>Why did I get a medical bill months after my appointment?</h3>
+                                <span class="faq-toggle">+</span>
+                            </div>
+                            <div class="faq-answer">
+                                <p>This is frustratingly common. Bills can arrive 3-12 months after your appointment due to:</p>
+                                <ul>
+                                    <li><strong>Insurance processing delays:</strong> Claims take 30-60 days to process normally, longer if there are errors or denials that need resubmission.</li>
+                                    <li><strong>Out-of-network providers you didn't know about:</strong> Anesthesiologists, radiologists, or labs often bill separately and months later.</li>
+                                    <li><strong>Provider billing delays:</strong> Some offices batch bills monthly or quarterly instead of sending them promptly.</li>
+                                </ul>
+                                <p><strong>What to do:</strong> Verify the bill is legitimate by checking with your insurance. If it arrives more than 12 months after service, check if it's past your state's "timely filing" deadline—the provider may have missed their window to bill you. Don't ignore it, but don't automatically pay without verifying it's correct.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <h3>How do I know what my insurance will cover before getting care?</h3>
+                                <span class="faq-toggle">+</span>
+                            </div>
+                            <div class="faq-answer">
+                                <p><strong>Request a "good faith estimate"</strong> from your provider before receiving care. Under federal law, they must provide cost estimates including all providers involved (surgeon, anesthesia, facility, labs).</p>
+                                <p><strong>Verify network status:</strong> Call your insurance and ask: "Is [provider name and location] in-network for my plan?" Do this before every appointment.</p>
+                                <p><strong>Check if prior authorization is needed:</strong> Ask your insurance if your procedure requires approval beforehand. If it does, make sure your doctor submits for authorization—without it, your claim could be denied entirely.</p>
+                                <p><strong>Get a benefits verification:</strong> For major procedures, call your insurance and ask them to verify coverage for the specific CPT codes and providers. Get a reference number for this call.</p>
+                                <p><strong>Bottom line:</strong> You have the right to know what you'll pay before receiving care. If providers or insurers won't tell you, that's a red flag.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <h3>Who do I contact if my provider and insurance company disagree about a bill?</h3>
+                                <span class="faq-toggle">+</span>
+                            </div>
+                            <div class="faq-answer">
+                                <p>When your provider and insurance can't agree, you shouldn't have to pay for their dispute.</p>
+                                <p><strong>First steps:</strong></p>
+                                <ul>
+                                    <li>Call your insurance and get the specific reason for the denial or partial payment</li>
+                                    <li>Call the provider and ask them to work directly with insurance to resolve it</li>
+                                    <li>Request a three-way call with both parties on the line</li>
+                                </ul>
+                                <p><strong>Escalate if needed:</strong></p>
+                                <ul>
+                                    <li>File a complaint with your state's Department of Insurance</li>
+                                    <li>Contact the patient advocate at both your insurance company and the provider</li>
+                                    <li>Request an independent external review (a neutral third party will make a binding decision)</li>
+                                </ul>
+                                <p><strong>Put it in writing:</strong> Send a letter to both parties stating you're disputing the bill and requesting they resolve it without further billing you. Send via certified mail.</p>
+                                <p><strong>While the dispute is ongoing:</strong> Don't ignore the bill, but don't pay the disputed amount either. Request in writing that collections be held while the issue is resolved.</p>
                             </div>
                         </div>
                     </div>
@@ -390,88 +636,45 @@
         <main id="pricing-page" class="page-content hidden">
             <div class="page-header">
                 <h1>Finally — Relief from Medical Bills Without the Headache</h1>
-                <p>You shouldn't need a PhD to understand your medical bills or fight a denied claim. With MyCareClaim, our growing team of AI agents helps you simplify the most confusing, frustrating parts of healthcare — for less than a latte.</p>
-                <div class="pricing-value-prop">
-                    <h3>Start Free, Upgrade When You Need More</h3>
-                    <p><strong>Free Plan:</strong> Get instant answers to your medical billing questions with our Q&A Agent</p>
-                    <p><strong>Complete Care:</strong> Unlock document analysis, bill challenging, and denial fighting agents</p>
-                </div>
+                <p>You shouldn't need a PhD to understand your medical bills or fight a denied claim. With MyCareClaim, our AI agents help you untangle, analyze, and challenge your bills — quickly, clearly, and affordably.</p>
             </div>
-            <div class="pricing-container">
-                <h2>Choose Your Plan</h2>
-                <p class="pricing-subheader">Start free. Upgrade when you're ready. Cancel anytime.</p>
-                
-                <!-- Billing Toggle -->
-                <div class="billing-toggle">
-                    <span class="toggle-label">Monthly</span>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="billing-toggle">
-                        <span class="toggle-slider"></span>
-                    </label>
-                    <span class="toggle-label">Yearly <span class="save-text">(Save 17%)</span></span>
-                </div>
-                
-                <div class="pricing-grid">
-                    <!-- Starter Plan -->
-                    <div class="pricing-card starter">
-                        <h3>Starter</h3>
-                        <div class="price">$0 <span class="price-period">– Always Free</span></div>
-                        <button class="btn-secondary" data-plan="free">Get Started Free</button>
-                        <ul class="features-list">
-                            <li>Ask our Q&A Agent anything</li>
-                            <li>Explore how MyCareClaim works</li>
-                            <li>Perfect for quick questions</li>
+            <div class="pricing-copy">
+                <h2>Simple, Transparent Pricing</h2>
+                <p>No subscriptions. No surprise fees. Just help when you need it.</p>
+            </div>
+            <div class="pricing-columns">
+                <div class="pricing-column">
+                    <h3>Start Free — Pay Only When You File a Case</h3>
+                    <div class="bullet-block">
+                        <h4>✅ Free Tools for Everyone</h4>
+                        <ul>
+                            <li>Get instant answers to your billing or insurance questions</li>
+                            <li>Learn how to read your Explanation of Benefits (EOB)</li>
+                            <li>Access guides and resources to understand your medical bills</li>
                         </ul>
-                        <p class="feature-footnote">Upgrade for advanced agents and uploads</p>
-                        <p class="cta-reassurance">No credit card required</p>
                     </div>
-                    
-                    <!-- Complete Care Plan (Monthly) -->
-                    <div class="pricing-card popular monthly-plan">
-                        <div class="popular-badge">Most Popular</div>
-                        <h3>Complete Care</h3>
-                        <div class="price monthly-price">$7.99<span class="price-period">/month</span></div>
-                        <button class="btn-primary" data-plan="monthly">Get Started</button>
-                        <ul class="features-list">
-                            <li>Everything in Starter, plus:</li>
-                            <li>Bill & Claim Analysis Agent</li>
-                            <li>Challenge Bills Agent</li>
-                            <li>Fight Denials Agent</li>
-                            <li>Unlimited document uploads</li>
-                            <li>Priority email support</li>
+                    <div class="bullet-block">
+                        <h4>💡 Need to Dispute a Bill or Claim?</h4>
+                        <ul>
+                            <li>Use our AI Billing Dispute Agent or Insurance Claim Dispute Agent</li>
+                            <li>Get step-by-step help to build your case and file it confidently</li>
+                            <li>Flat $10 per case — no subscriptions, no hidden costs</li>
                         </ul>
-                        <p class="cta-reassurance">Cancel anytime</p>
-                    </div>
-                    
-                    <!-- Complete Care Plan (Yearly) -->
-                    <div class="pricing-card yearly-plan">
-                        <h3>Complete Care</h3>
-                        <div class="price yearly-price">$79<span class="price-period">/year</span></div>
-                        <div class="savings-label">(Save 17% with annual billing)</div>
-                        <button class="btn-primary" data-plan="yearly">Get Started</button>
-                        <ul class="features-list">
-                            <li>All Complete Care features</li>
-                            <li>Save with annual billing</li>
-                        </ul>
-                        <p class="cta-reassurance">Cancel anytime</p>
                     </div>
                 </div>
-            </div>
-            
-            <!-- Coupon Code Section -->
-            <div class="coupon-section-pricing">
-                <h3>🎫 Have a Coupon Code?</h3>
-                <p>Enter your coupon code to get special discounts on Complete Care plans.</p>
-                <div class="coupon-input-group-pricing">
-                    <input type="text" id="pricing-coupon-input" placeholder="Enter coupon code" maxlength="20">
-                    <button id="pricing-apply-coupon-btn" class="btn-secondary">Apply Coupon</button>
+                <div class="pricing-column">
+                    <h3>Why People Love MyCareClaim</h3>
+                    <ul class="love-list">
+                        <li>✔ Simple and transparent pricing</li>
+                        <li>✔ Real guidance without the jargon</li>
+                        <li>✔ You stay in control — we just make it easier</li>
+                    </ul>
+                    <div class="cta-card">
+                        <h4>Start Free → File When Ready</h4>
+                        <p>Get peace of mind without a monthly bill.</p>
+                        <button class="btn-primary" data-plan="free">Get Started Free</button>
+                    </div>
                 </div>
-                <div id="pricing-coupon-message" class="coupon-message-pricing"></div>
-            </div>
-            
-            <div class="cta-section">
-                <h2>🚀 Why Upgrade?</h2>
-                <p>✔ Save hours of time calling billing departments<br>✔ Understand what you actually owe (and what's a mistake)<br>✔ Get support appealing denied claims and overcharges</p>
             </div>
         </main>
 
@@ -510,7 +713,6 @@
                         </div>
                     </div>
                     
-                    <p class="problem-conclusion">MyCareClaim exists to change that.</p>
                 </section>
 
                 <!-- Our Approach Section -->
@@ -730,9 +932,14 @@
         </main>
 
         <footer class="landing-footer">
-            <a href="#">Terms of Service</a>
+            <a href="/terms.html">Terms of Service</a>
             <span>&copy; 2025 MyCareClaim. All rights reserved.</span>
-            <a href="#">Privacy Policy</a>
+            <a href="/privacy.html">Privacy Policy</a>
+            <a href="#">Accessibility</a>
+            <div class="footer-notes">
+                <span class="privacy-note">We respect your privacy: your data is protected and never sold. See our Privacy Policy for details on data collection, storage, and your rights.</span>
+                <span class="accessibility-note">Accessibility: We aim for WCAG 2.1 AA compliance. If you need assistance or accommodations, contact support@mycareclaim.com.</span>
+            </div>
         </footer>
     </section>
 
@@ -987,7 +1194,7 @@
                     <button class="agent-select-btn">Get Started</button>
                 </div>
                 <div class="agent-selection-card" data-page="agent-2-page">
-                    <div class="agent-badge premium">Premium</div>
+                    <div class="agent-badge free">Free</div>
                     <div class="agent-icon">
                         <img src="img/agents/Sam.png" alt="Sam - Bill & Claim Review Agent" class="agent-avatar">
                     </div>
@@ -1007,7 +1214,7 @@
                     <button class="agent-select-btn">Get Started</button>
                 </div>
                 <div class="agent-selection-card" data-page="agent-3-page">
-                    <div class="agent-badge premium">Premium</div>
+                    <div class="agent-badge case">$10 per case</div>
                     <div class="agent-icon">
                         <img src="img/agents/Riley.png" alt="Riley - Dispute Incorrect Bills Agent" class="agent-avatar">
                     </div>
@@ -1027,7 +1234,7 @@
                     <button class="agent-select-btn">Get Started</button>
                 </div>
                 <div class="agent-selection-card" data-page="agent-4-page">
-                    <div class="agent-badge premium">Premium</div>
+                    <div class="agent-badge case">$10 per case</div>
                     <div class="agent-icon">
                         <img src="img/agents/John.png" alt="John - Appeal Insurance Denials Agent" class="agent-avatar">
                     </div>
@@ -2045,4 +2252,5 @@
     <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
     <script type="module" src="app.js?v=7.7"></script>
 </body>
+</html>
 </html>
