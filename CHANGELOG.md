@@ -84,6 +84,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Email/password signup/login now reloads user state and resends verification emails without recreating accounts
 - Dispute amount tracking now persists and displays correct totals on the dashboard
 - Post-Stripes case payment flow handles success callbacks without throwing reference errors
+- Eliminated dispute status/note “network error” alerts by sharing dispute state globally and guarding modal refresh
+- Activity log now sorts newest events first so freshly added notes appear immediately
 
 ### Planned
 - Additional future agents (Marcus, Tara)

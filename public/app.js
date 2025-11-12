@@ -204,9 +204,14 @@ googleProvider.addScope('profile');
             if (!activity.length) {
                 return '<p class="placeholder">No activity yet. Updates will appear here.</p>';
             }
+            const sortedActivity = [...activity].sort((a, b) => {
+                const aTime = a.createdAt && typeof a.createdAt.getTime === 'function' ? a.createdAt.getTime() : 0;
+                const bTime = b.createdAt && typeof b.createdAt.getTime === 'function' ? b.createdAt.getTime() : 0;
+                return bTime - aTime;
+            });
             return `
                 <ul class="activity-log">
-                    ${activity.map(entry => {
+                    ${sortedActivity.map(entry => {
                         const createdAt = parseTimestamp(entry.created_at_iso || entry.created_at);
                         const typeLabel = entry.type === 'status_change' ? 'Status Update' :
                                           entry.type === 'follow_up' ? 'Follow-Up' : 'Note';
