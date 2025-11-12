@@ -308,9 +308,15 @@ googleProvider.addScope('profile');
                     if (typeof loadDisputeDashboard === 'function') {
                         await loadDisputeDashboard();
                     }
-                    const updated = userDisputes.find(d => d.id === disputeId);
-                    if (updated) {
-                        showDisputeDetail(updated);
+                    const disputesArray = Array.isArray(userDisputes) ? userDisputes : [];
+                    const updated = disputesArray.find(d => d.id === disputeId);
+                    const detailRenderer = typeof showDisputeDetail === 'function'
+                        ? showDisputeDetail
+                        : typeof window.showDisputeDetail === 'function'
+                            ? window.showDisputeDetail
+                            : null;
+                    if (updated && detailRenderer) {
+                        detailRenderer(updated);
                     }
                 } else {
                     const errorData = await response.json().catch(() => ({}));
@@ -1016,6 +1022,12 @@ class QuickAnswersWidget {
 // Initialize Quick Answers Widget when DOM is loaded
 let quickAnswersWidget;
 
+// --- Global Dispute State ---
+let userDisputes = [];
+let currentDisputeDocument = null;
+let currentDisputeAnalysis = null;
+let currentDisputeCaseId = null;
+
 // --- HELPER FUNCTIONS ---
 function showLoginForm() {
     // Reset signup form
@@ -1140,10 +1152,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('🚀 DOM Content Loaded - Initializing application...');
 
     // --- Dispute System State ---
-    let userDisputes = [];
-    let currentDisputeDocument = null;
-    let currentDisputeAnalysis = null;
-    let currentDisputeCaseId = null;
+    userDisputes = [];
+    currentDisputeDocument = null;
+    currentDisputeAnalysis = null;
+    currentDisputeCaseId = null;
 
     // --- Handle Google Sign-in Redirect Results ---
     try {
