@@ -17,8 +17,8 @@ npm run dev                           # Local Firebase emulator (firebase serve)
 # Deployment
 npm run build                         # Generate articles + deploy to Firebase
 npm run deploy                        # Deploy frontend only (firebase deploy)
-bash deploy-cloud-function.sh         # Deploy document analysis Cloud Function
-bash deploy-security-rules.sh         # Deploy Firestore security rules
+bash scripts/deploy-cloud-function.sh # Deploy document analysis Cloud Function
+bash scripts/deploy-security-rules.sh # Deploy Firestore security rules
 
 # Article generation
 npm run generate-articles             # Generate HTML articles from articles-data.json
@@ -79,10 +79,19 @@ Firebase config is hardcoded in app.js (public keys only).
 
 ## Testing
 
-No automated test framework. Test files (`test_*.js`) are browser console scripts:
+No automated test framework. Test files in `tests/browser/` are browser console scripts:
 1. Deploy to Firebase
 2. Open browser DevTools console
-3. Paste and execute test script
+3. Paste and execute test script from `tests/browser/`
+
+## Documentation
+
+Project documentation is in `docs/`:
+- `docs/architecture.md` - Platform architecture
+- `docs/deployment.md` - Deployment procedures
+- `docs/stripe-setup.md` - Stripe integration
+- `docs/security-rules.md` - Firestore security rules
+- `docs/archive/` - Historical fix reports and implementation docs
 
 ## Deployment Targets
 
