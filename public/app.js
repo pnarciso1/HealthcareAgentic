@@ -1033,6 +1033,9 @@ let currentDisputeDocument = null;
 let currentDisputeAnalysis = null;
 let currentDisputeCaseId = null;
 
+// Prevents onAuthStateChanged from resetting the modal UI during the email signup flow
+let signupInProgress = false;
+
 // --- HELPER FUNCTIONS ---
 function showLoginForm() {
     // Reset signup form
@@ -3921,7 +3924,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (user) {
             // Check if email is verified
             if (!user.emailVerified) {
-                signOut(auth);
+                // Don't sign out mid-flight during the signup flow — let signup complete first
+                if (!signupInProgress) {
+                    signOut(auth);
+                }
                 return;
             }
             
@@ -3957,6 +3963,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             
         } else {
+            // Skip UI reset if signup flow is managing its own verification screen
+            if (signupInProgress) {
+                return;
+            }
+
             console.log('👋 User logged out, cleaning up listeners');
             
             authSection.classList.remove('hidden');
@@ -4936,338 +4947,264 @@ function setupSubscriptionListener(uid) {
 
     // --- EVENT LISTENERS ---
     if (signupForm) {
-        signupForm.addEventListener('submit', (e) => {
+        signupForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = signupForm['signup-email'].value;
+            const email = signupForm['signup-email'].value.trim();
             const password = signupForm['signup-password'].value;
-            
-            // Validate password before attempting to create account
+
             const passwordValidation = validatePassword(password);
             if (!passwordValidation.isValid) {
                 signupMessage.textContent = passwordValidation.errors[0];
                 signupMessage.style.color = 'red';
                 return;
             }
-            
-            // Set a timeout to ensure UI updates even if promise chain gets stuck
-            const signupTimeout = setTimeout(() => {
-                console.log('⏰ Signup timeout reached - forcing UI update...');
-                signupMessage.innerHTML = `
-                    <strong>🎉 Account created successfully!</strong><br>
-                    <strong>📧 Verification email should be on its way!</strong><br>
-                    <strong>⚠️ Email verification is required to activate your account.</strong><br>
-                    Please check your email and click the verification link.<br>
-                    <em>Note: There was a timeout in the signup flow, but your account is active.</em>
-                `;
-                signupMessage.style.color = 'orange';
-                signupForm.style.display = 'none';
-            }, 15000); // 15 second timeout (increased from 10s)
-            
-            createUserWithEmailAndPassword(auth, email, password)
-                .then((userCredential) => {
-                    const user = userCredential.user;
-                    console.log('✅ Firebase Auth signup successful for:', user.uid);
-                    
-                    // Store user data in Firestore first - using minimal required fields
-                    console.log('💾 Attempting Firestore write...');
-                    const userDocRef = doc(db, 'users', userCredential.user.uid);
-                    
-                    // Use only the fields explicitly allowed by Firestore rules
-                    const userData = {
+
+            signupInProgress = true;
+            signupMessage.textContent = 'Creating account...';
+            signupMessage.style.color = '#aaa';
+
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                // Write user record to Firestore (best-effort)
+                try {
+                    const userDocRef = doc(db, 'users', user.uid);
+                    await setDoc(userDocRef, {
                         email: email,
                         createdAt: serverTimestamp(),
                         provider: 'email'
-                    };
-                    
-                    console.log('📝 Writing user data:', userData);
-                    
-                    console.log('🚀 About to call setDoc...');
-                    
-                    // Create a timeout promise for Firestore write
-                    const firestoreTimeout = new Promise((_, reject) => {
-                        setTimeout(() => {
-                            reject(new Error('Firestore write timeout'));
-                        }, 5000); // 5 second timeout for Firestore
                     });
-                    
-                    return Promise.race([
-                        setDoc(userDocRef, userData),
-                        firestoreTimeout
-                    ]).then(() => {
-                        console.log('✅ Firestore write successful - inside .then()');
-                        
-                        // Send email verification after Firestore write - this is mandatory
-                        console.log('📧 Sending email verification...');
-                        
-                        return sendEmailVerification(user).then(() => {
-                            console.log('✅ Email verification sent successfully');
-                            return Promise.resolve();
-                        }).catch((emailError) => {
-                            console.error('❌ Email verification failed:', emailError);
-                            console.error('Email error code:', emailError.code);
-                            console.error('Email error message:', emailError.message);
-                            
-                            // If email verification fails, we should still show the user a message
-                            // but indicate that verification is required
-                            console.log('⚠️ Email verification failed - user needs to verify manually');
-                            
-                            // Don't throw - continue with success flow but show warning
-                            return Promise.resolve();
-                        });
-                    })
-                        .catch((firestoreWriteError) => {
-                            console.error('❌ Firestore write failed in .then():', firestoreWriteError);
-                            console.error('Firestore write error details:', {
-                                code: firestoreWriteError.code,
-                                message: firestoreWriteError.message,
-                                stack: firestoreWriteError.stack
-                            });
-                            
-                            // Even if Firestore fails, try to send email verification
-                            console.log('🔄 Firestore failed, attempting email verification anyway...');
-                            return sendEmailVerification(user).then(() => {
-                                console.log('✅ Email verification sent despite Firestore failure');
-                                return Promise.resolve();
-                            }).catch((emailError) => {
-                                console.error('❌ Email verification also failed:', emailError);
-                                return Promise.resolve();
-                            });
-                        })
-                        .catch((firestoreError) => {
-                            console.error('❌ Firestore write failed:', firestoreError);
-                            console.error('Firestore error code:', firestoreError.code);
-                            console.error('Firestore error message:', firestoreError.message);
-                            console.error('Full Firestore error object:', firestoreError);
-                            
-                            // Try to continue with success flow even if Firestore fails
-                            console.log('⚠️ Attempting to continue with success flow despite Firestore error...');
-                            return Promise.resolve();
-                        })
-                             .then(() => {
-                                 console.log('🎯 Reached the main success flow .then() - this should execute!');
-                                 // Clear the timeout since we've reached success
-                                 clearTimeout(signupTimeout);
-                                 console.log('✅ Starting success flow...');
-                                 
-                                 // Track successful signup with comprehensive error handling
-                                 console.log('🔍 Testing analytics tracking...');
-                                 
-                                 try {
-                                     console.log('📊 Calling trackAuthEvent...');
-                                     trackAuthEvent('sign_up', 'email');
-                                     console.log('✅ Analytics tracking successful');
-                                 } catch (analyticsError) {
-                                     console.error('❌ Analytics tracking failed:', analyticsError);
-                                     console.log('⚠️ Analytics failed but signup continues...');
-                                 }
-                                 
-                                 try {
-                                     console.log('📈 Calling trackBusinessMetric...');
-                                     trackBusinessMetric('user_signup', 1, { method: 'email' });
-                                     console.log('✅ Business metrics tracking successful');
-                                 } catch (metricsError) {
-                                     console.error('❌ Business metrics tracking failed:', metricsError);
-                                     console.log('⚠️ Business metrics failed but signup continues...');
-                                 }
-                                 
-                                 console.log('🎯 Analytics testing complete - proceeding with UI updates...');
-                                 
-                                 // Show success message with email verification info (if not already shown)
-                                 if (signupMessage.style.color !== 'orange') {
-                                     console.log('✅ Showing success message...');
-                                     signupMessage.innerHTML = `
-                                         <strong>🎉 Account created successfully!</strong><br>
-                                         <strong>📧 Verification email sent!</strong><br>
-                                         <strong>⚠️ Email verification is required to activate your account.</strong><br>
-                                         Please check your email and click the verification link.<br>
-                                         <em>Check your spam folder if you don't see the email.</em>
-                                     `;
-                                     signupMessage.style.color = 'green';
-                                 }
-                            
-                            // Hide signup form and show email verification message
-                            console.log('✅ Hiding signup form...');
-                            signupForm.style.display = 'none';
-                            
-                            console.log('✅ Creating verification message...');
-                            const verificationMessage = document.createElement('div');
-                            verificationMessage.className = 'verification-message';
-                            verificationMessage.innerHTML = `
-                                <h3>📧 Verify Your Email</h3>
-                                <p>We've sent a verification link to <strong>${email}</strong></p>
-                                <p>Click the link in the email to activate your account.</p>
-                                <p><small>Haven't received the email? <a href="#" id="resend-verification">Resend verification email</a></small></p>
-                                <div class="verification-actions">
-                                    <button class="btn-secondary" id="back-to-login-btn">Back to Login</button>
-                                    <button class="btn-primary" id="continue-to-app-btn">Continue to App</button>
-                                </div>
-                            `;
-                            
-                            console.log('✅ Appending verification message...');
-                            signupFormWrapper.appendChild(verificationMessage);
-                            console.log('✅ UI update complete!');
-                            
-                            // Add resend verification functionality
-                            const resendLink = verificationMessage.querySelector('#resend-verification');
-                            resendLink.addEventListener('click', (e) => {
-                                e.preventDefault();
-                                sendEmailVerification(user)
-                                    .then(() => {
-                                        alert('Verification email sent again!');
-                                    })
-                                    .catch(error => {
-                                        alert('Failed to resend verification email: ' + error.message);
-                                    });
-                            });
-                            
-                            // Add button functionality
-                            const backToLoginBtn = verificationMessage.querySelector('#back-to-login-btn');
-                            const continueToAppBtn = verificationMessage.querySelector('#continue-to-app-btn');
-                            
-                            if (backToLoginBtn) {
-                                backToLoginBtn.addEventListener('click', () => {
-                                    console.log('🔄 Switching to login form...');
-                                    showLoginForm();
-                                });
-                            }
-                            
-                            if (continueToAppBtn) {
-                                continueToAppBtn.addEventListener('click', () => {
-                                    console.log('🚀 Continuing to app...');
-                                    hideModal();
-                                });
-                            }
-                    });
-                })
-                .catch((successFlowError) => {
-                    console.error('❌ Error in success flow:', successFlowError);
-                    console.error('Success flow error details:', {
-                        message: successFlowError.message,
-                        code: successFlowError.code,
-                        stack: successFlowError.stack
-                    });
-                    
-                    // Show a fallback success message even if the success flow fails
-                    console.log('🆘 Showing fallback success message...');
-                    signupMessage.innerHTML = `
-                        <strong>🎉 Account created successfully!</strong><br>
-                        <strong>📧 Verification email should be on its way!</strong><br>
-                        <strong>⚠️ Email verification is required to activate your account.</strong><br>
-                        Please check your email and click the verification link.<br>
-                        <em>Note: There was an issue with the UI flow, but your account is active.</em>
-                    `;
-                    signupMessage.style.color = 'orange';
-                    
-                    // Hide the signup form
-                    console.log('🆘 Hiding signup form...');
-                    signupForm.style.display = 'none';
-                    
-                    // Force a manual email verification attempt
-                    console.log('🆘 Attempting manual email verification...');
-                    sendEmailVerification(user).then(() => {
-                        console.log('✅ Manual email verification successful');
-                    }).catch((emailError) => {
-                        console.error('❌ Manual email verification failed:', emailError);
-                    });
-                })
-                .catch(error => {
-                    console.error('Full signup error object:', error);
-                    console.error('Error code:', error.code);
-                    console.error('Error message:', error.message);
-                    
-                    if (error.code === 'auth/email-already-in-use') {
-                        signupMessage.textContent = 'This email address is already in use. Please log in or use a different email.';
-                    } else if (error.code === 'auth/account-exists-with-different-credential') {
-                        signupMessage.textContent = 'This email is already registered with Google. Please use "Sign up with Google" instead.';
-                    } else if (error.code === 'auth/weak-password') {
-                        signupMessage.textContent = 'Password is too weak. Please choose a stronger password.';
-                    } else if (error.code === 'auth/invalid-email') {
-                        signupMessage.textContent = 'Invalid email address. Please enter a valid email.';
-                    } else {
-                        console.error('Signup error:', error);
-                        signupMessage.textContent = error.message || 'An error occurred during signup. Please try again.';
+                } catch (firestoreError) {
+                    console.error('Firestore write failed (non-fatal):', firestoreError);
+                }
+
+                // Send verification email
+                let verificationEmailSent = false;
+                let verificationEmailError = null;
+                try {
+                    await sendEmailVerification(user);
+                    verificationEmailSent = true;
+                } catch (emailError) {
+                    console.error('sendEmailVerification failed:', emailError.code, emailError.message);
+                    verificationEmailError = emailError;
+                }
+
+                try {
+                    trackAuthEvent('sign_up', 'email');
+                    trackBusinessMetric('user_signup', 1, { method: 'email' });
+                } catch (_) {}
+
+                // Show verification UI — onAuthStateChanged is suppressed by signupInProgress
+                signupForm.style.display = 'none';
+                signupMessage.textContent = '';
+
+                const verificationMessage = document.createElement('div');
+                verificationMessage.className = 'verification-message';
+
+                const heading = document.createElement('h3');
+                heading.textContent = 'Verify Your Email';
+                verificationMessage.appendChild(heading);
+
+                const para1 = document.createElement('p');
+                if (verificationEmailSent) {
+                    para1.textContent = 'We\'ve sent a verification link to ' + email;
+                } else {
+                    para1.textContent = 'Account created, but we could not send the verification email.';
+                    para1.style.color = 'orange';
+                    if (verificationEmailError) {
+                        const errNote = document.createElement('small');
+                        errNote.style.display = 'block';
+                        errNote.style.color = '#aaa';
+                        errNote.textContent = 'Error: ' + (verificationEmailError.code || verificationEmailError.message);
+                        para1.appendChild(errNote);
                     }
-                    signupMessage.style.color = 'red';
+                }
+                verificationMessage.appendChild(para1);
+
+                const para2 = document.createElement('p');
+                para2.textContent = verificationEmailSent
+                    ? 'Click the link in the email to activate your account. Check spam if you don\'t see it.'
+                    : 'Use the resend link below to try again, or contact support@mycareclaim.com.';
+                verificationMessage.appendChild(para2);
+
+                const resendPara = document.createElement('p');
+                const small = document.createElement('small');
+                const resendLink = document.createElement('a');
+                resendLink.href = '#';
+                resendLink.id = 'resend-verification';
+                resendLink.textContent = 'Resend verification email';
+                resendLink.addEventListener('click', async (ev) => {
+                    ev.preventDefault();
+                    try {
+                        await sendEmailVerification(user);
+                        alert('Verification email sent again!');
+                    } catch (err) {
+                        alert('Failed to resend verification email: ' + err.message);
+                    }
                 });
+                small.appendChild(document.createTextNode('Haven\'t received the email? '));
+                small.appendChild(resendLink);
+                resendPara.appendChild(small);
+                verificationMessage.appendChild(resendPara);
+
+                const actions = document.createElement('div');
+                actions.className = 'verification-actions';
+
+                const backBtn = document.createElement('button');
+                backBtn.className = 'btn-secondary';
+                backBtn.textContent = 'Back to Login';
+                backBtn.addEventListener('click', () => {
+                    signupInProgress = false;
+                    verificationMessage.remove();
+                    signupForm.style.display = '';
+                    showLoginForm();
+                });
+
+                const continueBtn = document.createElement('button');
+                continueBtn.className = 'btn-primary';
+                continueBtn.textContent = 'I\'ll verify later';
+                continueBtn.addEventListener('click', () => {
+                    signupInProgress = false;
+                    hideModal();
+                });
+
+                actions.appendChild(backBtn);
+                actions.appendChild(continueBtn);
+                verificationMessage.appendChild(actions);
+
+                signupFormWrapper.appendChild(verificationMessage);
+
+                // Sign out the unverified user now that the verification screen is showing.
+                // onAuthStateChanged null branch is still guarded by signupInProgress = true.
+                try { await signOut(auth); } catch (_) {}
+
+            } catch (error) {
+                signupInProgress = false;
+                if (error.code === 'auth/email-already-in-use') {
+                    signupMessage.textContent = 'This email is already in use. Please log in or use a different email.';
+                } else if (error.code === 'auth/account-exists-with-different-credential') {
+                    signupMessage.textContent = 'This email is registered with Google. Please use "Sign up with Google".';
+                } else if (error.code === 'auth/weak-password') {
+                    signupMessage.textContent = 'Password is too weak. Please choose a stronger password.';
+                } else if (error.code === 'auth/invalid-email') {
+                    signupMessage.textContent = 'Invalid email address. Please enter a valid email.';
+                } else {
+                    signupMessage.textContent = error.message || 'An error occurred during signup. Please try again.';
+                }
+                signupMessage.style.color = 'red';
+            }
         });
     }
 
     if (loginForm) {
-        loginForm.addEventListener('submit', (e) => {
+        loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = loginForm['login-email'].value;
+            const email = loginForm['login-email'].value.trim();
             const password = loginForm['login-password'].value;
-            
-            // Check if account is locked
+
             if (isAccountLocked(email)) {
                 const remainingTime = getLockoutTimeRemaining(email);
                 const minutes = Math.ceil(remainingTime / (60 * 1000));
-                loginMessage.textContent = `Account temporarily locked due to too many failed attempts. Try again in ${minutes} minutes.`;
+                loginMessage.textContent = `Account temporarily locked. Try again in ${minutes} minutes.`;
                 loginMessage.style.color = 'red';
                 return;
             }
-            
-            signInWithEmailAndPassword(auth, email, password)
-                .then(async (userCredential) => {
-                    const user = userCredential.user;
 
-                    // Refresh user to pick up any recent verification
+            loginMessage.textContent = 'Logging in...';
+            loginMessage.style.color = '#aaa';
+
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                try { await user.reload(); } catch (_) {}
+
+                clearFailedLogins(email);
+
+                if (!user.emailVerified) {
+                    // Send a fresh verification email automatically
+                    let emailSent = false;
                     try {
-                        await user.reload();
-                    } catch (reloadError) {
-                        console.error('❌ Error reloading user:', reloadError);
+                        await sendEmailVerification(user);
+                        emailSent = true;
+                    } catch (verificationError) {
+                        console.error('sendEmailVerification failed:', verificationError);
                     }
 
-                    // Clear failed login attempts on success
-                    clearFailedLogins(email);
+                    await signOut(auth);
 
-                    if (!user.emailVerified) {
+                    // Build inline "not verified" message with a resend link
+                    loginMessage.textContent = '';
+
+                    const msgStrong = document.createElement('strong');
+                    msgStrong.textContent = 'Email not verified!';
+                    loginMessage.appendChild(msgStrong);
+
+                    loginMessage.appendChild(document.createElement('br'));
+
+                    const sentLine = document.createTextNode(
+                        emailSent
+                            ? 'A new verification link has been sent — please check your inbox (and spam folder).'
+                            : 'We could not send a verification email. Use the link below to try again.'
+                    );
+                    loginMessage.appendChild(sentLine);
+
+                    loginMessage.appendChild(document.createElement('br'));
+
+                    const resendLink = document.createElement('a');
+                    resendLink.href = '#';
+                    resendLink.textContent = 'Resend verification email';
+                    resendLink.style.color = '#7c6fff';
+                    resendLink.addEventListener('click', async (ev) => {
+                        ev.preventDefault();
+                        resendLink.textContent = 'Sending...';
                         try {
-                            await sendEmailVerification(user);
-                            alert('Verification email sent! Please check your inbox.');
-                        } catch (verificationError) {
-                            console.error('❌ Failed to resend verification email:', verificationError);
-                            alert('We could not resend the verification email. Please try again later.');
+                            // Re-sign in briefly just to call sendEmailVerification
+                            const tempCred = await signInWithEmailAndPassword(auth, email, password);
+                            await sendEmailVerification(tempCred.user);
+                            await signOut(auth);
+                            resendLink.textContent = 'Sent! Check your inbox.';
+                        } catch (err) {
+                            resendLink.textContent = 'Failed — please try again later.';
+                            console.error('Resend failed:', err);
                         }
+                    });
+                    loginMessage.appendChild(resendLink);
+                    loginMessage.style.color = 'orange';
+                    return;
+                }
 
-                        await signOut(auth);
-                        loginMessage.innerHTML = `
-                            <strong>Email not verified!</strong><br>
-                            Please check your email and click the verification link before logging in.
-                        `;
-                        loginMessage.style.color = 'orange';
-                        return;
-                    }
-
+                try {
                     trackAuthEvent('login', 'email');
                     trackBusinessMetric('user_login', 1, { method: 'email' });
+                } catch (_) {}
 
-                    loginMessage.textContent = 'Login successful!';
-                    loginMessage.style.color = 'green';
-                })
-                .catch(error => {
-                    // Record failed login attempt
-                    recordFailedLogin(email);
-                    
-                    if (error.code === 'auth/user-not-found') {
-                        loginMessage.textContent = 'No account found with this email address.';
-                    } else if (error.code === 'auth/wrong-password') {
-                        const remaining = getRemainingAttempts(email);
-                        if (remaining > 0) {
-                            loginMessage.textContent = `Incorrect password. ${remaining} attempts remaining.`;
-                        } else {
-                            const lockoutTime = Math.ceil(SECURITY_CONFIG.LOCKOUT_DURATION / (60 * 1000));
-                            loginMessage.textContent = `Too many failed attempts. Account locked for ${lockoutTime} minutes.`;
-                        }
-                    } else if (error.code === 'auth/invalid-email') {
-                        loginMessage.textContent = 'Invalid email address.';
-                    } else if (error.code === 'auth/user-disabled') {
-                        loginMessage.textContent = 'This account has been disabled.';
+                loginMessage.textContent = 'Login successful!';
+                loginMessage.style.color = 'green';
+
+            } catch (error) {
+                recordFailedLogin(email);
+
+                if (error.code === 'auth/user-not-found') {
+                    loginMessage.textContent = 'No account found with this email address.';
+                } else if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                    const remaining = getRemainingAttempts(email);
+                    if (remaining > 0) {
+                        loginMessage.textContent = `Incorrect password. ${remaining} attempts remaining.`;
                     } else {
-                        loginMessage.textContent = error.message;
+                        const lockoutTime = Math.ceil(SECURITY_CONFIG.LOCKOUT_DURATION / (60 * 1000));
+                        loginMessage.textContent = `Too many failed attempts. Account locked for ${lockoutTime} minutes.`;
                     }
-                    loginMessage.style.color = 'red';
-                });
+                } else if (error.code === 'auth/invalid-email') {
+                    loginMessage.textContent = 'Invalid email address.';
+                } else if (error.code === 'auth/user-disabled') {
+                    loginMessage.textContent = 'This account has been disabled.';
+                } else {
+                    loginMessage.textContent = error.message || 'Login failed. Please try again.';
+                }
+                loginMessage.style.color = 'red';
+            }
         });
     }
 
