@@ -4664,6 +4664,11 @@ function setupSubscriptionListener(uid) {
                 disputeBtn.classList.add('btn-small');
                 disputeBtn.textContent = 'Dispute Charges';
                 disputeBtn.addEventListener('click', () => {
+                    if (currentUserSubscriptionTier !== 'complete_care') {
+                        showUpgradePrompt();
+                        return;
+                    }
+
                     // Store document context for Agent 3
                     sessionStorage.setItem('agent3_document_context', JSON.stringify({
                         documentId: analysis.id,
@@ -4671,17 +4676,12 @@ function setupSubscriptionListener(uid) {
                         source: 'agent2_document_card',
                         timestamp: new Date().toISOString()
                     }));
-                    
-                    // Ensure app container is visible
+
                     const appContainer = document.getElementById('app-container');
-                    if (appContainer) {
-                        appContainer.classList.remove('hidden');
-                    }
-                    
-                    // Navigate to Agent 3
+                    if (appContainer) appContainer.classList.remove('hidden');
+
                     showAppPage('agent-3-page');
-                    
-                    // Show success message
+
                     setTimeout(() => {
                         alert('Successfully transferred to Dispute Resolution Agent! Your document context has been preserved.');
                     }, 100);
@@ -6003,26 +6003,26 @@ function setupSubscriptionListener(uid) {
         const documentId = qaModal.dataset.documentId;
         const documentData = JSON.parse(qaModal.dataset.documentData || '{}');
         
+        if (currentUserSubscriptionTier !== 'complete_care') {
+            closeQAModal();
+            showUpgradePrompt();
+            return;
+        }
+
         // Store in session storage for Agent 3
         sessionStorage.setItem('agent3_document_context', JSON.stringify({
             documentId: documentId,
             documentData: documentData,
             source: 'agent2_qa'
         }));
-        
-        // Close Q&A modal
+
         closeQAModal();
-        
-        // Ensure app container is visible
+
         const appContainer = document.getElementById('app-container');
-        if (appContainer) {
-            appContainer.classList.remove('hidden');
-        }
-        
-        // Navigate to Agent 3
+        if (appContainer) appContainer.classList.remove('hidden');
+
         showAppPage('agent-3-page');
-        
-        // Show success message
+
         setTimeout(() => {
             alert('Successfully transferred to Dispute Resolution Agent! Your document context has been preserved.');
         }, 100);
