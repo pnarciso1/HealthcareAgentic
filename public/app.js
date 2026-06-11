@@ -2431,20 +2431,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             const pageId = card.getAttribute('data-page');
             const isPremiumAgent = pageId === 'agent-3-page' || pageId === 'agent-4-page';
-            
-            console.log('🎯 Card clicked:', {
-                pageId: pageId,
-                subscriptionTier: currentUserSubscriptionTier,
-                isPremiumAgent: isPremiumAgent,
-                timestamp: new Date().toISOString(),
-                userAuthenticated: !!auth.currentUser,
-                userId: auth.currentUser?.uid
-            });
-            
-            trackFeatureUsage('agent_selection', { 
+
+            trackFeatureUsage('agent_selection', {
                 agent: pageId,
                 subscription_tier: currentUserSubscriptionTier
             });
+
+            if (isPremiumAgent && currentUserSubscriptionTier !== 'complete_care') {
+                showUpgradePrompt();
+                return;
+            }
             showAppPage(pageId);
         });
         
@@ -2452,16 +2448,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         const selectBtn = card.querySelector('.agent-select-btn');
         if (selectBtn) {
             selectBtn.addEventListener('click', (e) => {
-                e.stopPropagation(); // Prevent card click
-                
+                e.stopPropagation();
                 const pageId = card.getAttribute('data-page');
-                
-                console.log('🎯 Get Started button clicked:', {
-                    pageId: pageId,
-                    subscriptionTier: currentUserSubscriptionTier,
-                    buttonDisabled: selectBtn.disabled
-                });
-                
+                const isPremium = pageId === 'agent-3-page' || pageId === 'agent-4-page';
+                if (isPremium && currentUserSubscriptionTier !== 'complete_care') {
+                    showUpgradePrompt();
+                    return;
+                }
                 showAppPage(pageId);
             });
         }
