@@ -55,177 +55,18 @@ YOUR_DOMAIN = os.getenv('FRONTEND_DOMAIN', 'http://localhost:8000')  # Use envir
 
 vertexai.init(project=os.getenv('GCP_PROJECT_ID'), location="us-central1")
 
-# --- IMPORTANT: Add your Stripe Price IDs from your .env file ---
-PRICE_IDS = {
-    'monthly': os.getenv('STRIPE_MONTHLY_PRICE_ID'),
-    'yearly': os.getenv('STRIPE_YEARLY_PRICE_ID')
-}
-
-CASE_PRICE_ID = os.getenv('STRIPE_CASE_PRICE_ID')
+# --- STRIPE ANNUAL SUBSCRIPTION PRICE ---
+ANNUAL_PRICE_ID = os.getenv('STRIPE_ANNUAL_PRICE_ID')
+CASE_PRICE_ID = os.getenv('STRIPE_CASE_PRICE_ID')  # Legacy: kept for existing paid cases
 CASE_SUPPORTED_TYPES = {'dispute', 'appeal'}
 
-# Debug logging for environment variables
+# Debug logging for essential environment variables
 print("=== ENVIRONMENT VARIABLES DEBUG ===")
-print(f"STRIPE_MONTHLY_PRICE_ID: {os.getenv('STRIPE_MONTHLY_PRICE_ID')}")
-print(f"STRIPE_YEARLY_PRICE_ID: {os.getenv('STRIPE_YEARLY_PRICE_ID')}")
+print(f"STRIPE_ANNUAL_PRICE_ID: {ANNUAL_PRICE_ID}")
 print(f"STRIPE_SECRET_KEY: {os.getenv('STRIPE_SECRET_KEY', 'NOT_SET')[:20]}...")
 print(f"FRONTEND_DOMAIN: {os.getenv('FRONTEND_DOMAIN', 'NOT_SET')}")
 print(f"GCP_PROJECT_ID: {os.getenv('GCP_PROJECT_ID', 'NOT_SET')}")
-print(f"STRIPE_CASE_PRICE_ID: {CASE_PRICE_ID}")
 print("=== END ENVIRONMENT DEBUG ===")
-
-# --- STRIPE PROMOTION CONFIGURATION ---
-# Define the FRIENDSFOREVER promotion code
-PROMOTION_CONFIG = {
-    'FRIENDSFOREVER': {
-        'name': 'Friends Forever - 100% Off',
-        'stripe_promo_id': 'promo_1S09wVH0nOEj29DyKss41Ysu',  # Full Stripe promo code from dashboard
-        'percent_off': 100,  # 100% off
-        'applicable_plans': ['yearly'],  # Only valid for yearly plan
-        'description': 'Get your yearly membership for free forever!'
-    },
-    'ENTERPRISE75': {
-        'name': 'Enterprise Discount Trial - 75% Off',
-        'stripe_promo_id': 'promo_1S5AX8H0nOEj29DyOgfPFYaV',  # Full Stripe promo code from dashboard
-        'percent_off': 75,  # 75% off
-        'applicable_plans': ['monthly', 'yearly'],  # Valid for both monthly and yearly plans
-        'duration_months': 12,  # 12 months duration
-        'description': '75% off for first 12 months'
-    }
-}
-
-# --- PROMOTION VALIDATION FUNCTIONS ---
-def get_stripe_promotion(coupon_code):
-    """
-    Get the Stripe promotion using the promo code.
-    Since API key has limited permissions, we'll trust our configuration.
-    
-    Args:
-        coupon_code (str): The coupon code to get
-    
-    Returns:
-        dict: Mock promotion object that works with our system
-    """
-    if coupon_code not in PROMOTION_CONFIG:
-        return None
-    
-    promo_config = PROMOTION_CONFIG[coupon_code]
-    
-    # Since API key has limited permissions, we'll trust our configuration
-    # and create a mock promotion object that works with our system
-    print(f"✅ Using configuration-based validation for {coupon_code}")
-    return {
-        'id': promo_config['stripe_promo_id'],
-        'active': True,
-        'max_redemptions': None,  # Unlimited
-        'times_redeemed': 0,
-        'expires_at': None,
-        'coupon': {
-            'id': promo_config['stripe_promo_id']  # Use promo ID as coupon ID
-        }
-    }
-
-def validate_coupon_code(coupon_code, plan):
-    """
-    Validate a coupon code using Stripe's promotion system.
-    
-    Args:
-        coupon_code (str): The coupon code to validate
-        plan (str): The plan being purchased ('monthly' or 'yearly')
-    
-    Returns:
-        dict: Coupon information if valid, None if invalid
-    """
-    print(f"=== VALIDATE_COUPON_CODE DEBUG ===")
-    print(f"Input: coupon_code='{coupon_code}', plan='{plan}'")
-    
-    if not coupon_code:
-        print("❌ No coupon code provided")
-        return None
-    
-    coupon_code = coupon_code.upper().strip()
-    print(f"Normalized coupon code: '{coupon_code}'")
-    
-    # Check if coupon exists in our configuration
-    if coupon_code not in PROMOTION_CONFIG:
-        print(f"❌ Coupon '{coupon_code}' not found in PROMOTION_CONFIG")
-        print(f"Available coupons: {list(PROMOTION_CONFIG.keys())}")
-        return None
-    
-    promo_config = PROMOTION_CONFIG[coupon_code]
-    print(f"✅ Found coupon config: {promo_config}")
-    
-    # Check if plan is applicable
-    if 'applicable_plans' in promo_config and plan not in promo_config['applicable_plans']:
-        print(f"❌ Plan '{plan}' not applicable for coupon '{coupon_code}'")
-        print(f"Applicable plans: {promo_config['applicable_plans']}")
-        return None
-    
-    print(f"✅ Plan '{plan}' is applicable for coupon '{coupon_code}'")
-    
-    # Get Stripe promotion
-    print(f"🔍 Retrieving Stripe promotion for '{coupon_code}'...")
-    promotion = get_stripe_promotion(coupon_code)
-    if not promotion:
-        print(f"❌ Failed to retrieve Stripe promotion for '{coupon_code}'")
-        return None
-    
-    print(f"✅ Retrieved Stripe promotion: {promotion['id']}")
-    print(f"Promotion active: {promotion['active']}")
-    print(f"Promotion max redemptions: {promotion['max_redemptions']}")
-    print(f"Promotion times redeemed: {promotion['times_redeemed']}")
-    
-    # Check if promotion is active
-    if not promotion['active']:
-        print(f"❌ Promotion '{coupon_code}' is not active")
-        return None
-    
-    # Check redemption limits
-    if promotion['max_redemptions'] and promotion['times_redeemed'] >= promotion['max_redemptions']:
-        print(f"❌ Promotion '{coupon_code}' has reached max redemptions ({promotion['times_redeemed']}/{promotion['max_redemptions']})")
-        return None
-    
-    print(f"✅ Promotion '{coupon_code}' is valid and available")
-    
-    # Return coupon information
-    return {
-        'code': coupon_code,
-        'name': promo_config['name'],
-        'description': promo_config['description'],
-        'percent_off': promo_config['percent_off'],
-        'applicable_plans': promo_config['applicable_plans'],
-        'stripe_promo_id': promo_config['stripe_promo_id'],
-        'stripe_promotion': promotion
-    }
-
-def get_coupon_usage_count(coupon_code):
-    """
-    Get the current usage count for a coupon code from Stripe.
-    
-    Args:
-        coupon_code (str): The coupon code to check
-    
-    Returns:
-        int: Current usage count
-    """
-    try:
-        promotion = get_stripe_promotion(coupon_code)
-        if promotion:
-            return promotion.times_redeemed or 0
-        return 0
-    except Exception as e:
-        print(f"Error getting coupon usage count: {e}")
-        return 0
-
-def increment_coupon_usage(coupon_code):
-    """
-    Note: With Stripe promotions, usage is automatically tracked.
-    This function is kept for compatibility but doesn't need to do anything.
-    
-    Args:
-        coupon_code (str): The coupon code to increment
-    """
-    print(f"Coupon {coupon_code} usage tracked automatically by Stripe")
 
 
 def get_or_create_stripe_customer(uid, email):
@@ -1159,108 +1000,51 @@ def stripe_webhook_test():
 @app.route('/create-checkout-session', methods=['POST'])
 def create_checkout_session():
     print("=== STRIPE CHECKOUT DEBUG START ===")
-    print(f"Request headers: {dict(request.headers)}")
-    
+
     auth_header = request.headers.get('Authorization')
     if not auth_header or not auth_header.startswith('Bearer '):
-        print("ERROR: Authorization header missing or invalid")
         return jsonify({'error': 'Authorization header is missing or invalid'}), 401
-    
+
     token = auth_header.split('Bearer ')[1]
-    print(f"Token received: {token[:20]}...")
-    
     decoded_token = verify_firebase_token(token)
     if not decoded_token:
-        print("ERROR: Token verification failed")
         return jsonify({'error': 'Invalid or expired authentication token'}), 401
 
     uid = decoded_token.get('user_id') or decoded_token.get('uid')
     email = decoded_token.get('email', '')
-    print(f"User ID: {uid}")
-    print(f"Email: {email}")
-    
-    data = request.get_json()
-    plan = data.get('plan') # 'monthly' or 'yearly'
-    coupon_code = data.get('couponCode') # Optional: coupon code
-    print(f"Plan requested: {plan}")
-    print(f"Coupon code: {coupon_code}")
-    
-    price_id = PRICE_IDS.get(plan)
-    print(f"Price ID: {price_id}")
-    print(f"All Price IDs: {PRICE_IDS}")
-    print(f"Stripe API Key: {stripe.api_key[:10]}..." if stripe.api_key else "Stripe API Key: NOT SET")
+    print(f"Checkout requested by user: {uid}")
 
-    # Validate price ID configuration
-    if not price_id:
-        error_msg = f"Invalid plan specified: {plan}. Available plans: {list(PRICE_IDS.keys())}"
-        print(f"ERROR: {error_msg}")
-        return jsonify({'error': error_msg}), 400
-    
-    # Check if price ID is None (environment variable not loaded)
-    if price_id is None:
-        error_msg = f"Price ID for plan '{plan}' is not configured. Please check environment variables."
-        print(f"ERROR: {error_msg}")
+    if not ANNUAL_PRICE_ID:
+        print("ERROR: STRIPE_ANNUAL_PRICE_ID is not configured")
         return jsonify({'error': 'Service configuration error. Please contact support.'}), 500
 
     try:
-        print("Attempting to access or create Stripe customer...")
         stripe_customer_id, user_ref = get_or_create_stripe_customer(uid, email)
 
-        # Validate and apply coupon if provided
-        discount_info = None
-        if coupon_code:
-            discount_info = validate_coupon_code(coupon_code, plan)
-            if discount_info:
-                print(f"Applying coupon: {coupon_code} - {discount_info['description']}")
-                # Don't increment usage yet - wait for successful payment
-            else:
-                print(f"Coupon code {coupon_code} is invalid or expired.")
-                return jsonify({'error': f'Invalid or expired coupon code: {coupon_code}'}), 400
-
-        print("Creating Stripe checkout session...")
-        # Create checkout session parameters
-        session_params = {
-            'customer': stripe_customer_id,
-            'line_items': [{'price': price_id, 'quantity': 1}],
-            'mode': 'subscription',
-            'success_url': YOUR_DOMAIN + '?payment=success',
-            'cancel_url': YOUR_DOMAIN + '?payment=cancelled',
-            'payment_method_collection': 'if_required',  # Only require payment method if needed
-            'metadata': {
-                'firebase_uid': uid,
-                'coupon_code': coupon_code if coupon_code else None
-            }
-        }
-        
-        # Apply coupon discount if valid
-        if discount_info:
-            # Use discounts parameter for Stripe checkout session
-            promo_id = discount_info['stripe_promo_id']
-            session_params['discounts'] = [{'promotion_code': promo_id}]
-            print(f"Stripe promotion {coupon_code} applied to checkout session with promotion ID: {promo_id}")
-        
-        # Create the checkout session
-        checkout_session = stripe.checkout.Session.create(**session_params)
-        print(f"Checkout session created successfully: {checkout_session.id}")
+        checkout_session = stripe.checkout.Session.create(
+            customer=stripe_customer_id,
+            line_items=[{'price': ANNUAL_PRICE_ID, 'quantity': 1}],
+            mode='subscription',
+            success_url=YOUR_DOMAIN + '?payment=success',
+            cancel_url=YOUR_DOMAIN + '?payment=cancelled',
+            metadata={'firebase_uid': uid}
+        )
+        print(f"Checkout session created: {checkout_session.id}")
         print("=== STRIPE CHECKOUT DEBUG END ===")
         return jsonify({'id': checkout_session.id})
     except Exception as e:
         print(f"ERROR in Stripe checkout: {str(e)}")
-        print(f"Error type: {type(e)}")
         import traceback
-        print(f"Full traceback: {traceback.format_exc()}")
+        print(traceback.format_exc())
         print("=== STRIPE CHECKOUT DEBUG END ===")
-        
-        # Provide more specific error messages based on error type
+
         if "No such price" in str(e):
             error_msg = "Invalid price configuration. Please contact support."
         elif "Invalid API Key" in str(e):
             error_msg = "Payment service configuration error. Please contact support."
-        elif "customer" in str(e).lower():
-            error_msg = "Customer setup error. Please try again or contact support."
         else:
             error_msg = "Unable to create checkout session. Please try again."
-            
+
         return jsonify({'error': error_msg}), 500
 
 @app.route('/api/cases/create', methods=['POST'])
@@ -1389,46 +1173,6 @@ def cancel_case():
 
     return jsonify({'caseId': case_id, 'status': 'cancelled'})
 
-@app.route('/validate-coupon', methods=['POST'])
-def validate_coupon():
-    """Validate a coupon code for a specific plan"""
-    print("=== COUPON VALIDATION ENDPOINT CALLED ===")
-    try:
-        data = request.get_json()
-        if not data:
-            return jsonify({'error': 'No JSON data provided'}), 400
-            
-        coupon_code = data.get('couponCode')
-        plan = data.get('plan') # 'monthly' or 'yearly'
-
-        if not coupon_code or not plan:
-            return jsonify({'error': 'Coupon code and plan are required'}), 400
-
-        print(f"Validating coupon: {coupon_code} for plan: {plan}")
-        discount_info = validate_coupon_code(coupon_code, plan)
-
-        if discount_info:
-            print(f"Coupon {coupon_code} is valid for {plan} plan. Discount: {discount_info['description']}")
-            return jsonify({
-                'couponCode': coupon_code,
-                'plan': plan,
-                'discountType': 'percentage',
-                'discountAmount': discount_info['percent_off'],
-                'applicablePlans': discount_info['applicable_plans'],
-                'maxUses': discount_info['stripe_promotion']['max_redemptions'] if discount_info['stripe_promotion']['max_redemptions'] else 'unlimited',
-                'expiresAt': discount_info['stripe_promotion']['expires_at'] if discount_info['stripe_promotion']['expires_at'] else 'N/A',
-                'description': discount_info['description']
-            })
-        else:
-            print(f"Coupon {coupon_code} is invalid or expired for {plan} plan.")
-            return jsonify({'error': 'Invalid or expired coupon code'}), 400
-            
-    except Exception as e:
-        print(f"ERROR in coupon validation: {str(e)}")
-        import traceback
-        print(f"Full traceback: {traceback.format_exc()}")
-        return jsonify({'error': 'Internal server error during coupon validation'}), 500
-
 @app.route('/stripe-webhook', methods=['POST'])
 def stripe_webhook():
     print("=== STRIPE WEBHOOK DEBUG START ===")
@@ -1464,18 +1208,15 @@ def stripe_webhook():
         if not firebase_uid:
             print("WARNING: No firebase_uid found in session metadata")
         elif mode == 'subscription':
-            coupon_code = metadata.get('coupon_code')
             try:
                 user_ref = db.collection('users').document(firebase_uid)
                 user_ref.update({
                     'subscriptionTier': 'complete_care',
-                    'stripeSubscriptionId': session.get('subscription')
+                    'stripeSubscriptionId': session.get('subscription'),
+                    'cancellation_scheduled': False,
+                    'cancels_at': None
                 })
-                print(f"Successfully updated subscription for user {firebase_uid}")
-
-                if coupon_code:
-                    increment_coupon_usage(coupon_code)
-                    print(f"Coupon {coupon_code} usage incremented for user {firebase_uid}")
+                print(f"Successfully activated subscription for user {firebase_uid}")
             except Exception as e:
                 print(f"ERROR updating user subscription: {e}")
         elif mode == 'payment':
@@ -1497,8 +1238,151 @@ def stripe_webhook():
                 except Exception as e:
                     print(f"ERROR updating case payment status: {e}")
 
+    elif event['type'] == 'customer.subscription.deleted':
+        sub = event['data']['object']
+        sub_id = sub.get('id')
+        print(f"Processing subscription deletion: {sub_id}")
+        try:
+            users = db.collection('users').where('stripeSubscriptionId', '==', sub_id).stream()
+            for user_doc in users:
+                user_doc.reference.update({
+                    'subscriptionTier': 'free',
+                    'stripeSubscriptionId': None,
+                    'cancellation_scheduled': False,
+                    'cancels_at': None
+                })
+                print(f"Subscription cancelled — downgraded user {user_doc.id} to free")
+        except Exception as e:
+            print(f"ERROR processing subscription deletion: {e}")
+
+    elif event['type'] == 'customer.subscription.updated':
+        sub = event['data']['object']
+        sub_id = sub.get('id')
+        status = sub.get('status')
+        cancel_at_period_end = sub.get('cancel_at_period_end', False)
+        cancel_at = sub.get('cancel_at')
+        print(f"Processing subscription update: {sub_id}, status={status}, cancel_at_period_end={cancel_at_period_end}")
+        try:
+            users = db.collection('users').where('stripeSubscriptionId', '==', sub_id).stream()
+            for user_doc in users:
+                if status in ('canceled', 'unpaid', 'past_due', 'incomplete_expired'):
+                    user_doc.reference.update({
+                        'subscriptionTier': 'free',
+                        'stripeSubscriptionId': None,
+                        'cancellation_scheduled': False,
+                        'cancels_at': None
+                    })
+                    print(f"Subscription status '{status}' — downgraded user {user_doc.id} to free")
+                elif status == 'active' and cancel_at_period_end:
+                    from datetime import datetime, timezone
+                    cancels_at_dt = datetime.fromtimestamp(cancel_at, tz=timezone.utc).isoformat() if cancel_at else None
+                    user_doc.reference.update({
+                        'cancellation_scheduled': True,
+                        'cancels_at': cancels_at_dt
+                    })
+                    print(f"Cancellation scheduled for user {user_doc.id} at {cancels_at_dt}")
+                elif status == 'active' and not cancel_at_period_end:
+                    user_doc.reference.update({
+                        'subscriptionTier': 'complete_care',
+                        'cancellation_scheduled': False,
+                        'cancels_at': None
+                    })
+                    print(f"Subscription reactivated for user {user_doc.id}")
+        except Exception as e:
+            print(f"ERROR processing subscription update: {e}")
+
     print("=== STRIPE WEBHOOK DEBUG END ===")
     return 'Success', 200
+
+
+@app.route('/api/subscription/cancel', methods=['POST'])
+def cancel_subscription():
+    """Schedule a subscription to cancel at the end of the current billing period."""
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return jsonify({'error': 'Authorization header is missing or invalid'}), 401
+
+    token = auth_header.split('Bearer ')[1]
+    decoded_token = verify_firebase_token(token)
+    if not decoded_token:
+        return jsonify({'error': 'Invalid or expired authentication token'}), 401
+
+    uid = decoded_token.get('user_id') or decoded_token.get('uid')
+    print(f"Cancellation requested by user: {uid}")
+
+    try:
+        user_ref = db.collection('users').document(uid)
+        user_doc = user_ref.get()
+        if not user_doc.exists:
+            return jsonify({'error': 'User not found'}), 404
+
+        user_data = user_doc.to_dict()
+        sub_id = user_data.get('stripeSubscriptionId')
+
+        if not sub_id or sub_id == 'grandfathered':
+            return jsonify({'error': 'No active subscription found'}), 400
+
+        sub = stripe.Subscription.modify(sub_id, cancel_at_period_end=True)
+        from datetime import datetime, timezone
+        cancels_at = datetime.fromtimestamp(sub.current_period_end, tz=timezone.utc).isoformat()
+
+        user_ref.update({
+            'cancellation_scheduled': True,
+            'cancels_at': cancels_at
+        })
+        print(f"Cancellation scheduled for user {uid} at {cancels_at}")
+        return jsonify({'success': True, 'cancels_at': cancels_at})
+    except Exception as e:
+        print(f"ERROR cancelling subscription for user {uid}: {e}")
+        import traceback
+        print(traceback.format_exc())
+        return jsonify({'error': 'Unable to cancel subscription. Please try again.'}), 500
+
+
+@app.route('/api/admin/grandfather-case-users', methods=['POST'])
+def grandfather_case_users():
+    """One-time migration: grant complete_care to users who paid per-case."""
+    admin_secret = request.headers.get('X-Admin-Secret')
+    expected_secret = os.getenv('ADMIN_SECRET')
+    if not expected_secret or admin_secret != expected_secret:
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    upgraded = []
+    skipped = []
+    errors = []
+
+    try:
+        all_users = db.collection('users').stream()
+        for user_doc in all_users:
+            uid = user_doc.id
+            user_data = user_doc.to_dict()
+            if user_data.get('subscriptionTier') == 'complete_care':
+                skipped.append(uid)
+                continue
+            try:
+                cases = user_doc.reference.collection('cases') \
+                    .where('paymentStatus', '==', 'paid').limit(1).stream()
+                has_paid_case = any(True for _ in cases)
+                if has_paid_case:
+                    user_doc.reference.update({
+                        'subscriptionTier': 'complete_care',
+                        'stripeSubscriptionId': 'grandfathered',
+                        'cancellation_scheduled': False,
+                        'cancels_at': None
+                    })
+                    upgraded.append(uid)
+                    print(f"Grandfathered user {uid}")
+            except Exception as e:
+                errors.append({'uid': uid, 'error': str(e)})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+    return jsonify({
+        'upgraded': upgraded,
+        'skipped_already_subscribed': skipped,
+        'errors': errors
+    })
+
 
 @app.route('/ask-agent1', methods=['POST'])
 def ask_agent1():

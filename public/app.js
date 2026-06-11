@@ -1679,19 +1679,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </ul>
                 </div>
                 
-                <!-- Coupon Code Section -->
-                <div class="coupon-section">
-                    <h4>🎫 Have a Coupon Code?</h4>
-                    <div class="coupon-input-group">
-                        <input type="text" id="coupon-code-input" placeholder="Enter coupon code" maxlength="20">
-                        <button id="apply-coupon-btn" class="btn-secondary">Apply</button>
-                    </div>
-                    <div id="coupon-message" class="coupon-message"></div>
-                </div>
-                
                 <div class="upgrade-prompt-actions">
-                    <button class="btn-primary upgrade-now-btn">Start Saving Today - $7.99/month</button>
-                    <button class="btn-secondary upgrade-yearly-btn">Best Value - $79/year (Save $17)</button>
+                    <button class="btn-primary upgrade-annual-btn">Subscribe — $45/year</button>
                     <button class="btn-text close-upgrade-prompt-btn">Continue with Free Plan</button>
                 </div>
                 <div class="upgrade-prompt-guarantee">
@@ -1702,118 +1691,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         document.body.appendChild(upgradePrompt);
         
-        // Add event listeners
         const closeButtons = upgradePrompt.querySelectorAll('.close-upgrade-prompt, .close-upgrade-prompt-btn');
-        const upgradeNowBtn = upgradePrompt.querySelector('.upgrade-now-btn');
-        const upgradeYearlyBtn = upgradePrompt.querySelector('.upgrade-yearly-btn');
-        const applyCouponBtn = upgradePrompt.querySelector('#apply-coupon-btn');
-        const couponInput = upgradePrompt.querySelector('#coupon-code-input');
-        const couponMessage = upgradePrompt.querySelector('#coupon-message');
-        
-        // Coupon validation functionality
-        let currentCouponCode = null;
-        
-        applyCouponBtn.addEventListener('click', async () => {
-            const couponCode = couponInput.value.trim().toUpperCase();
-            if (!couponCode) {
-                showCouponMessage('Please enter a coupon code', 'error');
-                return;
-            }
-            
-            try {
-                applyCouponBtn.textContent = 'Validating...';
-                applyCouponBtn.disabled = true;
-                
-                const user = auth.currentUser;
-                if (!user) {
-                    showCouponMessage('Please log in to use coupon codes', 'error');
-                    return;
-                }
-                
-                const idToken = await user.getIdToken();
-                const response = await fetch(`${BACKEND_URL}/validate-coupon`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${idToken}`
-                    },
-                    body: JSON.stringify({ 
-                        couponCode: couponCode,
-                        plan: 'yearly' // Default to yearly for validation, but coupon will work for both plans
-                    })
-                });
-                
-                if (response.ok) {
-                    const couponData = await response.json();
-                    currentCouponCode = couponCode;
-                    
-                    // Create plan-specific success message
-                    const planText = couponData.plan === 'yearly' ? 'yearly' : 'monthly';
-                    const discountText = couponData.discountAmount === 100 ? 'FREE' : `${couponData.discountAmount}% off`;
-                    const successMessage = `✅ ${discountText} ${planText} plan - ${couponData.description}`;
-                    showCouponMessage(successMessage, 'success');
-                    
-                    // Update yearly button to show discount
-                    if (couponData.discountAmount === 100) {
-                        upgradeYearlyBtn.textContent = '🎫 FREE with Coupon!';
-                        upgradeYearlyBtn.classList.add('coupon-applied');
-                    }
-                } else {
-                    const errorData = await response.json();
-                    showCouponMessage(errorData.error || 'Invalid coupon code', 'error');
-                    currentCouponCode = null;
-                }
-            } catch (error) {
-                console.error('Coupon validation error:', error);
-                showCouponMessage('Error validating coupon. Please try again.', 'error');
-                currentCouponCode = null;
-            } finally {
-                applyCouponBtn.textContent = 'Apply';
-                applyCouponBtn.disabled = false;
-            }
-        });
-        
-        function showCouponMessage(message, type) {
-            if (type === 'success') {
-                // Add dismiss button for success messages
-                couponMessage.innerHTML = `
-                    <span>${message}</span>
-                    <button class="coupon-dismiss-btn" onclick="this.parentElement.style.display='none'" title="Dismiss">×</button>
-                `;
-            } else {
-                couponMessage.textContent = message;
-            }
-            couponMessage.className = `coupon-message ${type}`;
-            couponMessage.style.display = 'block';
-            
-            // Keep success messages visible until user takes action
-            // Success messages will persist to show coupon is applied
-        }
-        
-        // Handle coupon input enter key
-        couponInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                applyCouponBtn.click();
-            }
-        });
-        
+        const upgradeAnnualBtn = upgradePrompt.querySelector('.upgrade-annual-btn');
+
         closeButtons.forEach(btn => {
             btn.addEventListener('click', () => {
                 document.body.removeChild(upgradePrompt);
             });
         });
-        
-        upgradeNowBtn.addEventListener('click', () => {
+
+        upgradeAnnualBtn.addEventListener('click', () => {
             document.body.removeChild(upgradePrompt);
-            initiateStripeCheckout('monthly', currentCouponCode);
+            initiateStripeCheckout();
         });
-        
-        upgradeYearlyBtn.addEventListener('click', () => {
-            document.body.removeChild(upgradePrompt);
-            initiateStripeCheckout('yearly', currentCouponCode);
-        });
-        
-        // Close on outside click
+
         upgradePrompt.addEventListener('click', (e) => {
             if (e.target === upgradePrompt) {
                 document.body.removeChild(upgradePrompt);
@@ -2115,28 +2006,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     };
 
-    const initiateStripeCheckout = (plan, couponCode = null) => {
-        // Show free subscription modal if FRIENDSFOREVER coupon is used
-        if (couponCode === 'FRIENDSFOREVER') {
-            showFreeSubscriptionModal(() => {
-                proceedToCheckout(plan, couponCode);
-            });
-            return;
-        }
-        
-        // Show enterprise modal if ENTERPRISE75 coupon is used
-        if (couponCode === 'ENTERPRISE75') {
-            showEnterprise75Modal(plan, () => {
-                proceedToCheckout(plan, couponCode);
-            });
-            return;
-        }
-        
-        proceedToCheckout(plan, couponCode);
+    const initiateStripeCheckout = () => {
+        proceedToCheckout();
     };
 
-    const proceedToCheckout = (plan, couponCode = null) => {
-        // Show loading state
+    const proceedToCheckout = () => {
         const loadingMessage = document.createElement('div');
         loadingMessage.id = 'checkout-loading';
         loadingMessage.style.cssText = `
@@ -2164,18 +2038,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.body.appendChild(loadingMessage);
 
         auth.currentUser.getIdToken().then(idToken => {
-            const requestBody = { plan: plan };
-            if (couponCode) {
-                requestBody.couponCode = couponCode;
-            }
-            
             fetch(`${BACKEND_URL}/create-checkout-session`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${idToken}`
                 },
-                body: JSON.stringify(requestBody)
+                body: JSON.stringify({ plan: 'yearly' })
             })
             .then(response => {
                 if (!response.ok) {
@@ -2184,11 +2053,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return response.json();
             })
             .then(session => {
-                // Track checkout initiation
-                trackBusinessMetric('checkout_initiated', 1, { 
-                    price_id: plan,
-                    price_type: plan
-                });
+                trackBusinessMetric('checkout_initiated', 1, { price_type: 'yearly' });
                 
                 // Remove loading message before redirect
                 const loadingEl = document.getElementById('checkout-loading');
@@ -2269,33 +2134,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         reviewsCtaButton.addEventListener('click', () => showModal('signup'));
     }
     
-    // Billing Toggle Functionality
-    const billingToggle = document.getElementById('billing-toggle');
-    const monthlyPlan = document.querySelector('.monthly-plan');
-    const yearlyPlan = document.querySelector('.yearly-plan');
-    
-    if (billingToggle && monthlyPlan && yearlyPlan) {
-        billingToggle.addEventListener('change', function() {
-            if (this.checked) {
-                // Show yearly plan, hide monthly
-                monthlyPlan.style.display = 'none';
-                yearlyPlan.style.display = 'block';
-                yearlyPlan.classList.add('highlighted');
-                monthlyPlan.classList.remove('highlighted');
-            } else {
-                // Show monthly plan, hide yearly
-                monthlyPlan.style.display = 'block';
-                yearlyPlan.style.display = 'none';
-                monthlyPlan.classList.add('highlighted');
-                yearlyPlan.classList.remove('highlighted');
-            }
-        });
-        
-        // Initialize with monthly plan visible
-        monthlyPlan.style.display = 'block';
-        yearlyPlan.style.display = 'none';
-        monthlyPlan.classList.add('highlighted');
-    }
     loginCtaButton.addEventListener('click', () => showModal('login'));
     askAgentCtaButton.addEventListener('click', () => {
         if (auth.currentUser) {
@@ -4331,6 +4169,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         
         console.log('✅ Premium agent card visual states updated');
+        updateCancelSubscriptionButtons();
     }
 
     // --- Simple Subscription Check ---
@@ -6555,10 +6394,121 @@ function setupSubscriptionListener(uid) {
                     source: 'action_bar',
                     subscription_tier: currentUserSubscriptionTier
                 });
-                // Handle logout directly
                 signOut(auth).catch(error => console.error("Logout error:", error));
             });
         });
+    }
+
+    function updateCancelSubscriptionButtons() {
+        const isSubscribed = currentUserSubscriptionTier === 'complete_care';
+        document.querySelectorAll('.action-bar').forEach(bar => {
+            let existingBtn = bar.querySelector('#action-cancel-subscription');
+            if (isSubscribed && !existingBtn) {
+                const btn = document.createElement('button');
+                btn.id = 'action-cancel-subscription';
+                btn.className = 'action-btn cancel-sub-btn';
+                const icon = document.createElement('span');
+                icon.className = 'action-icon';
+                icon.textContent = '⚙️';
+                const label = document.createElement('span');
+                label.className = 'action-text';
+                label.textContent = 'Manage Subscription';
+                btn.appendChild(icon);
+                btn.appendChild(label);
+                btn.addEventListener('click', showCancelSubscriptionUI);
+                bar.insertBefore(btn, bar.querySelector('#action-logout'));
+            } else if (!isSubscribed && existingBtn) {
+                existingBtn.remove();
+            }
+        });
+    }
+
+    async function showCancelSubscriptionUI() {
+        const user = auth.currentUser;
+        if (!user) return;
+
+        let userData = null;
+        try {
+            const userDoc = await getDoc(doc(db, 'users', user.uid));
+            if (userDoc.exists()) userData = userDoc.data();
+        } catch (e) {
+            console.error('Error loading user data:', e);
+        }
+
+        const alreadyScheduled = userData && userData.cancellation_scheduled;
+        const cancelsAt = userData && userData.cancels_at
+            ? new Date(userData.cancels_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+            : '';
+
+        const overlay = document.createElement('div');
+        overlay.id = 'cancel-sub-overlay';
+        overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);display:flex;justify-content:center;align-items:center;z-index:10000;';
+
+        const box = document.createElement('div');
+        box.style.cssText = 'background:white;border-radius:12px;padding:32px;max-width:460px;width:90%;font-family:-apple-system,sans-serif;';
+
+        const title = document.createElement('h2');
+        title.style.cssText = 'color:#1F2937;margin:0 0 12px;font-size:20px;';
+        title.textContent = 'Manage Your Subscription';
+
+        const desc = document.createElement('p');
+        desc.style.cssText = 'color:#6B7280;margin:0 0 24px;line-height:1.5;';
+
+        if (alreadyScheduled) {
+            desc.textContent = `Your subscription is already scheduled to cancel on ${cancelsAt}. You can continue using all features until then.`;
+        } else {
+            desc.textContent = 'Your $45/year plan gives you unlimited access. If you cancel, you keep access until your current period ends.';
+        }
+
+        const btnRow = document.createElement('div');
+        btnRow.style.cssText = 'display:flex;gap:12px;justify-content:flex-end;';
+
+        const closeBtn = document.createElement('button');
+        closeBtn.style.cssText = 'background:#F3F4F6;color:#374151;border:none;border-radius:8px;padding:10px 20px;cursor:pointer;font-size:14px;';
+        closeBtn.textContent = 'Close';
+        closeBtn.addEventListener('click', () => document.body.removeChild(overlay));
+
+        btnRow.appendChild(closeBtn);
+
+        if (!alreadyScheduled) {
+            const cancelBtn = document.createElement('button');
+            cancelBtn.style.cssText = 'background:#EF4444;color:white;border:none;border-radius:8px;padding:10px 20px;cursor:pointer;font-size:14px;';
+            cancelBtn.textContent = 'Cancel Subscription';
+            cancelBtn.addEventListener('click', async () => {
+                cancelBtn.disabled = true;
+                cancelBtn.textContent = 'Cancelling...';
+                try {
+                    const idToken = await user.getIdToken();
+                    const res = await fetch(`${BACKEND_URL}/api/subscription/cancel`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${idToken}` }
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                        const endDate = new Date(data.cancels_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+                        desc.textContent = `Done. Your subscription will cancel on ${endDate}. You keep full access until then.`;
+                        cancelBtn.remove();
+                    } else {
+                        desc.textContent = data.error || 'Could not cancel. Please try again or contact support.';
+                        cancelBtn.disabled = false;
+                        cancelBtn.textContent = 'Cancel Subscription';
+                    }
+                } catch (err) {
+                    console.error('Cancel error:', err);
+                    desc.textContent = 'Network error. Please try again.';
+                    cancelBtn.disabled = false;
+                    cancelBtn.textContent = 'Cancel Subscription';
+                }
+            });
+            btnRow.insertBefore(cancelBtn, closeBtn);
+        }
+
+        box.appendChild(title);
+        box.appendChild(desc);
+        box.appendChild(btnRow);
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) document.body.removeChild(overlay); });
     }
     
     // Show Future Agent Modal
